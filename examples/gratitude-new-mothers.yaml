@@ -1,0 +1,80 @@
+# A niche file is the engine's only input. Everything in it is evidence you
+# collected — the gate fails a build whose load-bearing signals are hunches.
+niche: "Gratitude journal for new mothers"
+book_type: journal
+
+audience: "first-time mothers in the first year, usually buying for themselves at 11pm"
+promise: "Five quiet minutes at the end of a day that had none."
+
+keywords_seed:
+  - "gratitude journal for moms"
+  - "new mom gift journal"
+  - "postpartum journal for mothers"
+  - "motherhood keepsake journal"
+
+signals:
+  demand_volume:
+    score: 7.5
+    evidence: "1,900 monthly searches for 'gratitude journal for moms' plus 4 autocomplete variants"
+    source: "Helium 10 Magnet, 2026-01-14"
+  proven_sales:
+    score: 7.0
+    evidence: "Top 3 results sit at BSR 14k, 31k and 58k in Books — roughly 20-60 copies/day between them"
+    source: "Amazon BSR check, 2026-01-14"
+  competition_gap:
+    score: 8.0
+    evidence: "Top seller's 1-2 star reviews: 'pages bleed through', 'prompts repeat every week', '30 of the pages are blank'"
+    source: "Reviews of B0XXXXXXX, read 2026-01-15"
+  differentiation:
+    score: 7.5
+    evidence: "No incumbent in the top 10 offers prompts written for the first year specifically; all are generic gratitude"
+    source: "Search-results page audit, 2026-01-15"
+  review_moat:
+    score: 4.0
+    evidence: "Top 3 have 412, 188 and 96 reviews — beatable, not a fortress"
+    source: "Amazon search results, 2026-01-14"
+  price_headroom:
+    score: 6.5
+    evidence: "Incumbents priced 8.99-12.99 for 100-120 pages; printing cost at 120 pages is 2.44"
+    source: "Amazon listings + KDP printing cost calculator"
+  format_fit:
+    score: 9.0
+    evidence: "One page a day suits a reader with five spare minutes and one hand free"
+  longevity:
+    score: 8.0
+    evidence: "New mothers are a renewing audience — the cohort turns over every year"
+  seasonality:
+    score: 3.0
+    evidence: "Mother's Day and Christmas spike, but baseline demand holds all year"
+    source: "Google Trends, 5-year view"
+  trademark_risk:
+    score: 1.0
+    evidence: "No live marks for the phrase; 'Gratitude Journal' is descriptive and widely used"
+    source: "USPTO TESS search, 2026-01-15"
+
+competitor:
+  title: "The Gratitude Journal for Moms"
+  asin: "B0XXXXXXX"
+  price: 9.99
+  reviews: 412
+  rating: 4.3
+  page_count: 110
+  gaps:
+    - "Reviewers report bleed-through when writing with anything but a pencil"
+    - "Prompts repeat every week, so the book feels padded by the second month"
+    - "30 of the 110 pages are blank 'notes' pages"
+
+trademark:
+  checked: true
+  source: "USPTO TESS"
+  checked_on: "2026-01-15"
+  hits: []
+
+constraints:
+  trim_size: "6x9"
+  paper: "bw_cream"
+  target_pages: 120
+
+notes: |
+  The angle is specificity: prompts written for the first year of motherhood
+  rather than generic gratitude, and no filler pages at all.

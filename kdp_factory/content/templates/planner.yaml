@@ -1,0 +1,87 @@
+# Vocabulary for planners and logbooks. Every week gets its own focus line and
+# its own habit set, so no two spreads carry identical content — a planner that
+# repeats itself page for page fails the substance gate, by design.
+focus_lines:
+  - "One thing that would make this week count."
+  - "The task you keep moving to tomorrow. Put it here instead."
+  - "What does 'enough' look like this week?"
+  - "The one commitment you will not renegotiate."
+  - "What can only you do this week?"
+  - "Which single hour matters most, and when is it?"
+  - "What are you saying no to this week?"
+  - "The smallest step that would count as progress."
+  - "Who are you doing this week with?"
+  - "What would make Friday feel good?"
+  - "Name the week's one real deadline."
+  - "What would you like to have finished by Sunday night?"
+  - "Which task will you protect from interruption?"
+  - "What did last week ask you to change?"
+  - "The thing you are avoiding, in plain words."
+  - "What does a good day look like this week?"
+  - "Where will your attention go if you do not choose?"
+  - "One improvement you can repeat next week too."
+  - "What are you preparing for?"
+  - "Which promise are you keeping this week?"
+  - "What would you do differently if the week were half as long?"
+  - "The one conversation worth having this week."
+  - "What is finished that you have not admitted is finished?"
+  - "Which habit gets one more day this week?"
+  - "What is the week's obvious risk?"
+  - "Name one thing to do slowly on purpose."
+  - "What is worth protecting in your calendar this week?"
+  - "Which job only gets easier if you start it now?"
+  - "What is the honest reason last week's list did not finish?"
+  - "Name the week's one unavoidable task."
+  - "What would make this week feel less rushed?"
+  - "Which decision are you postponing, and what would settle it?"
+  - "What is the first thing you will do on Monday morning?"
+  - "Who needs an answer from you this week?"
+  - "What can wait until next month without any cost?"
+  - "Which habit is worth one more week of effort?"
+  - "What would you like to stop carrying by Friday?"
+  - "Name one thing you will finish rather than start."
+  - "What does this week need more of, and less of?"
+  - "Which task is bigger in your head than on paper?"
+  - "What is the week's quiet win going to be?"
+  - "Where is your time actually going at the moment?"
+  - "What would make next Monday easier, done this week?"
+  - "Which meeting could be a message instead?"
+  - "What are you learning this week, on purpose?"
+  - "Name the thing you would regret leaving undone."
+  - "What did you promise yourself last month?"
+  - "Which part of this week is already decided for you?"
+  - "What is the one number you are watching this week?"
+  - "What would a calm version of this week look like?"
+  - "Which help have you not asked for yet?"
+  - "What is worth doing badly rather than not at all?"
+  - "Name a boundary you will hold this week."
+  - "What is finished enough to let go of?"
+  - "Which small repair would save a bigger one later?"
+  - "What is the week's single most useful hour?"
+
+habit_sets:
+  - [Water, Movement, Sleep, Reading, Outside]
+  - [Steps, Stretch, Fruit, Journal, Early night]
+  - [Walk, Protein, Screens off, Tidy, Call someone]
+  - [Workout, Water, Daylight, No phone in bed, Plan tomorrow]
+  - [Reading, Stretch, Steps, Cook at home, Gratitude]
+  - [Meditation, Steps, Water, Inbox zero, Lights out by 11]
+
+review_questions:
+  - "What went well?"
+  - "What got in the way?"
+  - "What carries over?"
+  - "One thing to change next week"
+
+day_names: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
+
+month_names: [January, February, March, April, May, June, July, August, September, October, November, December]
+
+how_to_use:
+  - "Start on any Monday. The weeks are undated on purpose so a skipped week costs you nothing."
+  - "Fill the focus line before the to-do list. The list is easier when the week has a point."
+  - "Tick the habit boxes at the same time each day — the evening works better than the morning."
+  - "The review section at the end of each week takes two minutes and is the part that compounds."
+
+closing_lines:
+  - "That is the last week in this book. Read the focus lines back — that was your year, in one line a week."

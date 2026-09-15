@@ -1,0 +1,15 @@
+# Builds land here; they are outputs, not source.
+output/
+*.pdf.tmp
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+.DS_Store

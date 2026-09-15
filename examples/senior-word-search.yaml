@@ -1,0 +1,78 @@
+niche: "Large print word search for seniors"
+book_type: puzzle
+
+audience: "readers over 70 who want big grids and no eye strain"
+audience_short: "large-print puzzlers"
+promise: "Big grids, short sittings, and every answer in the back."
+
+keywords_seed:
+  - "large print word search for seniors"
+  - "word search puzzle book adults"
+  - "big print activity book elderly"
+  - "word find book large print"
+
+signals:
+  demand_volume:
+    score: 8.5
+    evidence: "'large print word search' at 14,800/mo with 9 autocomplete variants"
+    source: "Helium 10 Magnet, 2026-01-18"
+  proven_sales:
+    score: 8.0
+    evidence: "Top 3 at BSR 3k, 9k and 12k in Books — a proven, busy category"
+    source: "Amazon BSR check, 2026-01-18"
+  competition_gap:
+    score: 6.0
+    evidence: "1-star reviews of the leader: 'three puzzles had words missing from the grid', 'answers in the wrong order'"
+    source: "Reviews read 2026-01-19"
+  differentiation:
+    score: 7.0
+    evidence: "Every grid machine-verified; solutions printed in puzzle order — the leader fails both"
+  review_moat:
+    score: 7.0
+    evidence: "Leader has 6,400 reviews; the 8th-10th results have under 150"
+    source: "Amazon search results, 2026-01-18"
+  price_headroom:
+    score: 6.0
+    evidence: "Priced 6.99-9.99 at 100-120 pages, 8.5x11"
+  format_fit:
+    score: 9.0
+    evidence: "One puzzle per page on 8.5x11 gives a 15x15 grid at a readable size"
+  longevity:
+    score: 9.0
+    evidence: "Word search demand has been flat-to-up for five years"
+  seasonality:
+    score: 3.5
+    evidence: "Gift spike in December, steady the rest of the year"
+  trademark_risk:
+    score: 1.0
+    evidence: "Descriptive phrases only; no live marks"
+    source: "USPTO TESS, 2026-01-19"
+
+competitor:
+  title: "Large Print Word Search for Adults"
+  asin: "B0ZZZZZZZ"
+  price: 7.99
+  reviews: 6400
+  rating: 4.4
+  page_count: 110
+  gaps:
+    - "Reviewers report words listed but missing from the grid"
+    - "Solutions are not in puzzle order, so checking an answer is a hunt"
+    - "Print is smaller than the cover claims"
+
+trademark:
+  checked: true
+  source: "USPTO TESS"
+  checked_on: "2026-01-19"
+  hits: []
+
+constraints:
+  trim_size: "8.5x11"
+  paper: "bw_white"
+  target_pages: 120
+
+options:
+  grid_size: 15
+  words_per_puzzle: 12
+  difficulty: medium
+  solutions_per_page: 2

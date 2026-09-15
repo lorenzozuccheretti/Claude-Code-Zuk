@@ -1,0 +1,63 @@
+# Field map for the KDP paperback flow.
+#
+# KDP's DOM changes without warning, so nothing here is treated as certain: the
+# driver tries each strategy in order and reports the first that works. Labels
+# are listed before CSS because a visible label survives a redesign more often
+# than a generated id does.
+#
+# If the driver reports a field it could not find, fix it HERE — never by
+# teaching the driver to guess.
+screens:
+  details:
+    url_fragment: "/title-setup/paperback/details"
+    fields:
+      title:
+        labels: ["Book Title", "Title"]
+        css: ["#data-print-book-title", "input[name='title']"]
+      subtitle:
+        labels: ["Subtitle"]
+        css: ["#data-print-book-subtitle", "input[name='subtitle']"]
+      author_first:
+        labels: ["First name", "Primary Author or Contributor First name"]
+        css: ["#data-print-book-primary-author-first-name"]
+      author_last:
+        labels: ["Last name", "Primary Author or Contributor Last name"]
+        css: ["#data-print-book-primary-author-last-name"]
+      description:
+        labels: ["Description"]
+        css: ["#data-print-book-description", "textarea[name='description']"]
+      keywords:
+        labels: ["Keywords"]
+        css: ["#data-print-book-keywords-{index}"]
+        repeated: 7
+      language:
+        labels: ["Language"]
+        css: ["#data-print-book-language-native"]
+  content:
+    url_fragment: "/title-setup/paperback/content"
+    fields:
+      trim_size:
+        labels: ["Trim Size", "Choose a trim size"]
+        css: ["#trim-size-btn-announce"]
+      paper_type:
+        labels: ["Paper Type", "Paper type"]
+        css: ["input[name='paper_type']"]
+      bleed:
+        labels: ["Bleed Settings", "Bleed"]
+        css: ["input[name='bleed']"]
+      cover_finish:
+        labels: ["Paperback cover finish", "Cover Finish"]
+        css: ["input[name='cover_finish']"]
+    uploads:
+      manuscript:
+        labels: ["Upload paperback manuscript", "Upload Manuscript"]
+        css: ["input[type='file'][name*='manuscript']"]
+      cover:
+        labels: ["Upload your cover file", "Upload Cover"]
+        css: ["input[type='file'][name*='cover']"]
+  pricing:
+    url_fragment: "/title-setup/paperback/pricing"
+    fields:
+      list_price:
+        labels: ["Amazon.com price", "List Price"]
+        css: ["#data-pricing-print-us-price-input input"]

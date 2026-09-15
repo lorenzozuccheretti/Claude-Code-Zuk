@@ -1,0 +1,471 @@
+# Prompt banks for guided journals.
+#
+# Two mechanisms, both deterministic:
+#   * `prompts`  — complete prompts, used as written
+#   * `frames`   — a sentence pattern with a {subject} slot, combined with the
+#                  bank's `subjects` to make many unique prompts from few lines
+#
+# A bank is chosen by matching its `tags` against the niche text and keyword
+# seeds. `core` is always mixed in, so a niche nobody wrote a bank for still
+# produces a complete book.
+banks:
+  core:
+    tags: []
+    subjects:
+    - today
+    - this week
+    - the last month
+    - your morning
+    - your evening
+    - a conversation you had
+    - something you decided
+    - a small win
+    - a person you saw
+    - something you noticed
+    - a choice you almost made differently
+    - the part of the day you did not plan
+    - something you finished
+    - a room you spent time in
+    - someone you thought about
+    - a habit you kept
+    frames:
+    - Write down three things about {subject} that went better than expected.
+    - What is one thing about {subject} you would keep exactly as it was?
+    - Describe {subject} in five words, then explain the one that surprised you.
+    - What did {subject} ask of you that you were glad to give?
+    - If {subject} had a title, what would it be, and why?
+    - Name one thing about {subject} you would not want to forget.
+    - What is the smallest good thing you can remember about {subject}?
+    - Who else was part of {subject}, and what did they add to it?
+    prompts:
+    - What is one thing you are better at than you were a year ago?
+    - Write about something you own that you would replace immediately if it broke.
+    - What did you say no to recently, and how did it feel afterwards?
+    - Describe a place where you feel unhurried.
+    - What is a compliment you received that you still think about?
+    - Which habit is currently doing the most work for you?
+    - Write about a time you changed your mind about something.
+    - What would you tell yourself at the start of this week?
+    - Name three sounds you would be sad to never hear again.
+    - What is something you have been putting off that would take ten minutes?
+    - Which decision from this year are you still glad about?
+    - Write about a room you would happily be locked in for an afternoon.
+    - What do people ask you for help with, and how do you feel about that?
+    - Describe the last time you lost track of an hour.
+    - What is a rule you follow that nobody gave you?
+    - Which object in your home has the longest story behind it?
+    - What do you do when nobody is expecting anything from you?
+    - Write the sentence you wish someone would say to you this week.
+    - What did you believe five years ago that you have quietly dropped?
+    - Which door have you not knocked on yet?
+    - Describe the weather you would choose for an ordinary Tuesday.
+    - What is something you are slower at than everyone else, and fine with?
+    - Write about a stranger you still think about.
+    - What would your week look like without the one thing you dread in it?
+    - Which meal would you happily eat every day for a month?
+    - What part of your life would surprise the person you were at twenty?
+    - Name a skill you would learn if nobody would ever see you practising.
+    - What do you own too much of, and what does that say?
+    - Write about the last thing that made you laugh out loud on your own.
+    - Which conversation are you avoiding, and what is the real reason?
+    - What is a small extravagance that is worth every penny to you?
+    - Describe your ideal first hour of the morning, honestly.
+    - What is a mistake of yours that turned out to be useful?
+    - Who do you owe a message to?
+    - What did you do this week that only you would have thought of?
+    - Write about a place you go to think.
+    - What does 'enough' look like for you, this year?
+    - Which advice do you give often but rarely follow?
+    - Name three things you are better at ignoring than you used to be.
+    - What would you do with an unexpected free day, with no money involved?
+    - Write about something you finished that nobody congratulated you for.
+    - What is the most useful thing you have thrown away?
+    - Which relationship in your life takes the least effort, and why?
+    - What is the story you tell most often about yourself?
+    - Describe the last time you changed your mind in the middle of an argument.
+    - What do you notice first when you walk into someone else's home?
+    - Which task do you do carefully even though nobody checks?
+    - What did you want to be, and what did that actually mean?
+    - Write about a book, film or song you return to.
+    - What have you stopped apologising for?
+    - Which part of the day belongs to you alone?
+    - What would make tomorrow easier that you could do tonight?
+    - Name a promise you kept to yourself recently.
+    - What do you find beautiful that most people walk past?
+    - Write about a time you were braver than you expected.
+    - What are you curious about lately, with no purpose attached?
+    - Which habit did you drop without noticing, and do you miss it?
+    - What is something you say yes to too quickly?
+    - Describe the sound of your home on a normal evening.
+    - What is worth doing badly, in your opinion?
+    - Who taught you something without meaning to?
+    - What does your handwriting look like when you are in a hurry?
+    - Write about the last thing you fixed rather than replaced.
+    - What are you looking forward to that is entirely ordinary?
+  gratitude:
+    tags:
+    - gratitude
+    - thankful
+    - thanks
+    - blessing
+    - blessings
+    - appreciation
+    - grateful
+    subjects:
+    - your home
+    - your body
+    - a friendship
+    - a stranger's kindness
+    - something that works
+    - a meal you ate
+    - a difficulty that taught you something
+    - someone who waited for you
+    - a habit that serves you
+    - the weather this week
+    frames:
+    - What about {subject} are you grateful for that you rarely say out loud?
+    - Write a short thank-you note to {subject}.
+    - How would this week be different without {subject}?
+    - What did {subject} cost someone else, and did you ever thank them for it?
+    - List three specific details about {subject} you appreciate.
+    - When did you last notice {subject} without being reminded to?
+    prompts:
+    - Name someone whose ordinary effort makes your life easier, and say how.
+    - What is something you complained about this month that someone else is hoping for?
+    - Write about a possession that carries a memory you are grateful for.
+    - Which part of your routine would you miss most if it disappeared tomorrow?
+    - What went right today that you did nothing to deserve?
+    - Which everyday object would you miss most if it vanished tonight?
+    - Write about a time someone gave you their attention when you needed it.
+    - What has your body let you do this week that you did not think about?
+    - Name a person whose work you rely on but have never met.
+    - Which part of your home are you most glad to come back to?
+    - Write about something you were given that you still use.
+    - What did someone forgive you for?
+    - Which food are you grateful exists, and why that one?
+    - Name a small repair or fix that made your week better.
+    - Who made something easier for you today without being asked?
+    - What is going well right now that you have not mentioned to anyone?
+    - Write about a friendship that survived a gap.
+    - Which stranger's job would fall apart your week if they stopped doing it?
+    - What did you learn from someone who was patient with you?
+    - Name three things within arm's reach that you are glad to own.
+    - Which season are you grateful for, and what exactly about it?
+    - What difficulty are you now quietly grateful for?
+    - Write about a door that opened because another one closed.
+    - Who says your name in a way you like?
+    - What did you have access to today that most of history did not?
+    - Name something free that you would pay for.
+    - Which piece of music are you glad exists?
+    - What is the last kindness you received from someone in a hurry?
+    - Write about a teacher, coach or boss who took you seriously.
+    - What about this week would have impressed you a year ago?
+    - Which chore are you secretly glad to do?
+    - Name something you nearly lost and did not.
+    - Who keeps showing up, without being asked?
+    - What are you grateful to have stopped doing?
+    - Write a thank-you note you will never send.
+    - What worked today that you never think about until it breaks?
+    - Which view or window are you grateful for?
+    - Name a decision someone else made that improved your life.
+    - What do you have now that you once hoped for?
+  parenting:
+    tags:
+    - mother
+    - mothers
+    - mom
+    - moms
+    - mum
+    - mums
+    - parent
+    - parents
+    - parenting
+    - baby
+    - babies
+    - newborn
+    - toddler
+    - toddlers
+    - child
+    - children
+    - kids
+    - family
+    - pregnancy
+    - postpartum
+    subjects:
+    - your child's face this morning
+    - the sound of the house at night
+    - a first you witnessed
+    - a hard hour today
+    - something they said
+    - the way they sleep
+    - a habit you hope they keep
+    - the help you accepted
+    - your own patience today
+    - a mess worth making
+    frames:
+    - Write down exactly what {subject} looked like, so you still have it in ten years.
+    - What did {subject} teach you about the kind of parent you are becoming?
+    - What would you want them to know about {subject} when they are grown?
+    - Describe {subject} without using the word 'tired'.
+    - What part of {subject} do you want to remember on a harder day?
+    prompts:
+    - What is one thing you did well today that nobody saw?
+    - Write about the last time they surprised you.
+    - What advice did you ignore, and were you right to?
+    - Describe a sound in your house that means everything is fine.
+    - What do you want to stop apologising for?
+    - What did they do today that you want to remember in twenty years?
+    - Write about the first time they made you laugh.
+    - What are you better at now than you were three months ago?
+    - Describe their hands.
+    - What is the hardest part of this week, said plainly?
+    - Who helped you this week, and did you tell them?
+    - Write about a night that felt endless and how it ended.
+    - What do you hope they never lose?
+    - Which piece of advice have you decided to ignore?
+    - Describe the way they look when they are concentrating.
+    - What did you do today that no one will ever know about?
+    - Write about a smell that will always mean this year to you.
+    - What is the sound you will miss when they are older?
+    - Which of your own habits do you see in them already?
+    - What would you tell a friend in exactly your position?
+    - Describe the last five minutes before they fell asleep.
+    - What did you get wrong today, and how did you repair it?
+    - Write about the version of yourself you are when you are tired.
+    - What do they do that you have no explanation for?
+    - Which visitor made the week better?
+    - What does a good day look like now, compared to before?
+    - Write about something you gave up that you do not miss.
+    - What did you eat today, and when?
+    - Which song is stuck in your house at the moment?
+    - What do you want them to know about how they were loved?
+    - Describe a moment this week when everything was fine.
+    - What has surprised you most about yourself?
+    - Write about the help you found hardest to accept.
+    - What is the most ridiculous thing that happened this week?
+    - Which worry has quietly gone away?
+    - What would you like to have said today, and to whom?
+    - Describe their face when they see you come into the room.
+    - What do you do for yourself, and when did you last do it?
+    - Write about a thing they own that they cannot sleep without.
+  mindfulness:
+    tags:
+    - mindfulness
+    - calm
+    - anxiety
+    - stress
+    - meditation
+    - breathe
+    - wellbeing
+    - selfcare
+    - self-care
+    subjects:
+    - your breath right now
+    - the room you are in
+    - a tension you are carrying
+    - the last hour
+    - a sound you can hear
+    - your hands
+    - the pace of today
+    - something you can see from where you sit
+    frames:
+    - Describe {subject} in detail, with no judgement attached.
+    - What changes when you pay attention to {subject} for one full minute?
+    - Where in your body do you notice {subject}?
+    - What would it take to let {subject} be exactly as it is?
+    - Name three things about {subject} that are neither good nor bad.
+    prompts:
+    - What are you bracing for that has not happened yet?
+    - Write down the thought that keeps returning today, then set it aside.
+    - What would rest actually look like this week, specifically?
+    - Which worry shrinks when you write it down?
+    - What is one thing you can do more slowly tomorrow?
+    - What can you hear right now that you had not noticed?
+    - Describe the temperature of the room without judging it.
+    - Which part of your body is holding something today?
+    - What did you rush that did not need rushing?
+    - Write down the thought that keeps coming back, and leave it there.
+    - What would this hour be like at half speed?
+    - Name five things you can see that are not moving.
+    - What are you resisting right now?
+    - Describe your breathing before and after reading this line.
+    - Which worry has not actually happened?
+    - What is the difference between tired and empty, for you?
+    - Write about something that is exactly as it should be.
+    - What did you do today on autopilot?
+    - Which sensation do you notice only when you stop?
+    - What would you like more of that costs nothing?
+    - Describe the last time you felt unhurried.
+    - What has your attention been on, uninvited?
+    - Name something you can put down for the next ten minutes.
+    - What does your face do when you are concentrating?
+    - Which room in your home feels calmest, and why?
+    - What is happening around you that requires nothing from you?
+    - Write about a moment today that you did not have to fix.
+    - What is the smallest thing you could stop doing?
+    - Which thought are you treating as a fact?
+  fitness:
+    tags:
+    - fitness
+    - workout
+    - workouts
+    - running
+    - training
+    - weight
+    - health
+    - gym
+    - nutrition
+    - walking
+    subjects:
+    - today's session
+    - your energy this morning
+    - what you ate
+    - a day you did not train
+    - your sleep
+    - a movement that felt easy
+    - a movement that felt hard
+    - the week's total effort
+    frames:
+    - What did {subject} tell you about where you actually are right now?
+    - Rate {subject} out of ten and justify the number in one sentence.
+    - What would you change about {subject} if you repeated it tomorrow?
+    - What did {subject} cost you, and was it worth it?
+    prompts:
+    - What is the smallest version of your training that you would still be proud of?
+    - Which excuse shows up most often, and what is underneath it?
+    - Write down the reason you started, in your own words.
+    - What does a good week look like, measured honestly?
+    - What did your body do well today?
+    - Which part of training do you look forward to?
+    - What does a bad session teach you that a good one does not?
+    - Write about the difference between tired and injured.
+    - What are you training for, in one honest sentence?
+    - Which measurement matters to you, and which one should not?
+    - What did you eat that actually helped?
+    - Write about a time you stopped early and were right to.
+    - How did you sleep, and what did it change?
+    - Which excuse did you talk yourself out of this week?
+    - What would consistency look like for the next four weeks?
+    - Name the movement that has improved most.
+    - What does your warm-up tell you about the day?
+    - Which session do you avoid, and why that one?
+    - Write about training on a day you did not want to.
+    - What would you tell someone starting from where you started?
+    - Which result came slower than you expected?
+    - What are you doing now that used to be hard?
+    - Write about the last time you felt strong.
+    - What does rest actually look like in your week?
+  grief:
+    tags:
+    - grief
+    - loss
+    - bereavement
+    - memorial
+    - mourning
+    - remembrance
+    - widow
+    - widower
+    subjects:
+    - their voice
+    - a photograph
+    - a place you shared
+    - a habit of theirs
+    - something they said often
+    - an ordinary afternoon
+    - a song
+    - their handwriting
+    frames:
+    - Write everything you remember about {subject}.
+    - What do you want other people to know about {subject}?
+    - What does {subject} make easier, and what does it make harder?
+    - Describe {subject} as if telling someone who never met them.
+    prompts:
+    - What would you say if you had five more minutes?
+    - Write about a kindness someone offered that actually helped.
+    - What are you carrying that nobody has asked about?
+    - Which memory do you return to most often, and why that one?
+    - What would you want to tell them about today?
+    - Write down something they used to say.
+    - Which object of theirs do you not want to move?
+    - What do people get wrong when they try to help?
+    - Write about the first ordinary day after.
+    - Which memory arrives uninvited, and when?
+    - What did they teach you that you still use?
+    - Write about a photograph you keep coming back to.
+    - What is harder than you expected, and what is easier?
+    - Which date is coming that you are not looking forward to?
+    - What do you do on the bad days?
+    - Write about a kindness that actually helped.
+    - What are you carrying that you have not said out loud?
+    - Which song do you avoid, and which do you play on purpose?
+    - What would they find funny about this week?
+    - Write about the last good conversation you had with them.
+    - What have you kept, and what did you let go?
+    - Which part of them do you recognise in yourself?
+    - What do you wish people would ask you?
+    - Write about a place that still belongs to them.
+  productivity:
+    tags:
+    - productivity
+    - focus
+    - goals
+    - business
+    - work
+    - career
+    - planning
+    - habits
+    - study
+    - student
+    subjects:
+    - today's first hour
+    - the task you avoided
+    - a decision you made quickly
+    - an interruption
+    - the week's one real priority
+    - a meeting you had
+    - something you finished
+    frames:
+    - What did {subject} actually move forward?
+    - If you could only keep one outcome from {subject}, which one?
+    - What made {subject} harder than it needed to be?
+    - What would you delegate about {subject} if you could?
+    prompts:
+    - What is the one task that, if finished, makes the rest lighter?
+    - Where did your attention go that you did not choose?
+    - What are you doing out of habit rather than because it works?
+    - Write tomorrow's first action in a single sentence, starting with a verb.
+    - What is the one task that makes the rest lighter?
+    - Which meeting could have been a message?
+    - What did you finish this week, truly finished?
+    - Write down the task you keep rewriting on the list.
+    - Which part of your work do you protect, and which gets interrupted?
+    - What would you stop doing if nobody noticed for a month?
+    - Which decision are you postponing, and what is it costing?
+    - What does your best working hour look like?
+    - Write about a system that worked, and why it worked.
+    - What are you doing because it is easy to measure?
+    - Which task did you avoid, and what is actually under that?
+    - What would you delegate if you trusted it would be done?
+    - Name the thing you are learning on purpose right now.
+    - What does 'done' mean for the current project?
+    - Write about a deadline that improved the work.
+    - Which habit has made the biggest difference this quarter?
+    - What did you say no to, and how did it go?
+    - Which tool or process is quietly slowing you down?
+    - What would next week look like if this week's lesson stuck?
+    - Write the first action of tomorrow as one sentence starting with a verb.
+sections:
+- Beginning
+- Noticing
+- Deepening
+- Returning
+- Looking Forward
+- Steady Ground
+how_to_use:
+- One page a day. Keep it short and keep it honest — three lines you mean beat a page you performed.
+- Write at the same time each day if you can. The habit does more work than the words.
+- If a prompt does not fit today, answer the one underneath it instead. Nothing here is graded.
+- Dates are left blank on purpose. Start on any day and skip days without ruining the book.
+closing_lines:
+- That is the last page. Look back at the first one — you were a different person writing it.
+- You filled a book. Keep it somewhere you will find it again in a year.

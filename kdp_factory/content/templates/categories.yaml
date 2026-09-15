@@ -1,0 +1,86 @@
+# Candidate KDP browse categories per book type, with the tags that promote one.
+#
+# KDP allows three. The listing station picks the book type's defaults first,
+# then promotes any category whose tags match the niche, and never returns more
+# than the spec card's limit.
+#
+# These are category paths as KDP presents them; verify the current tree when
+# the categories are actually chosen in the dashboard.
+book_types:
+  journal:
+    defaults:
+      - "Books > Self-Help > Journal Writing"
+      - "Books > Health, Fitness & Dieting > Mental Health > Happiness"
+      - "Books > Crafts, Hobbies & Home > Home Improvement & Design > How-to & Home Improvements"
+    tagged:
+      - tags: [gratitude, thankful, blessings]
+        category: "Books > Religion & Spirituality > Worship & Devotion > Devotionals"
+      - tags: [mother, mothers, parent, parenting, baby, newborn, pregnancy, postpartum]
+        category: "Books > Parenting & Relationships > Parenting > Early Childhood"
+      - tags: [mindfulness, anxiety, stress, calm, meditation]
+        category: "Books > Health, Fitness & Dieting > Mental Health > Anxiety Disorders"
+      - tags: [grief, loss, bereavement, mourning]
+        category: "Books > Self-Help > Death & Grief > Grief & Bereavement"
+      - tags: [fitness, workout, training, health, running]
+        category: "Books > Health, Fitness & Dieting > Exercise & Fitness > Quick Workouts"
+      - tags: [productivity, goals, business, career, work]
+        category: "Books > Business & Money > Business Culture > Motivation & Self-Improvement"
+  planner:
+    defaults:
+      - "Books > Business & Money > Business Culture > Motivation & Self-Improvement"
+      - "Books > Self-Help > Time Management"
+      - "Books > Crafts, Hobbies & Home > Home Improvement & Design > Organizing"
+    tagged:
+      - tags: [student, school, study, college, teacher]
+        category: "Books > Education & Teaching > Studying & Workbooks > Study Guides"
+      - tags: [fitness, workout, training, nutrition]
+        category: "Books > Health, Fitness & Dieting > Exercise & Fitness"
+      - tags: [freelance, freelancer, business, entrepreneur, small business]
+        category: "Books > Business & Money > Small Business & Entrepreneurship"
+      - tags: [budget, money, finance, saving]
+        category: "Books > Business & Money > Personal Finance > Budgeting & Money Management"
+  puzzle:
+    defaults:
+      - "Books > Humor & Entertainment > Puzzles & Games > Word Search"
+      - "Books > Humor & Entertainment > Puzzles & Games > Logic & Brain Teasers"
+      - "Books > Health, Fitness & Dieting > Aging > Brain Games"
+    tagged:
+      - tags: [senior, seniors, elderly, dementia, alzheimer, large print]
+        category: "Books > Health, Fitness & Dieting > Aging > Medical Conditions & Diseases"
+      - tags: [kids, children, child, junior]
+        category: "Books > Children's Books > Activities, Crafts & Games > Puzzle Books"
+      - tags: [christmas, holiday, festive, gift]
+        category: "Books > Humor & Entertainment > Puzzles & Games > Crosswords"
+
+# Keyword modifiers used to build the seven slots. A slot is only spent on a
+# phrase that adds words the title and subtitle do not already carry.
+keyword_modifiers:
+  journal:
+    - "guided journal"
+    - "journal with prompts"
+    - "daily writing journal"
+    - "gift for {audience_short}"
+    - "self care journal"
+    - "undated journal notebook"
+    - "reflection journal for adults"
+  planner:
+    - "undated weekly planner"
+    - "habit tracker planner"
+    - "productivity planner notebook"
+    - "planner for {audience_short}"
+    - "goal setting planner"
+    - "weekly organizer notebook"
+    - "time management planner"
+  puzzle:
+    - "large print word search"
+    - "word search puzzle book"
+    - "puzzle book for {audience_short}"
+    - "brain games for adults"
+    - "activity book large print"
+    - "word find puzzle book"
+    - "gift puzzle book adults"
+  generic:
+    - "gift for {audience_short}"
+    - "birthday gift idea"
+    - "christmas stocking stuffer"
+    - "paperback notebook gift"

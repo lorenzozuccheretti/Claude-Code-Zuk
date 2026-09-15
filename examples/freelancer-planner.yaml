@@ -1,0 +1,72 @@
+niche: "Undated weekly planner for freelancers"
+book_type: planner
+
+audience: "freelancers juggling three or four clients at once"
+audience_short: "freelancers with several clients"
+promise: "A week that knows what it is for, before the first email lands."
+
+keywords_seed:
+  - "undated planner for freelancers"
+  - "self employed weekly planner"
+  - "client work planner notebook"
+  - "freelance business planner undated"
+
+signals:
+  demand_volume:
+    score: 6.5
+    evidence: "'undated weekly planner' at 8,100/mo; 'planner for freelancers' at 720/mo"
+    source: "Helium 10 Magnet, 2026-01-20"
+  proven_sales:
+    score: 6.5
+    evidence: "Two undated planners in the top 10 sit at BSR 22k and 44k"
+    source: "Amazon BSR check, 2026-01-20"
+  competition_gap:
+    score: 7.0
+    evidence: "Reviews of the top two: 'no space to plan by client', 'dated, so I wasted three months'"
+    source: "Reviews read 2026-01-21"
+  differentiation:
+    score: 7.0
+    evidence: "A focus line before the task list, and a review page per week — neither incumbent has both"
+    source: "Look Inside on the top 5, 2026-01-21"
+  review_moat:
+    score: 5.0
+    evidence: "Top results carry 900, 320 and 210 reviews"
+  price_headroom:
+    score: 7.0
+    evidence: "Undated planners priced 11.99-16.99 at 120-160 pages"
+  format_fit:
+    score: 8.0
+    evidence: "Two pages a week fits a freelancer's Monday-morning and Friday-afternoon habit"
+  longevity:
+    score: 7.5
+    evidence: "Undated means no dead stock in January"
+  seasonality:
+    score: 4.0
+    evidence: "December/January spike, but undated sells all year"
+  trademark_risk:
+    score: 1.0
+    evidence: "No live marks on any candidate title phrase"
+    source: "USPTO TESS, 2026-01-21"
+
+competitor:
+  title: "The Freelancer's Weekly Planner"
+  asin: "B0YYYYYYY"
+  price: 13.99
+  reviews: 320
+  rating: 4.1
+  page_count: 150
+  gaps:
+    - "Dated, so buyers who start in April waste a third of the book"
+    - "No room to plan by client — reviewers ask for it repeatedly"
+    - "Binding does not lie flat on a desk"
+
+trademark:
+  checked: true
+  source: "USPTO TESS"
+  checked_on: "2026-01-21"
+  hits: []
+
+constraints:
+  trim_size: "7x10"
+  paper: "bw_white"
+  target_pages: 130

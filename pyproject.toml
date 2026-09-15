@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kdp-factory"
+version = "0.1.0"
+description = "A repeatable engine that builds print-ready KDP books: six stations, three blocking gates."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "reportlab>=4.0",
+    "pypdf>=3.17",
+    "PyYAML>=6.0",
+    "Pillow>=10.0",
+]
+
+[project.optional-dependencies]
+upload = ["playwright>=1.40"]
+llm = ["anthropic>=0.40"]
+dev = ["pytest>=7.4"]
+
+[project.scripts]
+kdp = "kdp_factory.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["kdp_factory*"]
+
+[tool.setuptools.package-data]
+"kdp_factory" = ["spec/*.yaml", "content/templates/*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]

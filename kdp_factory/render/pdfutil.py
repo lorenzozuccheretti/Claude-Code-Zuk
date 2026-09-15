@@ -1,0 +1,45 @@
+"""Reading back what was written.
+
+The gates do not ask the renderer what it produced — they open the PDF. These
+helpers are the only way they look at it.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from pypdf import PdfReader
+
+POINTS_PER_INCH = 72.0
+
+
+def _reader(path: Path) -> PdfReader:
+    return PdfReader(str(path))
+
+
+def pdf_page_count(path: str | Path) -> int:
+    """The page count of the file that actually exists on disk."""
+    return len(_reader(Path(path)).pages)
+
+
+def pdf_page_sizes_in(path: str | Path) -> list[tuple[float, float]]:
+    """Every page's trim box in inches, rounded to a thousandth."""
+    sizes = []
+    for page in _reader(Path(path)).pages:
+        box = page.mediabox
+        sizes.append(
+            (
+                round(float(box.width) / POINTS_PER_INCH, 3),
+                round(float(box.height) / POINTS_PER_INCH, 3),
+            )
+        )
+    return sizes
+
+
+def extract_pages_text(path: str | Path) -> list[str]:
+    """Text per page, as a reader would see it."""
+    return [page.extract_text() or "" for page in _reader(Path(path)).pages]
+
+
+def extract_text(path: str | Path) -> str:
+    return "\n".join(extract_pages_text(path))
