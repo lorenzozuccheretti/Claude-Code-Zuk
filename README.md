@@ -118,6 +118,35 @@ The optional LLM hook is **off by default** for this reason. When enabled it can
 sharpen copy and give the substance gate a second opinion — advisory unless you
 explicitly let a model fail a build.
 
+## Front ends
+
+Two ways in, besides the terminal.
+
+**The `/kdp-factory` skill** (`.claude/skills/kdp-factory/`) turns "build the next
+book" into a complete instruction in a chat that has never seen this project. It
+carries the interview, the niche schema, the failure modes and one rule it will
+not break: fix the input, never the gate.
+
+**The Niche Proof Sheet** — a page you can open from any Claude app, phone
+included:
+
+<https://claude.ai/artifact/AntbVZq4G9VE8PGrXBCur8>
+
+It composes the niche file and shows **gate 1's verdict as you type** — the same
+ten weighted signals, the same thresholds, the same pass/fail reasons the build
+will print — plus the spine, wrap and price maths from the spec card. It cannot
+build (no Python in a sandbox), so it hands off two ways: copy the YAML, or save
+the sheet and ask Claude for it by name where the engine lives. The skill reads
+it back out of the page's own store and runs the build.
+
+```
+research on a phone  →  Niche Proof Sheet  →  saved
+                                               ↓
+                        "build the nurses niche from the proof sheet"
+                                               ↓
+                             /kdp-factory  →  kdp build  →  a book
+```
+
 ## Book types
 
 `journal`, `planner` and `puzzle` ship with the engine. They are plugins: a new

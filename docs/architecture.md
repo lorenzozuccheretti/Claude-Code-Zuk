@@ -71,6 +71,7 @@ That buys three things:
 | `run/` | Build context, manifest, pipeline |
 | `upload/` | Upload plan, KDP selector map, Playwright driver |
 | `cli.py` | The `kdp` command |
+| `.claude/skills/kdp-factory/` | The skill wrapper: the engine, explained to a fresh chat |
 
 ## Determinism
 
