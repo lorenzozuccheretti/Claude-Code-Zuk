@@ -43,15 +43,27 @@ def _audience(niche: Niche) -> str:
 def benefits(plan: InteriorPlan, niche: Niche) -> list[str]:
     """Benefit bullets: the format's own, plus anything the incumbent fails at."""
     out = list(BENEFIT_BY_TYPE.get(plan.book_type, []))
-    for gap in niche.competitor.gaps[:2]:
+    for gap in niche.competitor.gaps:
         answer = _answer_to_gap(gap)
-        if answer and answer not in out:
+        if answer and answer not in out and len(answer) <= MAX_BENEFIT_CHARS:
             out.append(answer)
+        if len(out) >= 5:
+            break
     return out[:5]
 
 
+# A gap is research: it may be a pasted review, several sentences long, in a
+# stranger's voice. Only a gap that maps to a claim this book can actually keep
+# becomes a bullet — an unmatched one is dropped, never reprinted. Putting a
+# competitor's one-star review on your own back cover is not marketing.
+MAX_BENEFIT_CHARS = 90
+
+
 def _answer_to_gap(gap: str) -> str:
-    """Turn a complaint about the incumbent into a claim this book can keep."""
+    """Turn a complaint about the incumbent into a claim this book can keep.
+
+    Returns "" when no rule matches, so the caller drops it.
+    """
     text = gap.strip().rstrip(".")
     if not text:
         return ""
@@ -73,7 +85,9 @@ def _answer_to_gap(gap: str) -> str:
     for needle, claim in rules:
         if needle in lowered:
             return claim
-    return f"Addresses a common complaint: {text.lower()}"
+    # No rule matched. The gap stays in the niche file as evidence; it just does
+    # not get printed as a promise nobody wrote.
+    return ""
 
 
 def hook(plan: InteriorPlan, niche: Niche) -> str:

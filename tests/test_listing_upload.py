@@ -146,3 +146,59 @@ class TestUploadPlanShape:
         plan = build_upload_plan("slug", listing, manuscript, cover)
         for field in plan.fields:
             assert field.labels or field.css, field.name
+
+
+class TestBackCoverCopy:
+    """A gap is research. Only a gap that maps to a claim becomes a bullet."""
+
+    def _plan(self, config):
+        from kdp_factory.booktypes import get_book_type
+        from kdp_factory.content.rng import StageRandom
+        from kdp_factory.niche import niche_from_dict
+
+        niche = niche_from_dict({
+            "niche": "Gratitude journal for new mothers",
+            "book_type": "journal",
+            "audience": "first-time mothers",
+            "constraints": {"target_pages": 120},
+        })
+        return niche, get_book_type("journal").plan(niche, config, StageRandom(1, "t"))
+
+    def test_a_recognised_complaint_becomes_a_claim(self, config):
+        from dataclasses import replace
+        from kdp_factory.content.copy import back_cover_copy
+        from kdp_factory.niche import Competitor
+
+        niche, plan = self._plan(config)
+        niche = replace(niche, competitor=Competitor(gaps=["the binding came undone the first time I opened it"]))
+        bullets = back_cover_copy(plan, niche, config.brand)["benefits"]
+        assert any("open flat" in b for b in bullets)
+
+    def test_an_unmatched_review_is_never_reprinted(self, config):
+        """The failure this guards: a stranger's one-star review on your cover."""
+        from dataclasses import replace
+        from kdp_factory.content.copy import back_cover_copy, description
+        from kdp_factory.niche import Competitor
+
+        review = (
+            "Did not like this book at all. It wasn't like a good prompt journal to "
+            "help you get feelings out, it was basic and bland. I returned it."
+        )
+        niche, plan = self._plan(config)
+        niche = replace(niche, competitor=Competitor(gaps=[review]))
+        bullets = back_cover_copy(plan, niche, config.brand)["benefits"]
+        assert all("basic and bland" not in b.lower() for b in bullets)
+        assert "basic and bland" not in description(plan, niche, config.brand).lower()
+
+    def test_bullets_stay_short_enough_to_print(self, config):
+        from dataclasses import replace
+        from kdp_factory.content.copy import MAX_BENEFIT_CHARS, back_cover_copy
+        from kdp_factory.niche import Competitor
+
+        niche, plan = self._plan(config)
+        niche = replace(niche, competitor=Competitor(gaps=[
+            "pages bleed through terribly and " + "x" * 300,
+            "the binding is poorly made",
+        ]))
+        bullets = back_cover_copy(plan, niche, config.brand)["benefits"]
+        assert all(len(b) <= MAX_BENEFIT_CHARS for b in bullets)
