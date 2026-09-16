@@ -1,13 +1,3 @@
-# Prompt banks for guided journals.
-#
-# Two mechanisms, both deterministic:
-#   * `prompts`  — complete prompts, used as written
-#   * `frames`   — a sentence pattern with a {subject} slot, combined with the
-#                  bank's `subjects` to make many unique prompts from few lines
-#
-# A bank is chosen by matching its `tags` against the niche text and keyword
-# seeds. `core` is always mixed in, so a niche nobody wrote a bank for still
-# produces a complete book.
 banks:
   core:
     tags: []
@@ -20,23 +10,19 @@ banks:
     - a conversation you had
     - something you decided
     - a small win
-    - a person you saw
     - something you noticed
-    - a choice you almost made differently
     - the part of the day you did not plan
     - something you finished
-    - a room you spent time in
-    - someone you thought about
     - a habit you kept
     frames:
     - Write down three things about {subject} that went better than expected.
     - What is one thing about {subject} you would keep exactly as it was?
-    - Describe {subject} in five words, then explain the one that surprised you.
     - What did {subject} ask of you that you were glad to give?
     - If {subject} had a title, what would it be, and why?
+    - Who else was part of {subject}, and what did they add to it?
+    - Describe {subject} in five words, then explain the one that surprised you.
     - Name one thing about {subject} you would not want to forget.
     - What is the smallest good thing you can remember about {subject}?
-    - Who else was part of {subject}, and what did they add to it?
     prompts:
     - What is one thing you are better at than you were a year ago?
     - Write about something you own that you would replace immediately if it broke.
@@ -102,6 +88,46 @@ banks:
     - What does your handwriting look like when you are in a hurry?
     - Write about the last thing you fixed rather than replaced.
     - What are you looking forward to that is entirely ordinary?
+    - 'Think of someone you saw today: what did their face tell you?'
+    - Who did you think about today without meaning to?
+    - Describe a room you spent time in today, and what it did to your mood.
+    - What is one thing about a person close to you that you would not want to forget?
+    - Which choice did you almost make differently today?
+    - Who has been on your mind all week, and have you told them?
+    - What did you carry into today that belonged to yesterday?
+    - What would you like to be told today by someone who knows you well?
+    - Name a thing you are good at that never shows up on a CV.
+    - What did you spend money on this week that you would spend again?
+    - Which task took less time than the dread it caused?
+    - What have you outgrown but not yet put down?
+    - When did someone last give you more time than you asked for?
+    - What is the first thing you notice when you wake up?
+    - Which season of your life does this one rhyme with?
+    - What do you keep in a drawer you never open?
+    - Name something you are willing to be bad at.
+    - What did you learn this month that you have not used yet?
+    - Which door in your home do you keep closed, and why?
+    - What is the kindest thing you did for yourself this week?
+    - Write down a number that matters to you right now.
+    - What would a friend say you worry about too much?
+    - Which meal do you associate with being looked after?
+    - What are you pretending not to know?
+    - Name a place you have never been but can picture clearly.
+    - What is on your desk, floor or bedside table right now?
+    - Which apology are you owed, and does it still matter?
+    - What do you do with your hands when you are thinking?
+    - Write about a time being late turned out well.
+    - What is a small thing that always works?
+    - Which song would you put at the start of this week?
+    - What did you nearly say today and did not?
+    - Name something you have kept long after it stopped being useful.
+    - What does your evening look like when nobody needs anything?
+    - Which compliment would you find hardest to believe?
+    - What have you been meaning to ask someone?
+    - Describe the last thing that made you stop walking.
+    - What is a habit of yours that you would not recommend?
+    - Which decision would you make faster if you trusted yourself more?
+    - What is taking up room in your head that you did not invite?
   gratitude:
     tags:
     - gratitude
@@ -254,6 +280,12 @@ banks:
     - calm
     - anxiety
     - stress
+    - stressed
+    - burnout
+    - burnt
+    - exhaustion
+    - overwhelm
+    - overwhelmed
     - meditation
     - breathe
     - wellbeing
@@ -261,17 +293,22 @@ banks:
     - self-care
     subjects:
     - your breath right now
-    - the room you are in
+    - this room
     - a tension you are carrying
     - the last hour
     - a sound you can hear
-    - your hands
     - the pace of today
     - something you can see from where you sit
     frames:
     - Describe {subject} in detail, with no judgement attached.
     - What changes when you pay attention to {subject} for one full minute?
-    - Where in your body do you notice {subject}?
+    - text: Where in your body do you notice {subject}?
+      subjects:
+      - a tension you are carrying
+      - the thing you are dreading
+      - today's tiredness
+      - what you are bracing for
+      - the last difficult conversation
     - What would it take to let {subject} be exactly as it is?
     - Name three things about {subject} that are neither good nor bad.
     prompts:
@@ -312,7 +349,6 @@ banks:
     - running
     - training
     - weight
-    - health
     - gym
     - nutrition
     - walking

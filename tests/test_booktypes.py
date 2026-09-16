@@ -151,3 +151,42 @@ class TestWordSearchAlgorithm:
         a = generate_puzzle(1, "Garden", words, 12, StageRandom(5, "t"))
         b = generate_puzzle(1, "Garden", words, 12, StageRandom(5, "t"))
         assert a.as_dict() == b.as_dict()
+
+
+class TestTemplatePacks:
+    """Frames multiply cheaply, and a frame that fits only some subjects
+    produces prompts no human wrote and no reader would ask."""
+
+    def test_a_frame_can_restrict_its_own_subjects(self):
+        from kdp_factory.content.packs import expand_bank
+
+        bank = {
+            "subjects": ["your hands", "a tension you are carrying"],
+            "frames": [
+                "Describe {subject}.",
+                {"text": "Where in your body is {subject}?",
+                 "subjects": ["a tension you are carrying"]},
+            ],
+        }
+        lines = expand_bank(bank)
+        assert "Describe your hands." in lines
+        assert "Where in your body is your hands?" not in lines
+        assert "Where in your body is a tension you are carrying?" in lines
+
+    def test_a_plain_string_frame_still_takes_every_subject(self):
+        from kdp_factory.content.packs import expand_bank
+
+        lines = expand_bank({"subjects": ["a", "b"], "frames": ["Describe {subject}."]})
+        assert lines == ["Describe a.", "Describe b."]
+
+    def test_no_bank_pairs_a_singular_frame_with_a_plural_subject(self):
+        """'…be exactly as it is?' breaks on a plural subject like 'your hands'."""
+        from kdp_factory.content.packs import expand_bank, load_pack
+
+        pack = load_pack("journal")
+        offenders = []
+        for name, bank in pack["banks"].items():
+            for line in expand_bank(bank):
+                if " as it is" in line and (" hands " in line or " your hands" in line):
+                    offenders.append((name, line))
+        assert offenders == []

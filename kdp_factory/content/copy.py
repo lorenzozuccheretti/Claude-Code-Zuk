@@ -81,6 +81,9 @@ def _answer_to_gap(gap: str) -> str:
         ("no room", "More writing space per page"),
         ("cramped", "More writing space per page"),
         ("date", "Undated, so you can start whenever you like"),
+        ("pamphlet", "A full journal, not a thin gift-shop notebook"),
+        ("shallow", "Prompts that ask for more than a one-word answer"),
+        ("bland", "Prompts that ask for more than a one-word answer"),
     )
     for needle, claim in rules:
         if needle in lowered:

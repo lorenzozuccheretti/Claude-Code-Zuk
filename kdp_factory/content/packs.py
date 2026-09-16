@@ -62,14 +62,27 @@ def select_banks(
 
 
 def expand_bank(bank: dict[str, Any]) -> list[str]:
-    """Every distinct line a bank can produce: written prompts + frame×subject."""
+    """Every distinct line a bank can produce: written prompts + frame×subject.
+
+    A frame is either a string, which combines with every subject in the bank,
+    or a mapping with its own ``subjects`` — because some frames only fit some
+    subjects. "Where in your body do you notice {subject}?" wants a feeling, and
+    pairing it with "your hands" produces a question nobody would ask.
+    """
     out: list[str] = list(bank.get("prompts") or [])
     subjects = bank.get("subjects") or []
     for frame in bank.get("frames") or []:
-        if "{subject}" not in frame:
-            out.append(frame)
+        if isinstance(frame, dict):
+            text = str(frame.get("text", ""))
+            frame_subjects = frame.get("subjects") or subjects
+        else:
+            text, frame_subjects = str(frame), subjects
+        if not text:
             continue
-        out.extend(frame.replace("{subject}", subject) for subject in subjects)
+        if "{subject}" not in text:
+            out.append(text)
+            continue
+        out.extend(text.replace("{subject}", subject) for subject in frame_subjects)
     return out
 
 

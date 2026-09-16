@@ -166,13 +166,28 @@ class ListingStation(Station):
             )
         return chosen
 
+    # Words a phrase cannot end on: cutting here leaves "gift for women with".
+    DANGLING = frozenset({
+        "with", "for", "and", "or", "who", "that", "in", "on", "at", "under",
+        "from", "to", "of", "facing", "living", "aged", "over", "about",
+    })
+
     def _audience_short(self, niche: Niche) -> str:
-        """Two or three words of the audience, for use inside a keyword phrase."""
+        """A few words of the audience, cut where a phrase can actually end.
+
+        Keyword slots are built as "gift for {this}", so a truncation that lands
+        mid-thought spends a slot on nonsense.
+        """
         words = [
             w for w in niche.audience_phrase.split()
             if w.lower() not in {"a", "an", "the"}
         ]
-        return " ".join(words[:3]).lower() if words else "adults"
+        if not words:
+            return "adults"
+        chosen = words[:4] if len(words) <= 4 else words[:3]
+        while len(chosen) > 1 and chosen[-1].lower().strip(",") in self.DANGLING:
+            chosen.pop()
+        return " ".join(chosen).lower().strip(",")
 
     # ---------------------------------------------------------- categories
     def _categories(
