@@ -1,0 +1,87 @@
+# Composed in the Niche Proof Sheet. Every evidence line is yours —
+# gate 1 fails a build whose load-bearing signals are hunches.
+niche: "Mental health journal for women"
+book_type: journal
+
+audience: "Fuck It: A Guided Self-Love and Gratitude Journal for Women to Unfuck Your Life, Exhale the Bullshit, and Love Who You Are (Cute Self Care & Self Help Books)"
+promise: "Five quiet minutes at the end of a day that had none."
+
+keywords_seed:
+  - "mental health journal for women"
+  - "guided self-love"
+  - "gratitude journal for women to unfuck your life"
+  - "love who you are"
+
+signals:
+  demand_volume:
+    score: 7.5
+    evidence: "#215.7K
+Avg BSR
+best #1.2K"
+    source: "Amazon "
+  proven_sales:
+    score: 7
+    evidence: "≈$52,510/mo
+Page revenue
+est. royalties, first page"
+    source: "Amazon BSR check"
+  competition_gap:
+    score: 8
+    evidence: "Did not like this book at all. It wasn't like a good prompt journal to help you get feelings out, it was basic and bland. I returned it.
+The book itself looks like it would be a nice book however, the binding glue that holds the book together to the cover, came undone. The first time I opened it so for that, the book is kind of poorly made. If that was improved I think the book might be worth giving it more than one star.
+I bought 3x books for gifts. They arrived in really bad condition. Not sure what to do because I’m supposed to give them as gifts by a certain date. But thought it’d at least be known how bad quality I got with brand new books.
+This is more like a pamphlet than a journal and it’s not worth $10.00
+That’s all. If you are doing shadow work, this is not a good book. It’s garbage. Looked fun and snarky. It isn’t.
+Inappropriate to have on the amazon shopping list.
+"
+    source: "ISBN-13 - 979-8988190721"
+  differentiation:
+    score: 7.5
+    evidence: "Only 1 top seller to contend"
+    source: "Search-results audit, 2026-09-16"
+  review_moat:
+    score: 4
+    evidence: "Top 1 have 1800, 188 and 96 reviews — beatable, not a fortress"
+  price_headroom:
+    score: 6.5
+    evidence: "Incumbents priced 8.99-12.99 for 100-120 pages"
+  format_fit:
+    score: 9
+    evidence: "One page a day suits a reader with five spare minutes and one hand free"
+  longevity:
+    score: 8
+    evidence: "Stressed women is a renewing audience — the cohort turns over every year"
+  seasonality:
+    score: 3
+    evidence: "Mother's Day and Christmas spike, but baseline holds all year"
+    source: "Google Trends, 5-year view"
+  trademark_risk:
+    score: 1
+    evidence: "No live marks for the phrase; 'Gratitude Journal' is descriptive"
+    source: "USPTO TESS, 2026-01-15"
+
+competitor:
+  title: "Mental health journal for women"
+  asin: "B0C2RH7K8N "
+  price: 9.99
+  reviews: 1800
+  rating: 4.3
+  gaps:
+    - "Did not like this book at all. It wasn't like a good prompt journal to help you get feelings out, it was basic and bland. I returned it."
+    - "The book itself looks like it would be a nice book however, the binding glue that holds the book together to the cover, came undone. The first time I opened it so for that, the book is kind of poorly made. If that was improved I think the book might be worth giving it more than one star."
+    - "I bought 3x books for gifts. They arrived in really bad condition. Not sure what to do because I’m supposed to give them as gifts by a certain date. But thought it’d at least be known how bad quality I got with brand new books."
+    - "This is more like a pamphlet than a journal and it’s not worth $10.00"
+    - "That’s all. If you are doing shadow work, this is not a good book. It’s garbage. Looked fun and snarky. It isn’t."
+    - "Inappropriate to have on the amazon shopping list."
+
+trademark:
+  checked: true
+  source: "USPTO TESS"
+  checked_on: "2026-01-15"
+  hits:
+    []
+
+constraints:
+  trim_size: "6x9"
+  paper: "bw_white"
+  target_pages: 120

@@ -1,0 +1,71 @@
+# THE ACTIVE ENGINE CONFIG — this is the one `--config engine.yaml` resolves to
+# from the repo root, which is the command the Niche Proof Sheet emits and the
+# skill documents. `examples/engine.yaml` is its annotated twin, kept as
+# documentation (and used by the tests); edit this file, read that one.
+#
+# Engine configuration: the answers to Prompt 1's interview, written down once.
+#
+#   kdp build examples/senior-word-search.yaml --config examples/engine.yaml
+#
+# Everything here has a default. Set only what your imprint actually needs.
+brand:
+  imprint: "Quiet Press"
+  author: "Quiet Press"
+  website: "quietpress.example"
+  tagline: "Books that do one thing well."
+  copyright_holder: "Quiet Press"
+  copyright_year: 2026
+  language: "english"
+  default_trim: "6x9"
+  default_paper: "bw_white"
+  also_by:
+    - "The Daily Gratitude Journal"
+    - "The Undated Weekly Planner"
+  back_matter_note: "Found a mistake? Tell us and we will fix it in the next printing."
+  fonts:
+    body: serif      # serif | sans | mono, or a registered TTF family
+    display: sans
+    accent: sans
+  palette:
+    primary: "#1F3A5F"
+    secondary: "#E8DCC8"
+    accent: "#C8783C"
+    ink: "#1A1A1A"
+    light_ink: "#6B6B6B"
+    rule: "#BFBFBF"
+
+# The quality bar the substance gate enforces. Raising any of these makes the
+# gate stricter — and a gate that never fails anything is not a gate.
+quality:
+  max_filler_page_ratio: 0.15
+  min_unique_content_ratio: 0.97
+  max_pairwise_similarity: 0.70
+  min_content_page_ratio: 0.80
+  min_chars_per_content_page: 20
+  min_front_matter_pages: 2
+  min_back_matter_pages: 1
+  require_page_numbers: true
+
+# When a niche is allowed through to the presses.
+niche_gate:
+  min_score: 6.0
+  min_demand_signal: 5.0
+  max_trademark_risk: 3.0
+  require_evidence_for: [demand_volume, proven_sales, differentiation]
+
+# How the list price is derived.
+price:
+  markup_over_cost: 1.45
+  round_to: 0.99
+  min_royalty_usd: 1.50
+  undercut_competitor_by: 0.0
+
+# The optional LLM hook. Off by default: determinism is worth more than variety.
+llm:
+  enabled: false
+  provider: "null"          # null | anthropic
+  model: "claude-sonnet-5"
+  temperature: 0.0
+  allow_llm_to_fail_gate: false
+
+output_root: "output"
