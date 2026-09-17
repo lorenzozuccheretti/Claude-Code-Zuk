@@ -57,8 +57,8 @@ class Fonts:
 class Brand:
     """The imprint. One of these, many books."""
 
-    imprint: str = "Quiet Press"
-    author: str = "Quiet Press"
+    imprint: str = "North Pine Press"
+    author: str = "North Pine Press"
     website: str = ""
     tagline: str = ""
     copyright_holder: str = ""

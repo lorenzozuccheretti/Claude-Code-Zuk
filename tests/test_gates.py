@@ -197,7 +197,6 @@ class TestPrintGate:
 
     def test_a_cover_built_for_the_wrong_page_count_fails(self, built, config, tmp_path):
         """The classic KDP rejection: a spine sized for a book you did not print."""
-        from kdp_factory.content.copy import back_cover_copy
         from kdp_factory.render.cover import render_cover
         from kdp_factory.spec.kdp import cover_geometry
 
@@ -477,3 +476,187 @@ class TestCoverSubtitle:
         plan = json.loads((result.root / "02_interior" / "interior_plan.json").read_text())
         assert listing["subtitle"] == plan["subtitle"]
         assert len(listing["subtitle"].split()) > 4
+
+
+class TestBackCover:
+    """The back cover's own round of feedback: off-axis copy nobody could read."""
+
+    COPY = {
+        "hook": "Five quiet minutes at the end of a day that had none.",
+        "body": "Built for women running on empty. 109 guided prompts, 120 pages.",
+        "benefits": ["One prompt per page — no blank-page paralysis",
+                     "Room to write, not just room to tick",
+                     "Undated, so a missed day costs you nothing",
+                     "Bound to open flat and stay open"],
+        "closing": "Books that do one thing well.",
+    }
+
+    def _render(self, config, palette="coral", benefits=None, pages=120):
+        from kdp_factory.render.cover import CoverRenderer
+        from kdp_factory.render.design import PALETTES_BY_KEY
+        from kdp_factory.spec.kdp import cover_geometry
+
+        copy = dict(self.COPY)
+        if benefits is not None:
+            copy["benefits"] = benefits
+        renderer = CoverRenderer(
+            cover_geometry("6x9", pages, "bw_white"),
+            "The Daily Mental Health Journal",
+            "A 109-Prompt Guided Journal for women running on empty",
+            copy, config, PALETTES_BY_KEY[palette], "arc", 1,
+            composition="reversed", badge="109 prompts",
+        )
+        renderer.render(config.output_root / "back.pdf")
+        return renderer
+
+    def _back_axis(self, renderer):
+        from kdp_factory.spec.kdp import INCH
+
+        geo = renderer.geo
+        return (geo.back_panel_x + geo.trim.width / 2) * INCH
+
+    def _back_lines(self, renderer):
+        """Every line drawn on the back panel, front and spine excluded."""
+        from kdp_factory.spec.kdp import INCH
+
+        spine = renderer.geo.spine_x * INCH
+        return [(left, right) for left, right, _ in renderer.text_boxes
+                if right <= spine]
+
+    def test_the_copy_sits_on_the_panels_centre_axis(self, config):
+        """Left-aligned copy beside a centred title reads as a mistake. Every
+        line's midpoint has to agree with the panel's, to within a hair."""
+        renderer = self._render(config)
+        axis = self._back_axis(renderer)
+        lines = self._back_lines(renderer)
+        assert len(lines) > 6
+        # The bullets are a block: left-aligned inside itself, so its lines are
+        # allowed off-axis. Everything else is centred on the axis itself.
+        lefts = [round(left, 2) for left, _ in lines]
+        block = max(set(lefts), key=lefts.count)
+        prose = [(left, right) for left, right in lines if round(left, 2) != block]
+        assert len(prose) >= 3
+        for left, right in prose:
+            assert abs((left + right) / 2 - axis) < 1.0
+
+    def test_the_bullet_block_is_centred_as_a_group(self, config):
+        """Centring each bullet separately makes a diamond; the block is what
+        gets centred, and the items stay aligned to each other."""
+        renderer = self._render(config)
+        axis = self._back_axis(renderer)
+        lines = self._back_lines(renderer)
+        lefts = [round(left, 2) for left, _ in lines]
+        # The four bullets share one left edge, and that block straddles the axis.
+        shared = max(set(lefts), key=lefts.count)
+        assert lefts.count(shared) >= 4
+        widest = max(right for left, right in lines if round(left, 2) == shared)
+        assert abs((shared + widest) / 2 - axis) < 22.0
+
+    @pytest.mark.parametrize("palette", ["coral", "balm", "dusk", "harbour"])
+    def test_every_word_on_the_back_clears_a_contrast_floor(self, palette, config):
+        """The coral accent lands at 1.4:1 on its own ground — printed, that is
+        a line nobody sees. Anything carrying words is checked before it is used."""
+        from kdp_factory.render.design import contrast
+
+        renderer = self._render(config, palette=palette)
+        pal = renderer.palette
+        for ink in (pal.ground_ink, renderer._ink_on(pal.ground, pal.accent)):
+            assert contrast(ink, pal.ground) >= 3.0
+        assert contrast(pal.ground_ink_soft, pal.ground) >= 2.5
+
+    def test_too_much_copy_gives_way_to_the_barcode(self, config):
+        """The keep-out is not negotiable, so the bullet list is what comes off."""
+        renderer = self._render(
+            config,
+            benefits=[f"A benefit long enough to wrap onto a second line, number {n}"
+                      for n in range(12)],
+        )
+        assert renderer.text_in_barcode_area() == []
+        low, high = renderer.safe_box()
+        assert [(a, b) for a, b in renderer.text_extents
+                if a < low - 0.5 or b > high + 0.5] == []
+
+    def test_the_imprint_is_the_one_in_the_config(self, config):
+        """The name on the book is the brand's, not a default left in the code."""
+        from kdp_factory.config import Brand
+
+        assert Brand().author == "North Pine Press"
+        assert Brand().imprint == "North Pine Press"
+
+    @pytest.mark.parametrize("composition", ["banded", "reversed", "framed", "emblem"])
+    def test_the_badge_is_legible_on_whatever_it_sits_on(self, composition, config):
+        """The outlined badge used to be the accent on the accent's own ground."""
+        from kdp_factory.render.cover import CoverRenderer
+        from kdp_factory.render.design import PALETTES_BY_KEY, contrast
+        from kdp_factory.spec.kdp import cover_geometry
+
+        pal = PALETTES_BY_KEY["coral"]
+        renderer = CoverRenderer(
+            cover_geometry("6x9", 120, "bw_white"), "The Daily Mental Health Journal",
+            "A 109-Prompt Guided Journal", self.COPY, config, pal, "arc", 1,
+            composition=composition, badge="109 prompts",
+        )
+        renderer.render(config.output_root / f"badge-{composition}.pdf")
+        for field in (pal.ground, pal.bold, pal.panel):
+            assert contrast(renderer._ink_on(field, pal.accent), field) >= 3.0
+
+    @pytest.mark.parametrize("palette", [p.key for p in __import__(
+        "kdp_factory.render.design", fromlist=["PALETTES"]).PALETTES])
+    def test_the_back_cover_band_is_visible_in_every_palette(self, palette, config):
+        """A fixed blend does not travel: 62% toward the ground was a soft rose
+        on coral and an invisible near-black on midnight."""
+        from kdp_factory.render.design import PALETTES_BY_KEY, contrast
+
+        renderer = self._render(config, palette=palette)
+        pal = renderer.palette
+        assert 1.6 <= contrast(renderer._band_ink(pal.ground), pal.ground) <= 2.6
+        assert PALETTES_BY_KEY[palette] is pal
+
+    @pytest.mark.parametrize("composition", ["banded", "reversed", "framed", "emblem"])
+    @pytest.mark.parametrize("palette", ["sage", "coral", "noir", "linen"])
+    def test_the_press_name_is_visible_on_the_front_foot(self, composition, palette,
+                                                         config, monkeypatch):
+        """Two compositions put this line on the bold band and asked for the
+        dark title ink: the press name was in the file and invisible in print."""
+        from kdp_factory.render import cover as cover_module
+        from kdp_factory.render.cover import CoverRenderer
+        from kdp_factory.render.design import PALETTES_BY_KEY, contrast
+        from kdp_factory.spec.kdp import cover_geometry
+
+        seen: list[tuple[str, str]] = []
+        real = CoverRenderer._author
+
+        def spy(self, c, cx, y, colour, field, clear_to):
+            seen.append((self._ink_on(field, colour), field))
+            return real(self, c, cx, y, colour, field, clear_to)
+
+        monkeypatch.setattr(cover_module.CoverRenderer, "_author", spy)
+        renderer = CoverRenderer(
+            cover_geometry("6x9", 120, "bw_white"), "The Daily Mental Health Journal",
+            "A 109-Prompt Guided Journal", self.COPY, config,
+            PALETTES_BY_KEY[palette], "arc", 1,
+            composition=composition, badge="109 prompts",
+        )
+        renderer.render(config.output_root / f"foot-{composition}-{palette}.pdf")
+        assert seen
+        for ink, field in seen:
+            assert contrast(ink, field) >= 3.0
+
+    @pytest.mark.parametrize("composition", ["banded", "reversed", "framed", "emblem"])
+    def test_the_front_foot_has_the_imprint_to_itself(self, composition, config):
+        """The press name used to be set immediately under the artwork, close
+        enough that an arch's cream interior swallowed it."""
+        from kdp_factory.render.cover import CoverRenderer
+        from kdp_factory.render.design import PALETTES_BY_KEY
+        from kdp_factory.spec.kdp import cover_geometry
+
+        renderer = CoverRenderer(
+            cover_geometry("6x9", 120, "bw_white"), "The Daily Mental Health Journal",
+            "A 109-Prompt Guided Journal", self.COPY, config,
+            PALETTES_BY_KEY["sage"], "arc", 1,
+            composition=composition, badge="109 prompts",
+        )
+        renderer.render(config.output_root / f"foot-clear-{composition}.pdf")
+        foot = renderer.author_metrics
+        assert foot, "every composition signs the front panel"
+        assert foot["cap_top"] < foot["clear_to"] - 4

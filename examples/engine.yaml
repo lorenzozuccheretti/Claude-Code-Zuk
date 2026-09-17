@@ -4,11 +4,11 @@
 #
 # Everything here has a default. Set only what your imprint actually needs.
 brand:
-  imprint: "Quiet Press"
-  author: "Quiet Press"
-  website: "quietpress.example"
+  imprint: "North Pine Press"
+  author: "North Pine Press"
+  website: "northpinepress.example"
   tagline: "Books that do one thing well."
-  copyright_holder: "Quiet Press"
+  copyright_holder: "North Pine Press"
   copyright_year: 2026
   language: "english"
   default_trim: "6x9"
