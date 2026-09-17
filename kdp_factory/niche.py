@@ -295,11 +295,22 @@ def _parse_signals(raw: Any, niche_name: str) -> dict[str, Signal]:
         if isinstance(value, (int, float)):
             signals[key] = Signal(key=key, score=float(value))
         elif isinstance(value, dict):
-            if "score" not in value:
+            # A hand-written niche file often has "score:" with nothing after
+            # it, which YAML reads as None. That is the same mistake as leaving
+            # the key out, and deserves the same sentence rather than a
+            # TypeError from float().
+            if value.get("score") is None:
                 raise ConfigError(f"{niche_name}: signal {key!r} has no 'score'")
+            try:
+                score = float(value["score"])
+            except (TypeError, ValueError):
+                raise ConfigError(
+                    f"{niche_name}: signal {key!r} has score {value['score']!r}, "
+                    "which is not a number between 0 and 10"
+                ) from None
             signals[key] = Signal(
                 key=key,
-                score=float(value["score"]),
+                score=score,
                 evidence=str(value.get("evidence", "") or ""),
                 source=str(value.get("source", "") or ""),
             )

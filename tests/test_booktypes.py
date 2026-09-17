@@ -15,7 +15,8 @@ from kdp_factory.errors import ConfigError
 from kdp_factory.niche import niche_from_dict
 
 
-def plan_for(book_type: str, config, target_pages: int = 120, **constraints):
+def plan_for(book_type: str, config, target_pages: int = 120, options=None,
+             **constraints):
     niche = niche_from_dict(
         {
             "niche": {
@@ -30,7 +31,8 @@ def plan_for(book_type: str, config, target_pages: int = 120, **constraints):
         }
     )
     return niche, get_book_type(book_type).plan(
-        niche, config, StageRandom(derive_seed(book_type, 1), "interior")
+        niche, config, StageRandom(derive_seed(book_type, 1), "interior"),
+        options=options,
     )
 
 
@@ -108,17 +110,37 @@ class TestPuzzle:
         _, plan = plan_for("puzzle", config)
         assert any(p.template == "solution_page" for p in plan.pages)
 
+    @staticmethod
+    def _leaving(count: int) -> dict:
+        """Options that hide every theme but `count` of them.
+
+        The scarcity is constructed rather than borrowed from the pack's size,
+        so adding themes to wordlists.yaml cannot quietly stop these two tests
+        exercising anything.
+        """
+        import yaml
+
+        from kdp_factory.content.text import normalize
+
+        themes = yaml.safe_load(
+            open("kdp_factory/content/templates/wordlists.yaml"))["themes"]
+        hidden = [t["name"] for t in themes[count:]]
+        return {"avoid": {frozenset({normalize(name)}) for name in hidden}}
+
     def test_reused_themes_never_share_a_word_list(self, config):
         """More puzzles than themes is fine — sharing a word list is not."""
-        _, plan = plan_for("puzzle", config, target_pages=120, trim_size="8.5x11")
+        _, plan = plan_for("puzzle", config, target_pages=120, trim_size="8.5x11",
+                           options=self._leaving(40))
         themes = plan.metadata["themes"]
         word_sets = [frozenset(p["words"]) for p in plan.metadata["puzzles"]]
         assert len(word_sets) > len(set(t.split(" (Part")[0] for t in themes))
         assert len(set(word_sets)) == len(word_sets)
 
     def test_refuses_when_the_themes_would_be_stretched_too_thin(self, config):
-        with pytest.raises(ConfigError, match="disjoint word sets"):
-            plan_for("puzzle", config, target_pages=200, trim_size="8.5x11")
+        """Two slices of twenty words is the most a theme can give."""
+        with pytest.raises(ConfigError, match="disjoint word sets|more themes than"):
+            plan_for("puzzle", config, target_pages=120, trim_size="8.5x11",
+                     options=self._leaving(20))
 
 
 class TestWordSearchAlgorithm:
@@ -295,3 +317,65 @@ class TestNicheNamesTheBook:
         with pytest.raises(KdpFactoryError) as caught:
             Pipeline(config).run(niche_from_dict(niche_dict), seed=3)
         assert "characters" in str(caught.value).lower()
+
+
+class TestPackCapacity:
+    """How many books an imprint can draw from the packs before they run dry.
+
+    This is the constraint that actually bites: the packs, not the niches. The
+    engine refuses to pad, so a thin pack shows up as a hard stop three books
+    in. These numbers are the floor the packs are expected to hold; they fail
+    loudly if someone trims a bank.
+    """
+
+    @staticmethod
+    def _prompts(bank: str) -> int:
+        import yaml
+
+        path = "kdp_factory/content/templates/journal.yaml"
+        return len(yaml.safe_load(open(path))["banks"][bank]["prompts"])
+
+    def test_the_shared_core_bank_carries_four_journals(self):
+        """Every journal draws on `core`, so journals compete with each other
+        for it. Four books at 109 prompts is the bar."""
+        assert self._prompts("core") >= 200
+
+    @pytest.mark.parametrize("bank,floor", [
+        ("grief", 50), ("fitness", 50), ("mindfulness", 45),
+        ("gratitude", 35), ("parenting", 35),
+    ])
+    def test_each_topic_bank_can_fill_a_book_of_its_own(self, bank, floor):
+        assert self._prompts(bank) >= floor
+
+    def test_the_planner_holds_two_books_of_undated_weeks(self):
+        """56 weeks a book, and a focus line is never reused across books."""
+        import yaml
+
+        pack = yaml.safe_load(open("kdp_factory/content/templates/planner.yaml"))
+        assert len(pack["focus_lines"]) >= 112
+        assert len(set(pack["focus_lines"])) == len(pack["focus_lines"])
+
+    def test_the_wordlists_hold_two_puzzle_books(self):
+        """A theme is dropped whole once a previous book used it, and a book of
+        76 puzzles needs 38 themes, so two books need 76."""
+        import yaml
+
+        themes = yaml.safe_load(open("kdp_factory/content/templates/wordlists.yaml"))["themes"]
+        assert len(themes) >= 76
+        assert len({t["name"] for t in themes}) == len(themes)
+        assert all(len(t["words"]) >= 20 for t in themes)
+
+    def test_no_two_lines_in_a_pack_are_near_duplicates(self):
+        """The generator holds itself to gate 2's bar, so the packs have to be
+        able to meet it. A pair over the limit is dead weight: it can never be
+        drawn alongside its twin."""
+        import itertools
+
+        import yaml
+
+        from kdp_factory.content.text import similarity
+
+        pack = yaml.safe_load(open("kdp_factory/content/templates/planner.yaml"))
+        worst = max(similarity(a, b)
+                    for a, b in itertools.combinations(pack["focus_lines"], 2))
+        assert worst < 0.70, f"two focus lines overlap {worst:.0%}"

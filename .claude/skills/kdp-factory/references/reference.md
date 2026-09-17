@@ -83,6 +83,23 @@ Run `kdp types` for the live list. As shipped:
 | `value_no_empty_content_pages` FAIL | A content page renders blank | A renderer bug; report it rather than working around it |
 | `cover_size_matches_page_count` FAIL | Cover built for a different page count | Re-run the build; never patch the PDF |
 | `ConfigError: only N of M prompts…` | The pack cannot fill a book this long without repeating | Lower `target_pages`, or add prompts to `content/templates/journal.yaml` |
+| `ConfigError: every one of the N focus lines has been used` | A previous planner spent the pack | Add focus lines to `content/templates/planner.yaml` |
+| `ConfigError: N puzzles need more themes than are left` | A previous puzzle book used those themes | Add themes to `content/templates/wordlists.yaml` |
+
+## How many books the packs hold
+
+The binding constraint on an imprint is the packs, not the niches. Current
+capacity, measured at the point a build actually stops:
+
+| Pack | Holds |
+| --- | --- |
+| `journal.yaml` | ~4 journals at 109 prompts (all of them share the 204-prompt `core` bank) |
+| `planner.yaml` | 2 planners at 56 undated weeks |
+| `wordlists.yaml` | 2 puzzle books at 76 puzzles |
+
+Past that, the engine refuses rather than repeating itself. New lines must clear
+the same 70% overlap bar the generator uses, against every line already in the
+pack — check with `kdp_factory.content.text.similarity` before adding.
 | `ConfigError: …disjoint word sets…` | More puzzles than the themes support | Lower `target_pages`, or add themes to `wordlists.yaml` |
 | `SpecViolation: …below the $X floor` | A pinned price loses money on every copy | Remove `constraints.price` and let the engine derive it |
 | `SpecViolation: title + subtitle is N characters` | Over KDP's 200 | Shorten the subtitle pattern for that book type |

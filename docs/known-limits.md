@@ -29,9 +29,23 @@ kdp build niche.yaml --seed 2 --output output/ --avoid output/   # 0% overlap
 With `--avoid`, book two is disjoint from book one — until the pack runs dry,
 at which point the engine refuses to publish a third rather than repeating
 itself. So **the packs are the part of this engine that needs feeding**: budget
-content writing, not code, as the recurring cost. The same applies to
-`wordlists.yaml` (41 themes; a theme reused inside one book needs 16+ words) and
-`planner.yaml` (56 focus lines caps a planner at 56 weeks).
+content writing, not code, as the recurring cost.
+
+### How many books a pack holds
+
+Measured, not estimated — each figure is where a build actually stopped:
+
+| Pack | Now | Holds | The wall |
+| --- | --- | --- | --- |
+| `journal.yaml` | 463 prompts (204 of them shared `core`) | ~4 journals at 109 prompts | Every journal draws on `core`, so journals compete with each other for it. At 104 core prompts the third journal stopped at "only 107 of 109 prompts could be drawn". |
+| `planner.yaml` | 145 focus lines | 2 planners at 56 weeks | A focus line is never reused across books, so at 56 lines the second planner had nothing left at all. |
+| `wordlists.yaml` | 86 themes | 2 puzzle books at 76 puzzles | A theme a previous book used is dropped whole, and 76 puzzles need 38 themes (each can give two disjoint word slices). |
+
+The numbers above are asserted in `tests/test_booktypes.py::TestPackCapacity`,
+so trimming a bank fails the suite rather than surfacing as a stopped build
+three books later. Feeding a pack is straightforward but not free: new lines
+have to clear the same 70% overlap bar the generator holds itself to, against
+every line already there.
 
 ## 2. KDP's DOM will move
 

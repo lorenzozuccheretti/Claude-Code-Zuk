@@ -1,0 +1,87 @@
+# ---------------------------------------------------------------------------
+# DRAFT — three signals are missing on purpose. `kdp build` will refuse this
+# file until you fill them, and that refusal is the point: gate 1 exists so a
+# niche scored on a hunch never reaches a printer. Run
+# `kdp score <this file>` to see the full checklist of what is still open.
+#
+# What is missing, and where to get it:
+#   demand_volume   — search volume for the keyword seeds below, from Helium 10
+#                     / Publisher Rocket / Amazon autocomplete, with the date.
+#   proven_sales    — the Best Seller Rank of the top three paperback results.
+#   differentiation — the one thing this book does that the top ten do not.
+#   trademark       — run the title phrase through USPTO TESS and date it.
+# Everything else below is reasoned from the format and the audience, not from
+# market data, so change any of it you disagree with.
+# ---------------------------------------------------------------------------
+niche: Walking journal for beginners
+book_type: journal
+audience: people in their fifties and sixties who have started walking daily after
+  a health scare or a doctor's advice, and want the habit to stick
+audience_short: people walking daily
+title: The Daily Walking Journal
+subtitle: A Guided Journal for the First Hundred Walks
+promise: A page a day that turns a walk into a habit.
+keywords_seed:
+- walking journal
+- fitness journal for beginners
+- daily walking log book
+- step tracker journal for adults
+signals:
+  # --- fill these three, with a source, before building --------------------
+  # demand_volume:
+  #   score:
+  #   evidence: ""
+  #   source: ""
+  # proven_sales:
+  #   score:
+  #   evidence: ""
+  #   source: ""
+  # differentiation:
+  #   score:
+  #   evidence: ""
+  #   source: ""
+  # --- these are format and audience judgements, not market data -----------
+  competition_gap:
+    score: 6.5
+    evidence: Placeholder — read the 1-2 star reviews of the incumbent and replace this
+      with what they actually complain about.
+  review_moat:
+    score: 5.0
+    evidence: Placeholder — count the reviews on the top three results.
+  price_headroom:
+    score: 6.0
+    evidence: Fitness logbooks cluster at 7.99-11.99; a guided journal can sit above a
+      bare tracker.
+  format_fit:
+    score: 8.5
+    evidence: A prompt a day matches a daily walk better than a weekly spread does.
+  longevity:
+    score: 7.5
+    evidence: Walking is the entry habit every year's new cohort starts with.
+  seasonality:
+    score: 4.0
+    evidence: January and spring peak, but the baseline holds; check Google Trends and
+      replace this.
+  trademark_risk:
+    score: 1.0
+    evidence: Placeholder — 'Walking Journal' is descriptive, but check the exact title
+      phrase on TESS and record the date.
+
+competitor:
+  title: ""          # the incumbent you intend to take share from
+  asin: ""
+  price:
+  reviews:
+  rating:
+  gaps: []           # what its own reviewers say is wrong with it
+
+trademark:
+  checked: false     # set true once you have actually run it
+  source: ""         # e.g. USPTO TESS
+  checked_on: ""     # e.g. 2026-09-17
+  hits: []
+
+constraints:
+  trim_size: 6x9
+  paper: bw_white
+  target_pages: 120

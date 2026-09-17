@@ -1,0 +1,87 @@
+# ---------------------------------------------------------------------------
+# DRAFT — three signals are missing on purpose. `kdp build` will refuse this
+# file until you fill them, and that refusal is the point: gate 1 exists so a
+# niche scored on a hunch never reaches a printer.
+#
+# What is missing, and where to get it:
+#   demand_volume   — search volume for the keyword seeds below, from Helium 10
+#                     / Publisher Rocket / Amazon autocomplete, with the date.
+#   proven_sales    — the Best Seller Rank of the top three paperback results.
+#   differentiation — the one thing this book does that the top ten do not.
+#   trademark       — run the title phrase through USPTO TESS and date it.
+# Everything else below is reasoned from the format and the audience, not from
+# market data, so change any of it you disagree with.
+# ---------------------------------------------------------------------------
+niche: Undated weekly planner for teachers
+book_type: planner
+audience: primary school teachers planning a term at the kitchen table on a Sunday
+  evening, usually buying for themselves in August or January
+audience_short: teachers planning on a Sunday
+title: The Undated Teacher Planner
+subtitle: 56 Undated Weeks of Planning and Review
+promise: A week that is planned before Monday plans it for you.
+keywords_seed:
+- teacher planner undated
+- weekly lesson planner book
+- teacher organiser and diary
+- school year planner for teachers
+
+signals:
+  # --- fill these three, with a source, before building --------------------
+  # demand_volume:
+  #   score:
+  #   evidence: ""
+  #   source: ""
+  # proven_sales:
+  #   score:
+  #   evidence: ""
+  #   source: ""
+  # differentiation:
+  #   score:
+  #   evidence: ""
+  #   source: ""
+  # --- these are format and audience judgements, not market data -----------
+  competition_gap:
+    score: 7.0
+    evidence: Placeholder — read the 1-2 star reviews of the incumbent and replace this
+      with what they actually complain about.
+  review_moat:
+    score: 5.5
+    evidence: Placeholder — count the reviews on the top three results.
+  price_headroom:
+    score: 7.0
+    evidence: Teacher planners run 11.99-18.99; the larger 7x10 trim supports the price.
+  format_fit:
+    score: 8.5
+    evidence: Two pages a week — plan on one, review on the other — matches how a term
+      is actually run.
+  longevity:
+    score: 8.0
+    evidence: Undated means it does not expire, and a new cohort buys every August.
+  seasonality:
+    score: 6.0
+    evidence: Heavily weighted to August and January. Undated softens it but does not
+      remove it — check Google Trends and replace this.
+  trademark_risk:
+    score: 1.0
+    evidence: Placeholder — 'Teacher Planner' is descriptive, but check the exact title
+      phrase on TESS and record the date.
+
+competitor:
+  title: ""          # the incumbent you intend to take share from
+  asin: ""
+  price:
+  reviews:
+  rating:
+  gaps: []           # what its own reviewers say is wrong with it
+
+trademark:
+  checked: false     # set true once you have actually run it
+  source: ""         # e.g. USPTO TESS
+  checked_on: ""     # e.g. 2026-09-17
+  hits: []
+
+constraints:
+  trim_size: 7x10
+  paper: bw_white
+  target_pages: 130

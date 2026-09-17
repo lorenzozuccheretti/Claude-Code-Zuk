@@ -1,0 +1,88 @@
+# ---------------------------------------------------------------------------
+# DRAFT — three signals are missing on purpose. `kdp build` will refuse this
+# file until you fill them, and that refusal is the point: gate 1 exists so a
+# niche scored on a hunch never reaches a printer.
+#
+# What is missing, and where to get it:
+#   demand_volume   — search volume for the keyword seeds below, from Helium 10
+#                     / Publisher Rocket / Amazon autocomplete, with the date.
+#   proven_sales    — the Best Seller Rank of the top three paperback results.
+#   differentiation — the one thing this book does that the top ten do not.
+#   trademark       — run the title phrase through USPTO TESS and date it.
+# Everything else below is reasoned from the format and the audience, not from
+# market data, so change any of it you disagree with.
+# ---------------------------------------------------------------------------
+niche: Large print word search for gardeners
+book_type: puzzle
+audience: keen gardeners aged 60 and over who do a puzzle in the evening, and their
+  families buying a present that is not another pair of gloves
+audience_short: gardeners who do puzzles
+title: The Gardener's Word Search
+subtitle: 76 Large-Print Puzzles on Everything That Grows
+promise: Big grids on the things you already know by heart.
+keywords_seed:
+- word search for gardeners
+- large print word search garden
+- gardening puzzle book for adults
+- flower word search large print
+
+signals:
+  # --- fill these three, with a source, before building --------------------
+  # demand_volume:
+  #   score:
+  #   evidence: ""
+  #   source: ""
+  # proven_sales:
+  #   score:
+  #   evidence: ""
+  #   source: ""
+  # differentiation:
+  #   score:
+  #   evidence: ""
+  #   source: ""
+  # --- these are format and audience judgements, not market data -----------
+  competition_gap:
+    score: 7.0
+    evidence: Placeholder — read the 1-2 star reviews of the incumbent and replace this
+      with what they actually complain about.
+  review_moat:
+    score: 4.0
+    evidence: Placeholder — count the reviews on the top three results.
+  price_headroom:
+    score: 6.0
+    evidence: Large-print puzzle books run 6.99-10.99; the 8.5x11 trim carries the
+      printing cost.
+  format_fit:
+    score: 9.0
+    evidence: One puzzle per page with the answers in the back is exactly the format
+      this reader already owns.
+  longevity:
+    score: 8.0
+    evidence: Gardening and puzzles are both permanently renewing audiences.
+  seasonality:
+    score: 5.0
+    evidence: Christmas gifting spikes and spring helps; check Google Trends and
+      replace this.
+  trademark_risk:
+    score: 1.0
+    evidence: Placeholder — 'Word Search' is descriptive, but check the exact title
+      phrase on TESS and record the date.
+
+competitor:
+  title: ""          # the incumbent you intend to take share from
+  asin: ""
+  price:
+  reviews:
+  rating:
+  gaps: []           # what its own reviewers say is wrong with it
+
+trademark:
+  checked: false     # set true once you have actually run it
+  source: ""         # e.g. USPTO TESS
+  checked_on: ""     # e.g. 2026-09-17
+  hits: []
+
+constraints:
+  trim_size: 8.5x11
+  paper: bw_white
+  target_pages: 120

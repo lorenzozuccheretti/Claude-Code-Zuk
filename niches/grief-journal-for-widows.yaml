@@ -1,0 +1,86 @@
+# ---------------------------------------------------------------------------
+# DRAFT — three signals are missing on purpose. `kdp build` will refuse this
+# file until you fill them, and that refusal is the point: gate 1 exists so a
+# niche scored on a hunch never reaches a printer.
+#
+# What is missing, and where to get it:
+#   demand_volume   — search volume for the keyword seeds below, from Helium 10
+#                     / Publisher Rocket / Amazon autocomplete, with the date.
+#   proven_sales    — the Best Seller Rank of the top three paperback results.
+#   differentiation — the one thing this book does that the top ten do not.
+#   trademark       — run the title phrase through USPTO TESS and date it.
+# Everything else below is reasoned from the format and the audience, not from
+# market data, so change any of it you disagree with.
+# ---------------------------------------------------------------------------
+niche: Grief journal for widows
+book_type: journal
+audience: women widowed within the last two years, most in their sixties and seventies,
+  buying for themselves or receiving the book as a gift from an adult child
+audience_short: widows in the first two years
+title: The Grief Journal
+subtitle: A Guided Journal for the First Two Years
+promise: Somewhere to put a day you could not say out loud.
+keywords_seed:
+- grief journal for widows
+- bereavement journal for women
+- loss of a spouse journal
+- widow gift for sympathy
+
+signals:
+  # --- fill these three, with a source, before building --------------------
+  # demand_volume:
+  #   score:
+  #   evidence: ""
+  #   source: ""
+  # proven_sales:
+  #   score:
+  #   evidence: ""
+  #   source: ""
+  # differentiation:
+  #   score:
+  #   evidence: ""
+  #   source: ""
+  # --- these are format and audience judgements, not market data -----------
+  competition_gap:
+    score: 6.5
+    evidence: Placeholder — read the 1-2 star reviews of the incumbent and replace this
+      with what they actually complain about.
+  review_moat:
+    score: 4.5
+    evidence: Placeholder — count the reviews on the top three results.
+  price_headroom:
+    score: 6.5
+    evidence: Sympathy and bereavement titles sit at 9.99-14.99; the gift buyer is
+      not price-led.
+  format_fit:
+    score: 9.0
+    evidence: One page a day suits someone who can manage a few lines and not a chapter.
+  longevity:
+    score: 8.5
+    evidence: Bereavement is a permanently renewing audience, not a trend.
+  seasonality:
+    score: 2.0
+    evidence: No seasonal peak worth planning around; demand is steady all year.
+  trademark_risk:
+    score: 1.0
+    evidence: Placeholder — 'Grief Journal' is descriptive, but check the exact title
+      phrase on TESS and record the date.
+
+competitor:
+  title: ""          # the incumbent you intend to take share from
+  asin: ""
+  price:
+  reviews:
+  rating:
+  gaps: []           # what its own reviewers say is wrong with it
+
+trademark:
+  checked: false     # set true once you have actually run it
+  source: ""         # e.g. USPTO TESS
+  checked_on: ""     # e.g. 2026-09-17
+  hits: []
+
+constraints:
+  trim_size: 6x9
+  paper: bw_cream    # cream is easier on the eye for long-form writing
+  target_pages: 120
