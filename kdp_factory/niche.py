@@ -146,6 +146,11 @@ class Niche:
     # year, usually buying for themselves at 11pm"). A subtitle needs the first
     # few words of it, not the whole observation.
     audience_short: str = ""
+    # The book's name. Left empty, the book type proposes one from the niche's
+    # own words; set here, it is used verbatim. A press that has settled on a
+    # name should not have to re-roll a seed to keep it.
+    title: str = ""
+    subtitle: str = ""
     promise: str = ""
     signals: dict[str, Signal] = field(default_factory=dict)
     keywords_seed: list[str] = field(default_factory=list)
@@ -196,6 +201,8 @@ class Niche:
             "book_type": self.book_type,
             "audience": self.audience,
             "audience_short": self.audience_phrase,
+            "title": self.title,
+            "subtitle": self.subtitle,
             "promise": self.promise,
             "keywords_seed": list(self.keywords_seed),
             "signals": {
@@ -314,6 +321,8 @@ def niche_from_dict(data: dict[str, Any], source_path: Path | None = None) -> Ni
         book_type=str(data.get("book_type", "")).strip(),
         audience=str(data.get("audience", "") or ""),
         audience_short=str(data.get("audience_short", "") or ""),
+        title=str(data.get("title", "") or "").strip(),
+        subtitle=str(data.get("subtitle", "") or "").strip(),
         promise=str(data.get("promise", "") or ""),
         signals=_parse_signals(data.get("signals"), name or "<unnamed>"),
         keywords_seed=[str(k) for k in (data.get("keywords_seed") or [])],

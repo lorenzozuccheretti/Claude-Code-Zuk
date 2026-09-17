@@ -9,6 +9,14 @@ book_type: journal                 # journal | planner | puzzle
 
 audience: "first-time mothers in the first year, usually buying at 11pm"
 audience_short: "first-time mothers"   # optional; used on the cover
+
+# Optional. Leave both out and the book type proposes a name from the niche's
+# own words; set either and it is used verbatim, so a press that has settled
+# on a name does not have to re-roll a seed to keep it. Station 4 still holds
+# the pair to KDP's combined character limit.
+title: "The Daily Gratitude Journal"
+subtitle: "109 Prompts for first-time mothers"
+
 promise: "Five quiet minutes at the end of a day that had none."
 
 keywords_seed:                     # the listing is written from these

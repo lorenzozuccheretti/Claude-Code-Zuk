@@ -238,3 +238,60 @@ class TestFitSize:
         size = fit_size(text, face, width, 60, 8, 3)
         lines = wrap(text, face, size, width)
         assert all(pdfmetrics.stringWidth(line, face, size) <= width for line in lines)
+
+
+class TestNicheNamesTheBook:
+    """A press that has settled on a name should not re-roll a seed to keep it."""
+
+    def _plan(self, niche_dict, seed=3, **overrides):
+        from kdp_factory.booktypes import get_book_type
+        from kdp_factory.config import EngineConfig
+        from kdp_factory.content.rng import StageRandom
+        from kdp_factory.niche import niche_from_dict
+
+        niche_dict = dict(niche_dict)
+        niche_dict.update(overrides)
+        niche = niche_from_dict(niche_dict)
+        book = get_book_type(niche.book_type)
+        return book.plan(niche, EngineConfig(), StageRandom(seed, "interior"))
+
+    def test_a_niche_can_name_the_book(self, niche_dict):
+        plan = self._plan(niche_dict, title="The Daily Mental Health Journal",
+                          subtitle="Guided Journal for women running on empty")
+        assert plan.title == "The Daily Mental Health Journal"
+        assert plan.subtitle == "Guided Journal for women running on empty"
+        assert "set by the niche file" in plan.metadata["title_rationale"]
+
+    def test_the_name_survives_a_change_of_seed(self, niche_dict):
+        """The whole point: the same book, whatever the seed rolls."""
+        pinned = {"title": "The Daily Gratitude Journal",
+                  "subtitle": "109 Prompts for first-time mothers"}
+        names = {(plan.title, plan.subtitle) for plan in
+                 (self._plan(niche_dict, seed=s, **pinned) for s in (1, 2, 7))}
+        assert names == {(pinned["title"], pinned["subtitle"])}
+        # Without the pin the same seeds disagree — that is what it is fixing.
+        assert len({self._plan(niche_dict, seed=s).subtitle for s in (1, 2, 7)}) > 1
+
+    def test_each_half_is_taken_on_its_own(self, niche_dict):
+        """Pinning the title must not throw away a subtitle that carries the count."""
+        plan = self._plan(niche_dict, title="The Daily Gratitude Journal")
+        assert plan.title == "The Daily Gratitude Journal"
+        assert plan.subtitle
+        assert str(len([u for u in plan.content_units if u.kind == "prompt"])) in plan.subtitle
+
+    def test_an_unnamed_niche_still_gets_a_proposal(self, niche_dict):
+        plan = self._plan(niche_dict)
+        assert plan.title and plan.subtitle
+        assert "set by the niche file" not in plan.metadata["title_rationale"]
+
+    def test_a_name_too_long_for_kdp_is_stopped_at_the_listing(self, niche_dict, config):
+        """The override is not a way past the character limit."""
+        from kdp_factory.errors import KdpFactoryError
+        from kdp_factory.niche import niche_from_dict
+        from kdp_factory.run.pipeline import Pipeline
+
+        niche_dict = dict(niche_dict)
+        niche_dict["subtitle"] = "A Guided Journal " * 20
+        with pytest.raises(KdpFactoryError) as caught:
+            Pipeline(config).run(niche_from_dict(niche_dict), seed=3)
+        assert "characters" in str(caught.value).lower()

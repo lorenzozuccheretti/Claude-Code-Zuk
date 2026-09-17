@@ -82,7 +82,7 @@ class WordSearchBookType(BookType):
         size = int(opts["grid_size"])
         per_puzzle = int(opts["words_per_puzzle"])
 
-        titles = self.titles(niche, rng)
+        titles = self.named(niche, rng)
         pages: list[PageSpec] = self._front_matter(config, titles, puzzle_count, size)
         content_units: list[ContentUnit] = []
         puzzles: list[Puzzle] = []

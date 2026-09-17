@@ -88,6 +88,8 @@ niche: "Gratitude journal for new mothers"
 book_type: journal                # journal | planner | puzzle
 audience: "first-time mothers in the first year"
 audience_short: "first-time mothers"     # used on the cover
+title: "The Daily Gratitude Journal"     # optional; else the type proposes one
+subtitle: "109 Prompts for first-time mothers"   # optional
 promise: "Five quiet minutes at the end of a day that had none."
 keywords_seed: ["gratitude journal for moms", "new mom gift journal", "..."]
 signals:

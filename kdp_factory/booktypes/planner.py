@@ -87,7 +87,7 @@ class PlannerBookType(BookType):
         day_names = list(pack.get("day_names") or [])
         review_questions = list(pack.get("review_questions") or [])
 
-        titles = self.titles(niche, rng)
+        titles = self.named(niche, rng)
         pages: list[PageSpec] = self._front_matter(config, titles, pack, weeks)
         content_units: list[ContentUnit] = []
 

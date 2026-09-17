@@ -98,7 +98,7 @@ class JournalBookType(BookType):
         )
         sections = pack.get("sections") or ["Section"]
 
-        titles = self.titles(niche, rng)
+        titles = self.named(niche, rng)
         pages: list[PageSpec] = self._front_matter(niche, config, titles, pack, prompt_count)
         content_units: list[ContentUnit] = []
 

@@ -30,6 +30,8 @@ niche: str                 # required
 book_type: str             # required: journal | planner | puzzle
 audience: str              # the research note
 audience_short: str        # optional; the few words that go on a cover
+title: str                 # optional; overrides the proposed title
+subtitle: str              # optional; overrides the proposed subtitle
 promise: str
 keywords_seed: [str]       # three or more, or gate 1 fails
 signals:

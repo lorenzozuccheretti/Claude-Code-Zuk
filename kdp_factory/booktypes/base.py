@@ -137,6 +137,23 @@ class TitleProposal:
     def combined(self) -> str:
         return f"{self.title}: {self.subtitle}" if self.subtitle else self.title
 
+    def with_overrides(self, title: str, subtitle: str) -> "TitleProposal":
+        """The niche file's name where it gives one, the proposal's otherwise.
+
+        Each half is taken on its own, so a niche can pin the title and still
+        let the subtitle carry the computed prompt count.
+        """
+        title, subtitle = title.strip(), subtitle.strip()
+        if not title and not subtitle:
+            return self
+        given = " and ".join(
+            part for part, value in (("title", title), ("subtitle", subtitle)) if value)
+        return TitleProposal(
+            title=title or self.title,
+            subtitle=subtitle or self.subtitle,
+            rationale=f"{given} set by the niche file; {self.rationale}",
+        )
+
 
 class BookType:
     """Base class for a format the factory knows how to build."""
@@ -165,7 +182,17 @@ class BookType:
         raise NotImplementedError
 
     def titles(self, niche: Niche, rng: StageRandom) -> TitleProposal:  # pragma: no cover
+        """What this type would call the book, from the niche's own words."""
         raise NotImplementedError
+
+    def named(self, niche: Niche, rng: StageRandom) -> TitleProposal:
+        """The name the book is actually built under.
+
+        Every type goes through here rather than calling ``titles`` directly,
+        so a niche file's own title and subtitle are honoured once instead of
+        three times.
+        """
+        return self.titles(niche, rng).with_overrides(niche.title, niche.subtitle)
 
     def verify(self, plan: InteriorPlan) -> list[tuple[str, bool, str]]:
         """Format-specific checks code can settle. Empty by default."""
