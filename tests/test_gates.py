@@ -233,3 +233,61 @@ class TestTelemetry:
         )
         stats = summarize_telemetry(path)
         assert "never fails" in stats["g1_niche"]["verdict"]
+
+
+class TestTypographyAndFrames:
+    """Two defects found on a real build, each now guarded."""
+
+    def test_the_print_gate_catches_a_book_set_in_a_builtin_face(self, built, config, tmp_path):
+        """A missing font directory renders a memo, and nothing else notices."""
+        from kdp_factory.gates.base import GateInput
+        from reportlab.pdfgen import canvas as pdfcanvas
+
+        plain = tmp_path / "helvetica.pdf"
+        c = pdfcanvas.Canvas(str(plain), pagesize=(432, 648))
+        for _ in range(120):
+            c.setFont("Helvetica", 12)
+            c.drawString(72, 300, "set in a builtin face")
+            c.showPage()
+        c.save()
+
+        paths = {a.role: built.root / a.path for a in built.context.manifest.artifacts}
+        paths["interior_pdf"] = plain
+        report = PrintReadyGate(config).run(
+            GateInput(subject="x", paths=paths, facts=built.context.manifest.facts)
+        )
+        assert not verdicts(report)["typography_embedded"]
+
+    def test_a_real_build_is_set_in_the_vendored_faces(self, built, config):
+        from kdp_factory.render.pdfutil import embedded_fonts
+
+        interior = built.root / built.context.manifest.artifact("interior_pdf").path
+        families = {name.split("-")[0] for name in embedded_fonts(interior)}
+        assert {"Lora", "CormorantGaramond"} <= families
+
+    def test_no_cover_text_is_drawn_outside_the_safe_area(self, config):
+        """Letterspacing leaks into the PDF text state; it once pushed a title
+        over the trim while ReportLab still measured it as fitting."""
+        from kdp_factory.render.cover import CoverRenderer
+        from kdp_factory.render.design import PALETTES_BY_KEY
+        from kdp_factory.spec.kdp import cover_geometry
+
+        copy = {
+            "hook": "Five quiet minutes at the end of a day that had none.",
+            "body": "A long line of body copy that has to stay inside its own panel.",
+            "benefits": ["One prompt per page — no blank-page paralysis"] * 4,
+            "closing": "Books that do one thing well.",
+        }
+        for trim, pages in (("6x9", 120), ("8.5x11", 200), ("5x8", 24)):
+            renderer = CoverRenderer(
+                cover_geometry(trim, pages, "bw_white"),
+                "The Daily Mental Health Journal",
+                "A 109-Prompt Guided Journal for women running on empty",
+                copy, config, PALETTES_BY_KEY["dusk"], "arc",
+            )
+            renderer.render(config.output_root / f"safe-{trim}.pdf")
+            low, high = renderer.safe_box()
+            outside = [(a, b) for a, b in renderer.text_extents
+                       if a < low - 0.5 or b > high + 0.5]
+            assert outside == [], f"{trim}: text outside the safe area: {outside}"
+            assert len(renderer.text_extents) > 5

@@ -54,18 +54,6 @@ class Fonts:
 
 
 @dataclass(frozen=True)
-class Palette:
-    """Cover and interior colours as hex strings."""
-
-    primary: str = "#1F3A5F"
-    secondary: str = "#E8DCC8"
-    accent: str = "#C8783C"
-    ink: str = "#1A1A1A"
-    light_ink: str = "#6B6B6B"
-    rule: str = "#BFBFBF"
-
-
-@dataclass(frozen=True)
 class Brand:
     """The imprint. One of these, many books."""
 
@@ -77,7 +65,10 @@ class Brand:
     copyright_year: int = 2026
     language: str = "english"
     fonts: Fonts = field(default_factory=Fonts)
-    palette: Palette = field(default_factory=Palette)
+    # Pin the imprint's look, or leave empty and let each niche choose its own.
+    # Keys come from kdp_factory/render/design.py (PALETTES, MOTIFS).
+    palette_key: str = ""
+    motif: str = ""
     also_by: list[str] = field(default_factory=list)
     back_matter_note: str = ""
     default_trim: str = "6x9"
@@ -110,6 +101,9 @@ class QualityBar:
     min_front_matter_pages: int = 2
     min_back_matter_pages: int = 1
     require_page_numbers: bool = True
+    # The engine ships real typefaces; a book set in Helvetica means the vendored
+    # fonts did not load, which is a defect worth stopping for.
+    require_vendored_fonts: bool = True
     forbidden_tokens: list[str] = field(
         default_factory=lambda: [
             "lorem ipsum", "todo", "tbd", "{{", "}}", "<placeholder>",
@@ -236,9 +230,15 @@ def load_config(path: str | Path | None = None) -> EngineConfig:
 
     brand_raw = dict(raw.get("brand") or {})
     fonts = _build(Fonts, brand_raw.pop("fonts", None), "brand.fonts")
-    palette = _build(Palette, brand_raw.pop("palette", None), "brand.palette")
+    if "palette" in brand_raw:
+        raise ConfigError(
+            "brand.palette held raw hex values and has been replaced by "
+            "brand.palette_key, which names one of the engine's colour worlds "
+            "(see kdp_factory/render/design.py). Set brand.palette_key: dusk "
+            "— or drop the block and let each niche pick its own."
+        )
     brand = _build(Brand, brand_raw, "brand")
-    brand = replace(brand, fonts=fonts, palette=palette)
+    brand = replace(brand, fonts=fonts)
 
     output_root = Path(raw.get("output_root") or DEFAULT_OUTPUT_ROOT)
     telemetry = raw.get("telemetry_path")

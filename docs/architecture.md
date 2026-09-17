@@ -66,6 +66,11 @@ That buys three things:
 | `booktypes/` | Pluggable formats; each returns an `InteriorPlan` |
 | `content/` | Template packs, seeded RNG, shared text measure, copy, optional LLM hook |
 | `render/` | ReportLab interior and cover renderers; PDF read-back helpers |
+| `render/typography.py` | Vendored typefaces, registered once, with a builtin fallback |
+| `render/design.py` | Colour worlds and drawn motifs, chosen from the niche |
+| `render/identity.py` | One palette and motif per book, shared by both renderers |
+| `render/layout.py` | Text primitives both renderers share (wrap, balance, tracking) |
+| `assets/fonts/` | The OFL typefaces, so a build needs no network |
 | `gates/` | The three gates and the gate framework, with telemetry |
 | `stations/` | The six stations |
 | `run/` | Build context, manifest, pipeline |

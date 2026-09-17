@@ -36,6 +36,36 @@ def pdf_page_sizes_in(path: str | Path) -> list[tuple[float, float]]:
     return sizes
 
 
+def embedded_fonts(path: str | Path) -> set[str]:
+    """Every font the PDF actually carries, by BaseFont name.
+
+    A book that silently fell back to Helvetica looks like a memo, and the only
+    place that shows up is here — the plan and the renderer both believed they
+    were using the real faces.
+    """
+    names: set[str] = set()
+    for page in _reader(Path(path)).pages:
+        resources = page.get("/Resources")
+        if not resources:
+            continue
+        fonts = resources.get("/Font")
+        if not fonts:
+            continue
+        try:
+            fonts = fonts.get_object()
+        except AttributeError:  # pragma: no cover - already resolved
+            pass
+        for entry in fonts.values():
+            try:
+                base = entry.get_object().get("/BaseFont")
+            except AttributeError:  # pragma: no cover
+                continue
+            if base:
+                # Subset names are prefixed like "AAAAAA+Lora-Regular".
+                names.add(str(base).lstrip("/").split("+")[-1])
+    return names
+
+
 def extract_pages_text(path: str | Path) -> list[str]:
     """Text per page, as a reader would see it."""
     return [page.extract_text() or "" for page in _reader(Path(path)).pages]

@@ -15,6 +15,7 @@ from ..content.copy import back_cover_copy
 from ..naming import artifact_name
 from ..niche import Niche
 from ..render.cover import render_cover
+from ..render.identity import choose_identity
 from ..render.pdfutil import pdf_page_count
 from ..run.context import BuildContext
 from ..spec.kdp import cover_geometry
@@ -40,19 +41,21 @@ class CoverStation(Station):
         geometry = cover_geometry(plan.trim_size, page_count, plan.paper)
         copy = back_cover_copy(plan, niche, self.config.brand)
 
+        palette, motif = choose_identity(niche, plan, self.config, ctx.seed)
         cover_path = ctx.station_dir(3) / artifact_name(ctx.slug, "cover_wrap", "pdf")
-        render_cover(
-            geometry, plan.title, plan.subtitle, copy, self.config, cover_path, guides=False
-        )
+        render_cover(geometry, plan.title, plan.subtitle, copy, self.config, cover_path,
+                     guides=False, palette=palette, motif=motif, seed=ctx.seed)
         ctx.register("cover_pdf", cover_path, station=3)
 
         proof_path = ctx.station_dir(3) / artifact_name(ctx.slug, "cover_proof", "pdf")
-        render_cover(
-            geometry, plan.title, plan.subtitle, copy, self.config, proof_path, guides=True
-        )
+        render_cover(geometry, plan.title, plan.subtitle, copy, self.config, proof_path,
+                     guides=True, palette=palette, motif=motif, seed=ctx.seed)
         ctx.register("cover_proof_pdf", proof_path, station=3)
 
         spec = geometry.as_dict()
+        spec["palette"] = palette.key
+        spec["palette_label"] = palette.label
+        spec["motif"] = motif
         spec["source_page_count_from"] = str(interior_pdf.name)
         spec["back_cover_copy"] = copy
         ctx.write_json(3, "cover_spec.json", spec, role="cover_spec")

@@ -11,7 +11,7 @@ page count you meant to produce rather than the one you did.
 from __future__ import annotations
 
 from ..errors import SpecViolation
-from ..render.pdfutil import pdf_page_count, pdf_page_sizes_in
+from ..render.pdfutil import embedded_fonts, pdf_page_count, pdf_page_sizes_in
 from ..spec.kdp import (
     KDP_SPEC,
     cover_geometry,
@@ -86,7 +86,33 @@ class PrintReadyGate(Gate):
             advisory=True,
         )
 
+        self._typography_check(interior, report)
         self._cover_checks(data, report, real_pages, paper, trim_name)
+
+    def _typography_check(self, interior, report: GateReport) -> None:
+        """Did the book get the faces it was designed in?"""
+        if not self.config.quality.require_vendored_fonts:
+            return
+        from ..render.typography import FACES
+
+        wanted = {name for weights in FACES.values() for name, _, _ in weights.values()}
+        families = {name.split("-")[0] for name in wanted}
+        found = embedded_fonts(interior)
+        matched = families & {name.split("-")[0] for name in found}
+        # ReportLab lists Helvetica in every page's resources whether or not it
+        # draws with it, so its presence proves nothing. What proves the real
+        # faces loaded is the real faces being there — a book uses at least a
+        # display and a text face.
+        enough = len(matched) >= 2
+        report.add(
+            "typography_embedded",
+            enough,
+            f"the book is set in {', '.join(sorted(matched))}" if enough
+            else f"only {len(matched)} vendored typeface(s) embedded "
+                 f"({', '.join(sorted(found)) or 'none'}) — the book fell back to a "
+                 f"builtin face; check kdp_factory/assets/fonts",
+            {"embedded": sorted(found), "matched_families": sorted(matched)},
+        )
 
     def _cover_checks(
         self, data: GateInput, report: GateReport, real_pages: int, paper: str, trim_name: str

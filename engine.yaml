@@ -26,13 +26,10 @@ brand:
     body: serif      # serif | sans | mono, or a registered TTF family
     display: sans
     accent: sans
-  palette:
-    primary: "#1F3A5F"
-    secondary: "#E8DCC8"
-    accent: "#C8783C"
-    ink: "#1A1A1A"
-    light_ink: "#6B6B6B"
-    rule: "#BFBFBF"
+  # Colour world for every book in this imprint. Leave empty and each
+  # niche picks its own from kdp_factory/render/design.py.
+  palette_key: ""     # dusk | sage | harbour | ink | linen | plum | moss | frost
+  motif: ""           # arc | waves | stems | rays | dots | rule
 
 # The quality bar the substance gate enforces. Raising any of these makes the
 # gate stricter — and a gate that never fails anything is not a gate.

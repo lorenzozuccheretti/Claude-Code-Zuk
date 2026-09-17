@@ -13,6 +13,7 @@ from ..booktypes import get_book_type
 from ..booktypes.base import InteriorPlan
 from ..naming import artifact_name
 from ..niche import Niche
+from ..render.identity import choose_identity
 from ..render.interior import render_interior
 from ..render.pdfutil import pdf_page_count
 from ..run.context import BuildContext
@@ -40,7 +41,13 @@ class InteriorStation(Station):
 
         ctx.write_json(2, "interior_plan.json", plan.as_dict(), role="interior_plan")
         pdf_path = ctx.station_dir(2) / artifact_name(ctx.slug, "interior", "pdf")
-        render_interior(plan, self.config, pdf_path)
+        # The colour world is chosen once, from the niche, and both the inside
+        # and the cover are drawn in it.
+        palette, motif = choose_identity(niche, plan, self.config, ctx.seed)
+        ctx.fact("palette", palette.key)
+        ctx.fact("motif", motif)
+        render_interior(plan, self.config, pdf_path, palette=palette, motif=motif,
+                        seed=ctx.seed)
         ctx.register("interior_pdf", pdf_path, station=2)
 
         # The page count that matters from here on is the file's, not the plan's.

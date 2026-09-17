@@ -28,7 +28,13 @@ kdp = "kdp_factory.cli:main"
 include = ["kdp_factory*"]
 
 [tool.setuptools.package-data]
-"kdp_factory" = ["spec/*.yaml", "content/templates/*.yaml"]
+"kdp_factory" = [
+    "spec/*.yaml",
+    "content/templates/*.yaml",
+    "upload/*.yaml",
+    "assets/fonts/*.ttf",
+    "assets/fonts/OFL.txt",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -123,8 +123,7 @@ class TestConfigFile:
             "  imprint: Lamplight Books\n"
             "  author: A. Editor\n"
             "  copyright_year: 2026\n"
-            "  palette:\n"
-            "    primary: '#2E2A26'\n"
+            "  palette_key: plum\n"
             f"output_root: {tmp_path / 'out'}\n",
             encoding="utf-8",
         )
@@ -134,6 +133,24 @@ class TestConfigFile:
         assert result.ok
         listing = json.loads((result.root / "04_listing" / "listing.json").read_text())
         assert listing["author"] == "A. Editor"
+
+    def test_a_pinned_palette_reaches_the_book(self, tmp_path, good_niche):
+        config_path = tmp_path / "engine.yaml"
+        config_path.write_text(
+            f"brand:\n  palette_key: moss\n  motif: stems\noutput_root: {tmp_path / 'out'}\n",
+            encoding="utf-8",
+        )
+        result = Pipeline(load_config(config_path)).run(good_niche, seed=2)
+        assert result.ok, result.summary()
+        assert result.context.manifest.facts["palette"] == "moss"
+        assert result.context.manifest.facts["motif"] == "stems"
+
+    def test_the_old_hex_palette_block_explains_itself(self, tmp_path):
+        """It was replaced by a named colour world; say so rather than ignoring it."""
+        config_path = tmp_path / "engine.yaml"
+        config_path.write_text("brand:\n  palette:\n    primary: '#2E2A26'\n", encoding="utf-8")
+        with pytest.raises(ConfigError, match="palette_key"):
+            load_config(config_path)
 
     def test_an_unknown_config_key_is_refused(self, tmp_path):
         config_path = tmp_path / "engine.yaml"

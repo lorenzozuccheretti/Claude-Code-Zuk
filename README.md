@@ -92,6 +92,28 @@ g1_niche            12       2     17%  healthy: this gate has caught things and
 g2_substance        10       0      0%  never fails — suspect the criteria are too vague to catch anything
 ```
 
+## How the books look
+
+The first books this engine made were set in Helvetica and Times on flat fills,
+because those are the faces ReportLab has when you give it none. A cover is
+judged at thumbnail size against nineteen others, so the design is part of the
+engine, not something to fix per book in another tool:
+
+- **Real typefaces, vendored.** Cormorant Garamond for display, Lora for the
+  page a buyer writes on, Karla for labels, IBM Plex Mono for puzzle grids —
+  committed under `kdp_factory/assets/fonts/` with their OFL licence, so a
+  build is hermetic and reproducible offline.
+- **Eight colour worlds** (`kdp_factory/render/design.py`), each with a ground,
+  a front panel, an accent and a matching interior ink. A niche picks its own
+  from its words; an imprint can pin one with `brand.palette_key`.
+- **One drawn mark per book** — an arc, stems, waves, rays, a dot field or a
+  plain rule, chosen the same way and clipped to its panel.
+- **The inside matches the outside.** Cover and interior take the same palette
+  from `render/identity.py`, so a book is one object rather than two.
+
+The print gate reads the finished PDF back and fails a book that silently fell
+back to a builtin face.
+
 ## What is computed, never estimated
 
 Everything countable lives in [`kdp_factory/spec/kdp_spec.yaml`](kdp_factory/spec/kdp_spec.yaml)
