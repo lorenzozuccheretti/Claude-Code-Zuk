@@ -190,3 +190,51 @@ class TestTemplatePacks:
                 if " as it is" in line and (" hands " in line or " your hands" in line):
                     offenders.append((name, line))
         assert offenders == []
+
+
+class TestTitles:
+    """A title that repeats a word reads as generated, because it was."""
+
+    @pytest.mark.parametrize("book_type,niche_name", [
+        ("planner", "Undated weekly planner for freelancers"),
+        ("journal", "Gratitude journal for new mothers"),
+        ("puzzle", "Large print word search for seniors"),
+        ("planner", "Weekly planner for weekly planning"),
+        ("journal", "Journal for people who journal"),
+    ])
+    def test_no_title_repeats_a_word(self, book_type, niche_name, config):
+        from kdp_factory.booktypes.base import TITLE_STOPWORDS
+        from kdp_factory.content.text import normalize
+        from kdp_factory.niche import niche_from_dict
+
+        niche = niche_from_dict({
+            "niche": niche_name, "book_type": book_type,
+            "audience": "readers", "constraints": {"target_pages": 120},
+        })
+        for seed in range(6):
+            proposal = get_book_type(book_type).titles(
+                niche, StageRandom(derive_seed(niche.slug, book_type, seed), "interior"))
+            words = [w for w in normalize(proposal.title).split() if w not in TITLE_STOPWORDS]
+            assert len(words) == len(set(words)), f"seed {seed}: {proposal.title!r}"
+
+    def test_pick_title_falls_back_rather_than_failing(self):
+        from kdp_factory.booktypes.base import pick_title
+
+        # Every pattern repeats; it still has to return something.
+        title = pick_title(("{topic} {topic}",), StageRandom(1, "t"), topic="Echo")
+        assert title == "Echo Echo"
+
+
+class TestFitSize:
+    def test_a_word_wider_than_the_measure_shrinks_the_type(self):
+        """It never raised the line count, so it used to overflow silently."""
+        from kdp_factory.render.layout import fit_size, wrap
+        from kdp_factory.render.typography import font
+        from reportlab.pdfbase import pdfmetrics
+
+        face = font("poster", "bold")
+        text = "Extraordinarily Long Compound Title"
+        width = 200.0
+        size = fit_size(text, face, width, 60, 8, 3)
+        lines = wrap(text, face, size, width)
+        assert all(pdfmetrics.stringWidth(line, face, size) <= width for line in lines)

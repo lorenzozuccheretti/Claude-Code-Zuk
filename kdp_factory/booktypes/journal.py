@@ -16,7 +16,15 @@ from ..content.rng import StageRandom
 from ..errors import ConfigError
 from ..niche import Niche
 from ..spec.kdp import KDP_SPEC, even_up
-from .base import BookType, ContentUnit, InteriorPlan, PageSpec, TitleProposal, register
+from .base import (
+    BookType,
+    ContentUnit,
+    InteriorPlan,
+    PageSpec,
+    TitleProposal,
+    pick_title,
+    register,
+)
 
 TITLE_PATTERNS = (
     "The {topic} Journal",
@@ -265,7 +273,7 @@ class JournalBookType(BookType):
         divider_every = int(opts["divider_every"]) if opts["section_dividers"] else 0
         count, _ = self._solve_layout(target_pages, opts.get("prompt_pages"), divider_every)
 
-        title = stream.choice(TITLE_PATTERNS).format(topic=topic)
+        title = pick_title(TITLE_PATTERNS, stream, topic=topic)
         subtitle = stream.stream("sub").choice(SUBTITLE_PATTERNS).format(
             count=count, audience=audience
         )

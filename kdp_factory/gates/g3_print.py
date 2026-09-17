@@ -114,6 +114,27 @@ class PrintReadyGate(Gate):
             {"embedded": sorted(found), "matched_families": sorted(matched)},
         )
 
+    def _legibility_check(self, data: GateInput, report: GateReport) -> None:
+        """A cover is first seen about 200 pixels tall, next to nineteen others."""
+        if "cover_spec" not in data.paths:
+            return
+        legibility = (data.json("cover_spec") or {}).get("legibility") or {}
+        if not legibility.get("measured"):
+            return
+        bar = self.config.quality
+        cap = float(legibility.get("title_cap_px", 0))
+        ratio = float(legibility.get("title_contrast", 0))
+        report.metrics["legibility"] = legibility
+        report.add(
+            "cover_reads_at_thumbnail",
+            cap >= bar.min_title_cap_px and ratio >= bar.min_title_contrast,
+            f"at {legibility['thumbnail_height_px']}px tall the title has a "
+            f"{cap:.1f}px cap height at {ratio:.1f}:1 contrast "
+            f"(bars: {bar.min_title_cap_px}px, {bar.min_title_contrast}:1). "
+            f"Measures size and contrast, not how heavy the face is.",
+            legibility,
+        )
+
     def _cover_checks(
         self, data: GateInput, report: GateReport, real_pages: int, paper: str, trim_name: str
     ) -> None:
@@ -173,6 +194,8 @@ class PrintReadyGate(Gate):
             if geometry.spine_text_allowed
             else f"not allowed by KDP below {spine_minimum} pages"
         )
+        self._legibility_check(data, report)
+
         report.add(
             "spine_text_allowed",
             True,

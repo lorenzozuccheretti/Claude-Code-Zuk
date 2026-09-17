@@ -18,6 +18,9 @@ Karla
     Copyright 2019 The Karla Project Authors (https://github.com/googlefonts/karla)
 IBM Plex Mono
     Copyright (c) 2017 IBM Corp. with Reserved Font Name "Plex"
+Archivo Black
+    Copyright 2017 The Archivo Black Project Authors
+    (https://github.com/Omnibus-Type/ArchivoBlack)
 
 Licence text
 ------------

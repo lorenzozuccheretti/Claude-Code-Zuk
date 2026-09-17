@@ -26,17 +26,39 @@ from reportlab.pdfgen import canvas as pdfcanvas
 from ..config import EngineConfig
 from ..content.rng import StageRandom
 from ..spec.kdp import INCH, CoverGeometry
+from . import artwork
 from .design import (
     MotifSpec,
     Palette,
     choose_motif,
     choose_palette,
+    contrast,
     draw_motif,
     gradient_ground,
     hex_color,
     small_caps,
 )
+from .layout import (
+    balanced,
+    draw_block,
+    draw_tracked,
+    fit_size,
+    rule,
+    tracked_width,
+    wrap,
+)
 from .typography import font
+
+# How the front panel is put together. A cover competes in a grid of twenty at
+# about 200 pixels tall, so each of these commits to one loud idea.
+COMPOSITIONS = ("banded", "reversed", "framed", "emblem")
+
+COMPOSITION_BY_TAG = {
+    "reversed": ("puzzle", "logic", "brain", "night", "bold", "challenge"),
+    "banded": ("planner", "goals", "productivity", "habit", "energy", "morning"),
+    "framed": ("gratitude", "garden", "nature", "keepsake", "memory", "family"),
+    "emblem": ("calm", "mindfulness", "stress", "burnout", "healing", "quiet"),
+}
 
 
 class CoverRenderer:
@@ -50,6 +72,10 @@ class CoverRenderer:
         palette: Palette | None = None,
         motif: str | None = None,
         seed: int = 0,
+        art_style: str | None = None,
+        composition: str | None = None,
+        badge: str = "",
+        words: list[str] | None = None,
     ) -> None:
         self.geo = geometry
         self.title = title
@@ -58,13 +84,34 @@ class CoverRenderer:
         self.config = config
         self.brand = config.brand
         rng = StageRandom(seed, "cover")
-        self.palette = palette or choose_palette([title, subtitle], rng)
-        self.motif = motif or choose_motif([title, subtitle], rng)
+        words = list(words or [title, subtitle])
+        self.words = words
+        self.palette = palette or choose_palette(words, rng)
+        self.motif = motif or choose_motif(words, rng)
+        self.art_style = art_style or artwork.choose_style(words, rng)
+        self.composition = composition or self._choose_composition(words, rng)
+        self.badge = (badge or "").strip()
         self.seed = seed
         # Every text extent drawn, so the renderer can be held to its own frames.
         self.text_extents: list[tuple[float, float]] = []
+        # What the title ended up as, so "can you read this at thumbnail size"
+        # is a number rather than an opinion.
+        self.title_metrics: dict[str, Any] = {}
+
+    @staticmethod
+    def _choose_composition(words, rng: StageRandom) -> str:
+        from ..content.text import token_set
+
+        haystack = token_set(" ".join(w or "" for w in words))
+        for composition, tags in COMPOSITION_BY_TAG.items():
+            if haystack & set(tags):
+                return composition
+        return rng.stream("composition").choice(COMPOSITIONS)
 
     # ------------------------------------------------------------- helpers
+    def _note_line(self, left: float, right: float, baseline: float) -> None:
+        self._note_extent(left, right)
+
     def _note_extent(self, left: float, right: float) -> None:
         self.text_extents.append((left, right))
 
@@ -165,78 +212,194 @@ class CoverRenderer:
         caps = text.upper()
         return pdfmetrics.stringWidth(caps, face, size) + tracking * max(len(caps) - 1, 0)
 
-    # -------------------------------------------------------------- panels
+    # -------------------------------------------------------------- panels    # ---------------------------------------------------------- front panel
     def _front_panel(self, c: pdfcanvas.Canvas) -> None:
-        geo, pal = self.geo, self.palette
-        panel_x = geo.front_panel_x * INCH
-        panel_w = (geo.trim.width + geo.bleed) * INCH
+        {
+            "banded": self._compose_banded,
+            "reversed": self._compose_reversed,
+            "framed": self._compose_framed,
+            "emblem": self._compose_emblem,
+        }.get(self.composition, self._compose_emblem)(c)
 
-        gradient_ground(c, panel_x, 0, panel_w, geo.height_pt, pal.panel, pal.panel_deep)
+    def _panel_box(self) -> tuple[float, float, float, float]:
+        """(x, y, w, h) of the whole front panel, bleed included."""
+        geo = self.geo
+        return (geo.front_panel_x * INCH, 0.0,
+                (geo.trim.width + geo.bleed) * INCH, geo.height_pt)
 
-        safe = geo.safe_margin
-        x = (geo.front_panel_x + safe) * INCH
-        width = (geo.trim.width - 2 * safe) * INCH
-        top = (geo.height - geo.bleed - safe) * INCH
-        bottom = (geo.bleed + safe) * INCH
+    def _safe_frame(self) -> tuple[float, float, float, float]:
+        """(x, y, w, h) of the area type may occupy on the front panel."""
+        geo, safe = self.geo, self.geo.safe_margin
+        return ((geo.front_panel_x + safe) * INCH, (geo.bleed + safe) * INCH,
+                (geo.trim.width - 2 * safe) * INCH,
+                (geo.height - 2 * (geo.bleed + safe)) * INCH)
 
-        self._draw_front_motif(c, x, bottom, width, top - bottom)
+    def _art(self, c, x: float, y: float, width: float, height: float,
+             field: str, scale: float = 1.0, primary: str = "") -> None:
+        artwork.draw(c, self.art_style, artwork.ArtSpec(
+            x=x, y=y, width=width, height=height, palette=self.palette,
+            field=field, seed=self.seed, scale=scale, primary=primary,
+            extras={"columns": 6}))
 
-        # The title sits in the upper third: that is the part of a cover that
-        # survives being shrunk to a thumbnail.
-        display = font("display", "bold")
-        size = self._fit(self.title, display, width, 56, 24, 3)
-        cursor = top - geo.trim.height * INCH * 0.16
-        cursor = self._block(c, self.title, x, cursor, width, display, size,
-                             size * 1.04, pal.title_ink, balanced=True)
+    def _title_block(self, c, x: float, y: float, width: float, face: str,
+                     start: float, minimum: float, colour: str,
+                     centred: bool = True, background: str = "") -> float:
+        size = fit_size(self.title, face, width, start, minimum, 3)
+        self.title_metrics = {
+            "size_pt": size,
+            "face": face,
+            "ink": colour,
+            "background": background or self.palette.panel,
+            "lines": len(balanced(self.title, face, size, width)),
+        }
+        return draw_block(c, self.title, x, y, width, face, size, size * 1.06,
+                          colour, centred=centred, balance=True,
+                          on_line=self._note_line)
 
-        cursor -= size * 0.32
-        c.setStrokeColor(hex_color(pal.accent))
-        c.setLineWidth(1.1)
-        c.line(x + width * 0.36, cursor, x + width * 0.64, cursor)
-        cursor -= 26
+    def _badge(self, c, x: float, y: float, fill: str, ink: str,
+               outline: bool = False, centred: bool = True) -> float:
+        """The flash that says what the book is: '109 PROMPTS', 'LARGE PRINT'."""
+        if not self.badge:
+            return y
+        face = font("sans", "bold")
+        size = 8.5
+        tracking = 2.0
+        text_width = tracked_width(self.badge, face, size, tracking)
+        pad_x, pad_y = 13.0, 7.0
+        box_w = text_width + pad_x * 2
+        box_h = size + pad_y * 2
+        left = x - box_w / 2 if centred else x
+        if outline:
+            c.setStrokeColor(hex_color(ink))
+            c.setLineWidth(1.1)
+            c.roundRect(left, y - pad_y, box_w, box_h, box_h / 2, stroke=1, fill=0)
+        else:
+            c.setFillColor(hex_color(fill))
+            c.roundRect(left, y - pad_y, box_w, box_h, box_h / 2, stroke=0, fill=1)
+        draw_tracked(c, self.badge, left + pad_x, y + 1.5, face, size, ink,
+                     tracking, centred=False)
+        self._note_extent(left, left + box_w)
+        return y - pad_y
 
-        if self.subtitle:
-            text_face = font("text", "regular")
-            sub_size = self._fit(self.subtitle, text_face, width * 0.92, 13.5, 9, 4)
-            self._block(c, self.subtitle, x + width * 0.04, cursor, width * 0.92,
-                        text_face, sub_size, sub_size * 1.55, pal.panel_ink, balanced=True)
-
+    def _author(self, c, cx: float, y: float, colour: str) -> None:
         author = self.brand.author.strip()
         if author:
-            self._tracked(c, author, x + width / 2, bottom + 4,
-                          font("sans", "bold"), 9.5, pal.title_ink, 2.2)
+            width = draw_tracked(c, author, cx, y, font("sans", "bold"), 9.5,
+                                 colour, 2.4)
+            self._note_extent(cx - width / 2, cx + width / 2)
 
-    def _draw_front_motif(self, c, x: float, y: float, width: float, height: float) -> None:
-        """Place the mark where it supports the type instead of fighting it.
-
-        Clipped to the front panel: a motif is allowed to run off the trim, but
-        never onto the spine or the back cover.
-        """
+    # ------------------------------------------------------- compositions
+    def _compose_banded(self, c) -> None:
+        """A field of colour on top, the type on a clean band below."""
         pal = self.palette
-        panel_x = self.geo.front_panel_x * INCH
-        c.saveState()
-        clip = c.beginPath()
-        clip.rect(panel_x, 0, self.geo.width_pt - panel_x, self.geo.height_pt)
-        c.clipPath(clip, stroke=0, fill=0)
-        spec = MotifSpec(x=x, y=y, width=width, height=height,
-                         color=pal.accent, alpha=0.20, seed=self.seed, weight=1.2)
-        if self.motif == "arc":
-            spec.y = y + height * 0.30
-            spec.alpha = 0.16
-        elif self.motif in ("stems", "rays"):
-            spec.height = height * 0.42
-        elif self.motif == "waves":
-            spec.y = y + height * 0.04
-            spec.height = height * 0.26
-            spec.alpha = 0.18
-        elif self.motif == "dots":
-            spec.alpha = 0.22
-            spec.extras = {"step": 15.0, "radius": 1.0}
-        elif self.motif == "rule":
-            spec.y = y + height * 0.46
-            spec.alpha = 0.5
-        draw_motif(c, self.motif, spec)
-        c.restoreState()
+        px, py, pw, ph = self._panel_box()
+        x, y, width, height = self._safe_frame()
+
+        band_y = py + ph * 0.42
+        c.setFillColor(hex_color(pal.panel))
+        c.rect(px, py, pw, ph, stroke=0, fill=1)
+        c.setFillColor(hex_color(pal.bold))
+        c.rect(px, band_y, pw, ph - band_y, stroke=0, fill=1)
+        self._art(c, px, band_y, pw, ph - band_y, pal.bold, 1.0,
+                  primary=pal.bold_ink)
+
+        cursor = band_y - 46
+        cursor = self._title_block(c, x, cursor, width, font("poster", "bold"),
+                                   40, 17, pal.title_ink, background=pal.panel)
+        cursor -= 16
+        if self.subtitle:
+            face = font("text", "regular")
+            size = fit_size(self.subtitle, face, width * 0.9, 12, 8.5, 3)
+            cursor = draw_block(c, self.subtitle, x + width * 0.05, cursor,
+                                width * 0.9, face, size, size * 1.5,
+                                pal.panel_ink, centred=True, balance=True,
+                                on_line=self._note_line)
+        self._badge(c, x + width / 2, band_y + 16, pal.panel, pal.title_ink)
+        self._author(c, x + width / 2, y + 2, pal.title_ink)
+
+    def _compose_reversed(self, c) -> None:
+        """Dark panel, art behind, title reversed out of it."""
+        pal = self.palette
+        px, py, pw, ph = self._panel_box()
+        x, y, width, height = self._safe_frame()
+
+        gradient_ground(c, px, py, pw, ph, pal.ground, pal.ground_deep)
+        self._art(c, px, py + ph * 0.06, pw, ph * 0.62, pal.ground, 1.05)
+
+        cursor = y + height * 0.94
+        cursor = self._title_block(c, x, cursor, width, font("poster", "bold"),
+                                   40, 17, pal.ground_ink, background=pal.ground)
+        cursor -= 14
+        rule(c, x + width * 0.38, cursor, width * 0.24, pal.accent, 1.4)
+        cursor -= 22
+        if self.subtitle:
+            face = font("text", "regular")
+            size = fit_size(self.subtitle, face, width * 0.88, 12, 8.5, 3)
+            cursor = draw_block(c, self.subtitle, x + width * 0.06, cursor,
+                                width * 0.88, face, size, size * 1.5,
+                                pal.ground_ink_soft, centred=True, balance=True,
+                                on_line=self._note_line)
+        self._badge(c, x + width / 2, y + 34, pal.ground, pal.accent, outline=True)
+        self._author(c, x + width / 2, y + 2, pal.ground_ink)
+
+    def _compose_framed(self, c) -> None:
+        """A thick border holds everything; the art is a block inside it."""
+        pal = self.palette
+        px, py, pw, ph = self._panel_box()
+        x, y, width, height = self._safe_frame()
+
+        c.setFillColor(hex_color(pal.bold))
+        c.rect(px, py, pw, ph, stroke=0, fill=1)
+        inset = 0.30 * INCH
+        inner_x = (self.geo.front_panel_x + self.geo.bleed) * INCH + inset
+        inner_y = self.geo.bleed * INCH + inset
+        inner_w = self.geo.trim.width * INCH - inset * 2
+        inner_h = (self.geo.height - 2 * self.geo.bleed) * INCH - inset * 2
+        c.setFillColor(hex_color(pal.panel))
+        c.rect(inner_x, inner_y, inner_w, inner_h, stroke=0, fill=1)
+
+        art_h = inner_h * 0.40
+        self._art(c, inner_x, inner_y, inner_w, art_h, pal.panel, 0.88)
+
+        cursor = inner_y + inner_h - 46
+        cursor = self._title_block(c, inner_x + 14, cursor, inner_w - 28,
+                                   font("display", "bold"), 62, 24, pal.title_ink,
+                                   background=pal.panel)
+        cursor -= 14
+        self._badge(c, inner_x + inner_w / 2, cursor - 6, pal.bold, pal.bold_ink)
+        cursor -= 34
+        if self.subtitle:
+            face = font("text", "regular")
+            size = fit_size(self.subtitle, face, inner_w * 0.82, 12, 8.5, 3)
+            draw_block(c, self.subtitle, inner_x + inner_w * 0.09, cursor,
+                       inner_w * 0.82, face, size, size * 1.5, pal.panel_ink,
+                       centred=True, balance=True, on_line=self._note_line)
+        self._author(c, x + width / 2, inner_y + 12, pal.title_ink)
+
+    def _compose_emblem(self, c) -> None:
+        """Light panel, one big mark low, the title above it."""
+        pal = self.palette
+        px, py, pw, ph = self._panel_box()
+        x, y, width, height = self._safe_frame()
+
+        gradient_ground(c, px, py, pw, ph, pal.panel, pal.panel_deep)
+        self._art(c, px, py + ph * 0.05, pw, ph * 0.46, pal.panel, 1.0)
+
+        cursor = y + height * 0.96
+        cursor = self._title_block(c, x, cursor, width, font("display", "bold"),
+                                   74, 26, pal.title_ink, background=pal.panel)
+        cursor -= 18
+        rule(c, x + width * 0.36, cursor, width * 0.28, pal.accent, 1.3)
+        cursor -= 24
+        if self.subtitle:
+            face = font("text", "regular")
+            size = fit_size(self.subtitle, face, width * 0.88, 13, 9, 3)
+            cursor = draw_block(c, self.subtitle, x + width * 0.06, cursor,
+                                width * 0.88, face, size, size * 1.52,
+                                pal.panel_ink, centred=True, balance=True,
+                                on_line=self._note_line)
+        self._badge(c, x + width / 2, cursor - 18, pal.bold, pal.bold_ink)
+        self._author(c, x + width / 2, y + 2, pal.title_ink)
 
     def _spine(self, c: pdfcanvas.Canvas) -> None:
         geo, pal = self.geo, self.palette
@@ -376,8 +539,36 @@ class CoverRenderer:
         c.drawString(bleed + 4, geo.height_pt - bleed - 10,
                      f"PROOF — wrap {geo.width:.3f} x {geo.height:.3f} in, "
                      f"spine {geo.spine_width:.3f} in for {geo.page_count} pages "
-                     f"({geo.paper}) · palette {self.palette.key} · motif {self.motif}. "
+                     f"({geo.paper}) · {self.composition} · {self.art_style} · "
+                     f"palette {self.palette.key}. "
                      f"Do not upload this file.")
+
+    # --------------------------------------------------------- legibility
+    def legibility(self, thumbnail_height_px: int = 200) -> dict[str, Any]:
+        """Can this cover be read in a search grid?
+
+        Amazon shows a paperback at roughly 200 pixels tall. At that size a
+        title has a cap height of a few pixels, and a colour pairing that looked
+        fine at full size can vanish. Both are arithmetic, so both are checked
+        rather than admired.
+        """
+        metrics = self.title_metrics
+        if not metrics:
+            return {"measured": False}
+        scale = thumbnail_height_px / (self.geo.trim.height * INCH)
+        cap_height_pt = metrics["size_pt"] * 0.72
+        return {
+            "measured": True,
+            "thumbnail_height_px": thumbnail_height_px,
+            "title_size_pt": round(metrics["size_pt"], 1),
+            "title_lines": metrics["lines"],
+            "title_cap_px": round(cap_height_pt * scale, 2),
+            "title_contrast": round(contrast(metrics["ink"], metrics["background"]), 2),
+            "composition": self.composition,
+            "art_style": self.art_style,
+            "palette": self.palette.key,
+            "has_badge": bool(self.badge),
+        }
 
     # -------------------------------------------------------------- output
     def render(self, path: str | Path, guides: bool = False) -> Path:
@@ -418,9 +609,14 @@ def render_cover(
     palette: Palette | None = None,
     motif: str | None = None,
     seed: int = 0,
+    art_style: str | None = None,
+    composition: str | None = None,
+    badge: str = "",
+    words: list[str] | None = None,
 ) -> Path:
     return CoverRenderer(
-        geometry, title, subtitle, back_copy, config, palette, motif, seed
+        geometry, title, subtitle, back_copy, config, palette, motif, seed,
+        art_style, composition, badge, words,
     ).render(path, guides)
 
 

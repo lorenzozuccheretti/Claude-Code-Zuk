@@ -15,7 +15,7 @@ what a word search is.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Iterable, Sequence
 
 from ..config import EngineConfig
 from ..content.rng import StageRandom
@@ -212,6 +212,26 @@ class BookType:
                 PageSpec("notes_page", kind="filler", data={"heading": "Notes"}),
             )
         return pages
+
+
+TITLE_STOPWORDS = frozenset({
+    "a", "an", "the", "of", "for", "and", "with", "to", "in", "on", "your", "my",
+})
+
+
+def pick_title(patterns: Sequence[str], rng: StageRandom, **fields: object) -> str:
+    """The first pattern that does not repeat a word once filled in.
+
+    "Weekly: The Undated Weekly Planner" is what happens when a topic extracted
+    from the niche collides with the words already in the pattern.
+    """
+    ordered = rng.shuffled(patterns)
+    for pattern in ordered:
+        candidate = pattern.format(**fields)
+        words = [w for w in normalize(candidate).split() if w not in TITLE_STOPWORDS]
+        if len(words) == len(set(words)):
+            return candidate
+    return ordered[0].format(**fields)
 
 
 _REGISTRY: dict[str, BookType] = {}

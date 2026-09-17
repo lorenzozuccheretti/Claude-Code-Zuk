@@ -67,7 +67,8 @@ That buys three things:
 | `content/` | Template packs, seeded RNG, shared text measure, copy, optional LLM hook |
 | `render/` | ReportLab interior and cover renderers; PDF read-back helpers |
 | `render/typography.py` | Vendored typefaces, registered once, with a builtin fallback |
-| `render/design.py` | Colour worlds and drawn motifs, chosen from the niche |
+| `render/design.py` | Colour worlds, contrast maths and small motifs |
+| `render/artwork.py` | The seven cover artwork styles, as filled vector shapes |
 | `render/identity.py` | One palette and motif per book, shared by both renderers |
 | `render/layout.py` | Text primitives both renderers share (wrap, balance, tracking) |
 | `assets/fonts/` | The OFL typefaces, so a build needs no network |

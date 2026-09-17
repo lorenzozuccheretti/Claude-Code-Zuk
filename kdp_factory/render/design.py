@@ -30,6 +30,29 @@ def hex_color(value: str, alpha: float = 1.0) -> Color:
     return Color(base.red, base.green, base.blue, alpha=alpha)
 
 
+def relative_luminance(value: str) -> float:
+    """WCAG relative luminance of a hex colour."""
+    colour = HexColor(value)
+
+    def channel(v: float) -> float:
+        return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+
+    return (0.2126 * channel(colour.red) + 0.7152 * channel(colour.green)
+            + 0.0722 * channel(colour.blue))
+
+
+def contrast(a: str, b: str) -> float:
+    """WCAG contrast ratio between two hex colours, 1.0 to 21.0."""
+    la, lb = relative_luminance(a), relative_luminance(b)
+    high, low = max(la, lb), min(la, lb)
+    return (high + 0.05) / (low + 0.05)
+
+
+def readable_on(background: str, light: str, dark: str) -> str:
+    """Whichever of two inks is more readable on this background."""
+    return light if contrast(light, background) >= contrast(dark, background) else dark
+
+
 def mix(a: str, b: str, amount: float) -> str:
     """Blend two hex colours — used to derive a gradient's far end."""
     ca, cb = HexColor(a), HexColor(b)
@@ -54,15 +77,37 @@ class Palette:
     ground_ink: str       # text on the back cover
     ground_ink_soft: str
     accent: str           # rules, marks, the one loud thing
+    # A saturated field for artwork and colour blocking. The old accent was
+    # pitched for hairlines: at 2.5:1 against the panel it vanished the moment
+    # the cover was a thumbnail.
+    bold: str = ""
+    bold_ink: str = ""
     interior_ink: str = "#1C1B19"
     interior_soft: str = "#6E6A64"
     interior_rule: str = "#C9C4BB"
     interior_accent: str = ""
     tags: tuple[str, ...] = ()
 
+    def __post_init__(self) -> None:
+        if not self.bold:
+            object.__setattr__(self, "bold", self.accent)
+        if not self.bold_ink:
+            object.__setattr__(
+                self, "bold_ink", readable_on(self.bold, self.panel, self.ground))
+
     @property
     def accent_for_page(self) -> str:
         return self.interior_accent or self.accent
+
+    def contrast_report(self) -> dict[str, float]:
+        """Every pairing a cover relies on, measured."""
+        return {
+            "title_on_panel": round(contrast(self.title_ink, self.panel), 2),
+            "bold_on_panel": round(contrast(self.bold, self.panel), 2),
+            "ink_on_bold": round(contrast(self.bold_ink, self.bold), 2),
+            "ink_on_ground": round(contrast(self.ground_ink, self.ground), 2),
+            "accent_on_ground": round(contrast(self.accent, self.ground), 2),
+        }
 
 
 # Eight worlds, each built around a ground a book can actually be printed in.
@@ -73,6 +118,7 @@ PALETTES: tuple[Palette, ...] = (
         panel="#EFE6DC", panel_deep="#E2D4C6",
         title_ink="#2E2338", panel_ink="#5A4A52", ground_ink="#F1E7DC",
         ground_ink_soft="#C3B2BC", accent="#C97B6A",
+        bold="#8E4A63",
         interior_ink="#221B28", interior_soft="#6F6472", interior_rule="#CFC6CF",
         tags=("stress", "burnout", "anxiety", "calm", "sleep", "evening", "mental", "overwhelm"),
     ),
@@ -82,6 +128,7 @@ PALETTES: tuple[Palette, ...] = (
         panel="#EDEAE0", panel_deep="#DDD9CB",
         title_ink="#2C3830", panel_ink="#55604F", ground_ink="#EFEDE3",
         ground_ink_soft="#BFC6B8", accent="#B4854A",
+        bold="#3F6B45",
         interior_ink="#23291F", interior_soft="#6B7063", interior_rule="#C8CCC0",
         tags=("gratitude", "garden", "nature", "growth", "mindfulness", "wellbeing", "thankful"),
     ),
@@ -91,6 +138,7 @@ PALETTES: tuple[Palette, ...] = (
         panel="#E8EDEB", panel_deep="#D6E0DD",
         title_ink="#173339", panel_ink="#4A5D60", ground_ink="#E9F1EF",
         ground_ink_soft="#A9C2C2", accent="#D97B5C",
+        bold="#176577",
         interior_ink="#16262A", interior_soft="#5F7276", interior_rule="#BFCFD0",
         tags=("sea", "seaside", "travel", "coast", "holiday", "swim", "ocean"),
     ),
@@ -100,6 +148,7 @@ PALETTES: tuple[Palette, ...] = (
         panel="#1C1E23", panel_deep="#101215",
         title_ink="#F0EBE1", panel_ink="#B9B3A7", ground_ink="#F0EBE1",
         ground_ink_soft="#9A958C", accent="#C9A227",
+        bold="#C9A227",
         interior_ink="#16171B", interior_soft="#6A6B70", interior_rule="#C6C6C9",
         tags=("puzzle", "word", "search", "brain", "logic", "focus", "night", "chess"),
     ),
@@ -109,6 +158,7 @@ PALETTES: tuple[Palette, ...] = (
         panel="#F3F0EA", panel_deep="#E6E1D7",
         title_ink="#2F3A46", panel_ink="#5C6672", ground_ink="#F3F1EC",
         ground_ink_soft="#BAC2CB", accent="#7D93A6",
+        bold="#4E6E8E",
         interior_ink="#1E242B", interior_soft="#67707A", interior_rule="#C7CBD1",
         tags=("planner", "work", "business", "productivity", "study", "school", "goals", "freelance"),
     ),
@@ -118,6 +168,7 @@ PALETTES: tuple[Palette, ...] = (
         panel="#F2E6E6", panel_deep="#E4D2D3",
         title_ink="#3B2432", panel_ink="#6A4B57", ground_ink="#F4E9E8",
         ground_ink_soft="#C6ABB4", accent="#D08A76",
+        bold="#9C3F62",
         interior_ink="#281922", interior_soft="#71606A", interior_rule="#D2C4C9",
         tags=("self", "love", "care", "woman", "women", "mother", "baby", "grief", "healing"),
     ),
@@ -127,6 +178,7 @@ PALETTES: tuple[Palette, ...] = (
         panel="#EEEADF", panel_deep="#DFD9C9",
         title_ink="#33361F", panel_ink="#5C5F4A", ground_ink="#F0EDE2",
         ground_ink_soft="#C2C2AC", accent="#A8562F",
+        bold="#96441F",
         interior_ink="#24251A", interior_soft="#6B6D5C", interior_rule="#C9C8B8",
         tags=("autumn", "harvest", "farm", "countryside", "walking", "hiking", "forest"),
     ),
@@ -136,8 +188,40 @@ PALETTES: tuple[Palette, ...] = (
         panel="#EAEFF3", panel_deep="#D8E1E8",
         title_ink="#1F3040", panel_ink="#51606D", ground_ink="#EDF2F6",
         ground_ink_soft="#A9BCCB", accent="#8FB0C4",
+        bold="#2E6C96",
         interior_ink="#1A2530", interior_soft="#5F6D78", interior_rule="#C3CDD5",
         tags=("christmas", "winter", "festive", "snow", "holiday", "advent"),
+    ),
+    Palette(
+        key="citrus", label="Citrus — deep navy and amber",
+        ground="#152A3F", ground_deep="#0C1927",
+        panel="#F7F2E7", panel_deep="#EDE3D0",
+        title_ink="#132639", panel_ink="#4C5A68", ground_ink="#F8F3E8",
+        ground_ink_soft="#A9BACA", accent="#E08A1E",
+        bold="#D4770E",
+        interior_ink="#132639", interior_soft="#5F6E7C", interior_rule="#C6CFD8",
+        tags=("energy", "morning", "goals", "focus", "start", "motivation", "fitness", "habit"),
+    ),
+    Palette(
+        key="coral", label="Coral — bone and hot coral",
+        ground="#B13A31", ground_deep="#8A2A23",
+        panel="#FBF4EE", panel_deep="#F2E4D8",
+        title_ink="#7A2019", panel_ink="#6B4A43", ground_ink="#FDF3EE",
+        ground_ink_soft="#F0C3B9", accent="#D9472F",
+        bold="#D9472F",
+        interior_ink="#2A1713", interior_soft="#75584F", interior_rule="#DCC8BD",
+        tags=("love", "self", "care", "confidence", "bold", "joy", "creative", "woman", "women"),
+    ),
+    Palette(
+        key="noir", label="Noir — black and chartreuse",
+        ground="#101112", ground_deep="#050506",
+        panel="#16181A", panel_deep="#0C0D0E",
+        title_ink="#E9F5C4", panel_ink="#A8B394", ground_ink="#E9F5C4",
+        ground_ink_soft="#8E9A7B", accent="#C6F04A",
+        bold="#C6F04A",
+        interior_ink="#121314", interior_soft="#66696C", interior_rule="#C4C6C8",
+        interior_accent="#6E8A16",
+        tags=("puzzle", "sudoku", "logic", "brain", "crossword", "challenge", "games"),
     ),
 )
 

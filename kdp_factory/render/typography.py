@@ -8,8 +8,10 @@ seed, same book" stops being true on a machine with no network.
 
 Four roles, chosen to work on a page a person writes on:
 
+* ``poster`` — Archivo Black. One weight, and that weight is heavy. It is what
+  a cover needs to survive being 200 pixels tall in a search grid.
 * ``display`` — Cormorant Garamond. High contrast, generous, made for size.
-  It carries the cover and the title page.
+  It carries the quieter covers and the title page.
 * ``text`` — Lora. A sturdy workhorse serif that stays readable at 11pt beside
   a ruled line.
 * ``sans`` — Karla. Labels, numbers, letterspaced small caps.
@@ -35,6 +37,11 @@ FONT_DIR = Path(__file__).resolve().parent.parent / "assets" / "fonts"
 # The registered name is the font's own PostScript name, so the print gate can
 # read the PDF's BaseFont entries and compare them against what was asked for.
 FACES: dict[str, dict[str, tuple[str, str, str]]] = {
+    "poster": {
+        "regular": ("ArchivoBlack-Regular", "ArchivoBlack-Regular.ttf", "Helvetica-Bold"),
+        "bold": ("ArchivoBlack-Regular", "ArchivoBlack-Regular.ttf", "Helvetica-Bold"),
+        "italic": ("ArchivoBlack-Regular", "ArchivoBlack-Regular.ttf", "Helvetica-BoldOblique"),
+    },
     "display": {
         "regular": ("CormorantGaramond-Light", "CormorantGaramond-Light.ttf", "Times-Roman"),
         "bold": ("CormorantGaramond-SemiBold", "CormorantGaramond-SemiBold.ttf", "Times-Bold"),

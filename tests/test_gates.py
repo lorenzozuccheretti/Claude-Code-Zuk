@@ -291,3 +291,77 @@ class TestTypographyAndFrames:
                        if a < low - 0.5 or b > high + 0.5]
             assert outside == [], f"{trim}: text outside the safe area: {outside}"
             assert len(renderer.text_extents) > 5
+
+
+class TestCoverStopsTheScroll:
+    """A cover is first seen ~200px tall in a grid. That is measurable."""
+
+    def _render(self, config, **kwargs):
+        from kdp_factory.render.cover import CoverRenderer
+        from kdp_factory.render.design import PALETTES_BY_KEY
+        from kdp_factory.spec.kdp import cover_geometry
+
+        copy = {"hook": "A hook.", "body": "Body.", "benefits": ["One"], "closing": "End."}
+        renderer = CoverRenderer(
+            cover_geometry("6x9", 120, "bw_white"),
+            kwargs.pop("title", "The Daily Mental Health Journal"),
+            "A 109-Prompt Guided Journal for women running on empty",
+            copy, config, PALETTES_BY_KEY[kwargs.pop("palette", "dusk")], "arc", 1,
+            **kwargs,
+        )
+        renderer.render(config.output_root / "thumb.pdf")
+        return renderer
+
+    @pytest.mark.parametrize("composition", ["banded", "reversed", "framed", "emblem"])
+    def test_every_composition_is_readable_at_thumbnail_size(self, composition, config):
+        renderer = self._render(config, composition=composition, badge="109 prompts")
+        legibility = renderer.legibility()
+        assert legibility["measured"]
+        assert legibility["title_cap_px"] >= config.quality.min_title_cap_px
+        assert legibility["title_contrast"] >= config.quality.min_title_contrast
+
+    @pytest.mark.parametrize("composition", ["banded", "reversed", "framed", "emblem"])
+    def test_no_composition_puts_text_outside_the_safe_area(self, composition, config):
+        renderer = self._render(config, composition=composition, badge="109 prompts")
+        low, high = renderer.safe_box()
+        assert [(a, b) for a, b in renderer.text_extents if a < low - 0.5 or b > high + 0.5] == []
+
+    def test_a_long_title_still_clears_the_bar(self, config):
+        renderer = self._render(
+            config, composition="emblem",
+            title="The Complete Undated Gratitude and Reflection Journal for Beginners",
+        )
+        assert renderer.legibility()["title_cap_px"] >= config.quality.min_title_cap_px
+
+    def test_the_gate_fails_a_cover_that_disappears_in_a_grid(self, built, config, tmp_path):
+        """Tiny type on a low-contrast ground is the defect this guards."""
+        import json
+        from kdp_factory.gates.base import GateInput
+
+        spec = json.loads((built.root / "03_cover" / "cover_spec.json").read_text())
+        spec["legibility"] = {
+            "measured": True, "thumbnail_height_px": 200,
+            "title_size_pt": 11, "title_lines": 3,
+            "title_cap_px": 2.4, "title_contrast": 1.9,
+        }
+        path = tmp_path / "faint.json"
+        path.write_text(json.dumps(spec), encoding="utf-8")
+        paths = {a.role: built.root / a.path for a in built.context.manifest.artifacts}
+        paths["cover_spec"] = path
+        report = PrintReadyGate(config).run(
+            GateInput(subject="x", paths=paths, facts=built.context.manifest.facts))
+        assert not verdicts(report)["cover_reads_at_thumbnail"]
+        assert not report.passed
+
+    def test_artwork_on_its_own_colour_is_drawn_in_something_else(self):
+        """Art on the bold field was being tinted toward bold — invisible."""
+        from kdp_factory.render.artwork import ArtSpec
+        from kdp_factory.render.design import PALETTES_BY_KEY, contrast
+
+        palette = PALETTES_BY_KEY["dusk"]
+        on_panel = ArtSpec(x=0, y=0, width=100, height=100, palette=palette,
+                           field=palette.panel)
+        on_bold = ArtSpec(x=0, y=0, width=100, height=100, palette=palette,
+                          field=palette.bold)
+        assert on_panel.primary == palette.bold
+        assert contrast(on_bold.primary, palette.bold) > 2.0

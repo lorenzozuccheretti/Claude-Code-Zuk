@@ -18,7 +18,15 @@ from ..content.wordsearch import Puzzle, generate_puzzle, verify_puzzle
 from ..errors import ConfigError
 from ..niche import Niche
 from ..spec.kdp import KDP_SPEC, even_up
-from .base import BookType, ContentUnit, InteriorPlan, PageSpec, TitleProposal, register
+from .base import (
+    BookType,
+    ContentUnit,
+    InteriorPlan,
+    PageSpec,
+    TitleProposal,
+    pick_title,
+    register,
+)
 
 TITLE_PATTERNS = (
     "{topic} Word Search",
@@ -355,7 +363,7 @@ class WordSearchBookType(BookType):
             bool(opts["solutions"]),
         )
         return TitleProposal(
-            title=stream.choice(TITLE_PATTERNS).format(topic=topic),
+            title=pick_title(TITLE_PATTERNS, stream, topic=topic),
             subtitle=stream.stream("sub").choice(SUBTITLE_PATTERNS).format(
                 count=count, audience=audience
             ),

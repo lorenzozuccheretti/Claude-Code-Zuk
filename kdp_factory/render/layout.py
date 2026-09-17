@@ -56,7 +56,14 @@ def fit_size(text: str, face: str, width: float, start: float,
              minimum: float, max_lines: int) -> float:
     """The largest size at which the text still fits in ``max_lines``."""
     size = start
-    while size > minimum and len(wrap(text, face, size, width)) > max_lines:
+    while size > minimum:
+        lines = wrap(text, face, size, width)
+        too_many = len(lines) > max_lines
+        # A word wider than the measure gets a line to itself and still
+        # overflows, without ever raising the line count.
+        too_wide = any(pdfmetrics.stringWidth(line, face, size) > width for line in lines)
+        if not (too_many or too_wide):
+            break
         size -= 0.5
     return size
 

@@ -96,23 +96,44 @@ g2_substance        10       0      0%  never fails — suspect the criteria are
 
 The first books this engine made were set in Helvetica and Times on flat fills,
 because those are the faces ReportLab has when you give it none. A cover is
-judged at thumbnail size against nineteen others, so the design is part of the
-engine, not something to fix per book in another tool:
+first seen about 200 pixels tall in a grid of twenty, so the design is part of
+the engine rather than something to redo per book in another tool.
 
-- **Real typefaces, vendored.** Cormorant Garamond for display, Lora for the
-  page a buyer writes on, Karla for labels, IBM Plex Mono for puzzle grids —
-  committed under `kdp_factory/assets/fonts/` with their OFL licence, so a
-  build is hermetic and reproducible offline.
-- **Eight colour worlds** (`kdp_factory/render/design.py`), each with a ground,
-  a front panel, an accent and a matching interior ink. A niche picks its own
-  from its words; an imprint can pin one with `brand.palette_key`.
-- **One drawn mark per book** — an arc, stems, waves, rays, a dot field or a
-  plain rule, chosen the same way and clipped to its panel.
+- **Five typefaces, vendored** under `kdp_factory/assets/fonts/` with their OFL
+  licence, so a build is hermetic: Archivo Black for poster-weight titles,
+  Cormorant Garamond for the quieter covers and title pages, Lora for the page
+  a buyer writes on, Karla for labels, IBM Plex Mono for puzzle grids.
+- **Eleven colour worlds** (`render/design.py`), each carrying a saturated
+  field colour for the artwork — the first pass used the accent, which at
+  2.5:1 against the panel disappeared the moment the cover was a thumbnail.
+- **Seven artwork styles** (`render/artwork.py`): arch, bloom, strata,
+  sunburst, rings, tiles, wave. Filled vector shapes at full strength, drawn in
+  whatever contrasts with the field they sit on.
+- **Four compositions** (`render/cover.py`): `banded` puts a field of colour
+  over a clean type band, `reversed` runs the title out of a dark panel,
+  `framed` holds everything in a thick border, `emblem` sets one big mark under
+  a large title. Each commits to one idea.
+- **A badge** carrying the number that sells the book — "109 prompts",
+  "56 undated weeks", "76 puzzles + answers".
 - **The inside matches the outside.** Cover and interior take the same palette
-  from `render/identity.py`, so a book is one object rather than two.
+  from `render/identity.py`.
 
-The print gate reads the finished PDF back and fails a book that silently fell
-back to a builtin face.
+Every choice is deterministic: the niche's own words pick the world, the style
+and the composition, and the seed breaks ties — so the same niche always gets
+the same cover, and two books in an imprint do not collide by accident.
+
+### The cover is checked, not admired
+
+The print gate measures what a shopper's eye actually gets:
+
+```
+PASS  typography_embedded       the book is set in CormorantGaramond, Karla, Lora
+PASS  cover_reads_at_thumbnail  at 200px tall the title has a 13.8px cap height
+                                at 12.0:1 contrast (bars: 6.5px, 4.5:1)
+```
+
+It measures size and contrast, not how heavy the face is — that part is still
+your eye's job, which is why station 6 asks you to look at the cover at 100%.
 
 ## What is computed, never estimated
 
