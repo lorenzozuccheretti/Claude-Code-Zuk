@@ -365,3 +365,115 @@ class TestCoverStopsTheScroll:
                           field=palette.bold)
         assert on_panel.primary == palette.bold
         assert contrast(on_bold.primary, palette.bold) > 2.0
+
+
+class TestCoverLayout:
+    """What the last round of feedback was actually about."""
+
+    def _render(self, config, composition, **kwargs):
+        from kdp_factory.render.cover import CoverRenderer
+        from kdp_factory.render.design import PALETTES_BY_KEY
+        from kdp_factory.spec.kdp import cover_geometry
+
+        copy = {
+            "hook": "Five quiet minutes at the end of a day that had none.",
+            "body": "Built for women running on empty. 109 guided prompts, 120 pages.",
+            "benefits": ["One prompt per page — no blank-page paralysis",
+                         "Room to write, not just room to tick",
+                         "Undated, so a missed day costs you nothing",
+                         "Bound to open flat and stay open"],
+            "closing": "Books that do one thing well.",
+        }
+        renderer = CoverRenderer(
+            cover_geometry(kwargs.pop("trim", "6x9"), kwargs.pop("pages", 120), "bw_white"),
+            kwargs.pop("title", "The Daily Mental Health Journal"),
+            kwargs.pop("subtitle", "A 109-Prompt Guided Journal for women running on empty"),
+            copy, config, PALETTES_BY_KEY[kwargs.pop("palette", "balm")], "arc", 1,
+            composition=composition, badge="109 prompts", **kwargs,
+        )
+        renderer.render(config.output_root / f"{composition}.pdf")
+        return renderer
+
+    @pytest.mark.parametrize("composition", ["banded", "reversed", "framed", "emblem"])
+    def test_nothing_readable_sits_under_the_barcode(self, composition, config):
+        """The white box that used to hide this area is gone, so it has to be
+        kept clear rather than covered up."""
+        renderer = self._render(config, composition)
+        assert renderer.text_in_barcode_area() == []
+        assert renderer.legibility()["barcode_area_clear"] is True
+
+    @pytest.mark.parametrize("composition", ["banded", "reversed", "framed", "emblem"])
+    def test_a_long_title_shrinks_instead_of_overflowing(self, composition, config):
+        """A stack taller than its zone used to run over the artwork below it."""
+        renderer = self._render(
+            config, composition,
+            title="The Complete Undated Gratitude Reflection and Evening Wind-Down Journal",
+        )
+        low, high = renderer.safe_box()
+        assert [(a, b) for a, b in renderer.text_extents if a < low - 0.5 or b > high + 0.5] == []
+        assert renderer.text_in_barcode_area() == []
+
+    def test_a_title_too_long_for_its_layout_is_reported_not_shipped(self, config):
+        """Compositions differ in how much room they give a title: `emblem`
+        carries ten words where `banded` cannot. Where it cannot, the cover is
+        measured as unreadable rather than quietly shipped."""
+        long_title = "The Complete Undated Gratitude Reflection and Evening Wind-Down Journal"
+        measured = {
+            composition: self._render(config, composition, title=long_title)
+                             .legibility()["title_cap_px"]
+            for composition in ("banded", "reversed", "framed", "emblem")
+        }
+        assert measured["banded"] < config.quality.min_title_cap_px
+        assert measured["emblem"] > measured["banded"]
+
+    @pytest.mark.parametrize("composition", ["banded", "reversed", "framed", "emblem"])
+    def test_the_titles_the_engine_writes_do_read_on_a_phone(self, composition, config):
+        for title in ("The Daily Mental Health Journal", "Large Print Word Search",
+                      "The Undated Weekly Planner", "Gratitude, One Page at a Time"):
+            renderer = self._render(config, composition, title=title)
+            assert renderer.legibility()["title_cap_px"] >= config.quality.min_title_cap_px, title
+
+    def test_the_cover_never_carries_the_proof_markings(self, config):
+        """Shipping the proof file is the mistake this guards."""
+        from kdp_factory.render.pdfutil import extract_text
+
+        renderer = self._render(config, "reversed")
+        cover = config.output_root / "cover-clean.pdf"
+        proof = config.output_root / "cover-proof.pdf"
+        renderer.render(cover, guides=False)
+        renderer.render(proof, guides=True)
+        assert "barcode keep-out" not in extract_text(cover)
+        assert "barcode keep-out" in extract_text(proof)
+        assert "Do not upload" in extract_text(proof)
+
+
+class TestCoverSubtitle:
+    def test_the_cover_takes_the_first_clause(self):
+        from kdp_factory.render.cover import short_subtitle
+
+        assert short_subtitle(
+            "A 109-Prompt Guided Journal for women running on empty"
+        ) == "A 109-Prompt Guided Journal"
+
+    def test_a_short_subtitle_is_left_alone(self):
+        from kdp_factory.render.cover import short_subtitle
+
+        assert short_subtitle("Five Minutes Before the Day Starts") == (
+            "Five Minutes Before the Day Starts")
+
+    def test_it_never_returns_a_stub(self):
+        from kdp_factory.render.cover import short_subtitle
+
+        # Splitting on " for " here would leave two words, so it must not.
+        assert len(short_subtitle("Prompts for women who are done shrinking").split()) >= 3
+
+    def test_the_listing_keeps_the_full_subtitle(self, good_niche, config):
+        """Only the cover shortens it; the product page gets the whole thing."""
+        import json
+        from kdp_factory.run.pipeline import Pipeline
+
+        result = Pipeline(config).run(good_niche, seed=6)
+        listing = json.loads((result.root / "04_listing" / "listing.json").read_text())
+        plan = json.loads((result.root / "02_interior" / "interior_plan.json").read_text())
+        assert listing["subtitle"] == plan["subtitle"]
+        assert len(listing["subtitle"].split()) > 4

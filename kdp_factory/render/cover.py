@@ -16,8 +16,9 @@ upload.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from reportlab import rl_config
 from reportlab.pdfbase import pdfmetrics
@@ -49,15 +50,61 @@ from .layout import (
 )
 from .typography import font
 
+
+def short_subtitle(subtitle: str, max_words: int = 7) -> str:
+    """The cover's version of the subtitle.
+
+    "A 109-Prompt Guided Journal for women running on empty" is written for a
+    product page. At 160 pixels tall it is a smudge, so the cover takes the
+    first clause and the listing keeps the whole thing.
+    """
+    text = " ".join(subtitle.split())
+    for separator in (" — ", " – ", ": ", " for ", ", "):
+        if separator in text:
+            head = text.split(separator)[0].strip()
+            if len(head.split()) >= 3:
+                text = head
+                break
+    words = text.split()
+    return " ".join(words[:max_words]) if len(words) > max_words else text
+
+
+@dataclass
+class StackItem:
+    """One block in a centred group: how tall it is, and how to draw it."""
+
+    height: float
+    render: Callable[[float], None]
+    gap: float = 0.0
+
+
+def _stack_height(items: list) -> float:
+    """How tall a group of blocks is, gaps included."""
+    present = [item for item in items if item is not None]
+    if not present:
+        return 0.0
+    return sum(item.height + item.gap for item in present) - present[0].gap
+
+
+def _gap(item: "StackItem | None", gap: float) -> "StackItem | None":
+    """Space above a block, applied only when the block exists."""
+    if item is not None:
+        item.gap = gap
+    return item
+
 # How the front panel is put together. A cover competes in a grid of twenty at
 # about 200 pixels tall, so each of these commits to one loud idea.
 COMPOSITIONS = ("banded", "reversed", "framed", "emblem")
 
 COMPOSITION_BY_TAG = {
-    "reversed": ("puzzle", "logic", "brain", "night", "bold", "challenge"),
-    "banded": ("planner", "goals", "productivity", "habit", "energy", "morning"),
+    # Stress and burnout buyers were getting the quietest layout on the sheet.
+    # They are not shopping for a funeral: put them on a loud one.
+    "reversed": ("puzzle", "logic", "brain", "night", "bold", "challenge",
+                 "burnout", "stress", "overwhelm", "anxiety"),
+    "banded": ("planner", "goals", "productivity", "habit", "energy", "morning",
+               "confidence", "women", "woman"),
     "framed": ("gratitude", "garden", "nature", "keepsake", "memory", "family"),
-    "emblem": ("calm", "mindfulness", "stress", "burnout", "healing", "quiet"),
+    "emblem": ("calm", "mindfulness", "healing", "quiet", "sleep", "meditation"),
 }
 
 
@@ -91,9 +138,13 @@ class CoverRenderer:
         self.art_style = art_style or artwork.choose_style(words, rng)
         self.composition = composition or self._choose_composition(words, rng)
         self.badge = (badge or "").strip()
+        self.cover_subtitle = short_subtitle(subtitle)
         self.seed = seed
         # Every text extent drawn, so the renderer can be held to its own frames.
         self.text_extents: list[tuple[float, float]] = []
+        # (left, right, baseline) for every line, so the barcode keep-out can be
+        # verified now that no white box hides what is under it.
+        self.text_boxes: list[tuple[float, float, float]] = []
         # What the title ended up as, so "can you read this at thumbnail size"
         # is a number rather than an opinion.
         self.title_metrics: dict[str, Any] = {}
@@ -111,9 +162,23 @@ class CoverRenderer:
     # ------------------------------------------------------------- helpers
     def _note_line(self, left: float, right: float, baseline: float) -> None:
         self._note_extent(left, right)
+        self.text_boxes.append((left, right, baseline))
 
     def _note_extent(self, left: float, right: float) -> None:
         self.text_extents.append((left, right))
+
+    def text_in_barcode_area(self, pad: float = 4.0) -> list[tuple[float, float, float]]:
+        """Any line of text sitting where KDP will print its barcode.
+
+        The background runs under the barcode, as on every trade paperback, but
+        nothing that has to be read may be there.
+        """
+        bx, by, bw, bh = self._barcode_box()
+        return [
+            (left, right, baseline) for left, right, baseline in self.text_boxes
+            if right > bx - pad and left < bx + bw + pad
+            and by - pad - 10 < baseline < by + bh + pad
+        ]
 
     def safe_box(self) -> tuple[float, float]:
         """Left and right bounds no text may cross, in points across the wrap."""
@@ -121,98 +186,26 @@ class CoverRenderer:
         return ((geo.bleed + geo.safe_margin) * INCH,
                 (geo.width - geo.bleed - geo.safe_margin) * INCH)
 
-    def _wrap(self, text: str, face: str, size: float, width: float) -> list[str]:
-        words = text.split()
-        if not words:
-            return []
-        lines, current = [], words[0]
-        for word in words[1:]:
-            candidate = f"{current} {word}"
-            if pdfmetrics.stringWidth(candidate, face, size) <= width:
-                current = candidate
-            else:
-                lines.append(current)
-                current = word
-        lines.append(current)
-        return lines
+    # -------------------------------------------------------------- panels    # ---------------------------------------------------------- front panel    def text_in_barcode_area(self, pad: float = 4.0) -> list[tuple[float, float, float]]:
+        """Any line of text sitting where KDP will print its barcode.
 
-    def _fit(self, text: str, face: str, width: float, start: float,
-             minimum: float, max_lines: int) -> float:
-        """Largest size at which the text still fits in ``max_lines``."""
-        size = start
-        while size > minimum and len(self._wrap(text, face, size, width)) > max_lines:
-            size -= 0.5
-        return size
-
-    def _balanced(self, text: str, face: str, size: float, width: float) -> list[str]:
-        """Wrap into even lines rather than filling each one to the edge.
-
-        Greedy wrapping leaves a long first line and a stub last one. Narrowing
-        the measure until the line count would grow finds the tightest width
-        that keeps the same number of lines, which is what balances them.
+        The background runs under the barcode, as on every trade paperback, but
+        nothing that has to be read may be there.
         """
-        lines = self._wrap(text, face, size, width)
-        if len(lines) < 2:
-            return lines
-        target = len(lines)
-        low, high = max(w for w in (pdfmetrics.stringWidth(word, face, size)
-                                    for word in text.split())), width
-        while high - low > 1.0:
-            middle = (low + high) / 2
-            if len(self._wrap(text, face, size, middle)) <= target:
-                high = middle
-            else:
-                low = middle
-        return self._wrap(text, face, size, high)
+        bx, by, bw, bh = self._barcode_box()
+        return [
+            (left, right, baseline) for left, right, baseline in self.text_boxes
+            if right > bx - pad and left < bx + bw + pad
+            and by - pad - 10 < baseline < by + bh + pad
+        ]
 
-    def _block(self, c, text: str, x: float, y: float, width: float, face: str,
-               size: float, leading: float, color: str, centred: bool = True,
-               balanced: bool = False) -> float:
-        c.setFont(face, size)
-        c.setFillColor(hex_color(color))
-        lines = self._balanced(text, face, size, width) if balanced else \
-            self._wrap(text, face, size, width)
-        for line in lines:
-            line_width = pdfmetrics.stringWidth(line, face, size)
-            left = x + (width - line_width) / 2 if centred else x
-            self._note_extent(left, left + line_width)
-            if centred:
-                c.drawCentredString(x + width / 2, y, line)
-            else:
-                c.drawString(x, y, line)
-            y -= leading
-        return y
+    def safe_box(self) -> tuple[float, float]:
+        """Left and right bounds no text may cross, in points across the wrap."""
+        geo = self.geo
+        return ((geo.bleed + geo.safe_margin) * INCH,
+                (geo.width - geo.bleed - geo.safe_margin) * INCH)
 
-    def _tracked(self, c, text: str, x: float, y: float, face: str, size: float,
-                 color: str, tracking: float = 1.6, centred: bool = True) -> None:
-        """Letterspaced caps — the label voice on this cover.
-
-        Tracking lives on a text object, not the canvas, so this measures the
-        tracked width itself to centre it.
-        """
-        if not text:
-            return
-        caps = text.upper()
-        start = x - self._tracked_width(caps, face, size, tracking) / 2 if centred else x
-        # Character spacing is part of the PDF text state and survives BT/ET, so
-        # without this save/restore every later string is drawn wider than
-        # ReportLab measures it — which is how a title ends up over the trim.
-        c.saveState()
-        obj = c.beginText()
-        obj.setFont(face, size)
-        obj.setFillColor(hex_color(color))
-        obj.setCharSpace(tracking)
-        obj.setTextOrigin(start, y)
-        obj.textOut(caps)
-        c.drawText(obj)
-        c.restoreState()
-        self._note_extent(start, start + self._tracked_width(caps, face, size, tracking))
-
-    def _tracked_width(self, text: str, face: str, size: float, tracking: float) -> float:
-        caps = text.upper()
-        return pdfmetrics.stringWidth(caps, face, size) + tracking * max(len(caps) - 1, 0)
-
-    # -------------------------------------------------------------- panels    # ---------------------------------------------------------- front panel
+    # ---------------------------------------------------------- front panel
     def _front_panel(self, c: pdfcanvas.Canvas) -> None:
         {
             "banded": self._compose_banded,
@@ -241,116 +234,179 @@ class CoverRenderer:
             field=field, seed=self.seed, scale=scale, primary=primary,
             extras={"columns": 6}))
 
-    def _title_block(self, c, x: float, y: float, width: float, face: str,
-                     start: float, minimum: float, colour: str,
-                     centred: bool = True, background: str = "") -> float:
-        size = fit_size(self.title, face, width, start, minimum, 3)
+    # ------------------------------------------------- the type, as a stack
+    def _stack_title(self, c, x: float, width: float, face: str, start: float,
+                     minimum: float, colour: str, background: str) -> StackItem:
+        size = fit_size(self.title, face, width, start, minimum, 4)
+        lines = balanced(self.title, face, size, width)
+        leading = size * 1.06
         self.title_metrics = {
-            "size_pt": size,
-            "face": face,
-            "ink": colour,
-            "background": background or self.palette.panel,
-            "lines": len(balanced(self.title, face, size, width)),
+            "size_pt": size, "face": face, "ink": colour,
+            "background": background, "lines": len(lines),
         }
-        return draw_block(c, self.title, x, y, width, face, size, size * 1.06,
-                          colour, centred=centred, balance=True,
-                          on_line=self._note_line)
+        height = (len(lines) - 1) * leading + size * 0.72
 
-    def _badge(self, c, x: float, y: float, fill: str, ink: str,
-               outline: bool = False, centred: bool = True) -> float:
-        """The flash that says what the book is: '109 PROMPTS', 'LARGE PRINT'."""
+        def render(top: float) -> None:
+            draw_block(c, self.title, x, top - size * 0.72, width, face, size,
+                       leading, colour, centred=True, balance=True,
+                       on_line=self._note_line)
+
+        return StackItem(height, render)
+
+    def _stack_subtitle(self, c, x: float, width: float, colour: str,
+                        start: float = 18.0) -> StackItem | None:
+        text = self.cover_subtitle
+        if not text:
+            return None
+        face = font("sans", "regular")
+        size = fit_size(text, face, width, start, 10, 2)
+        lines = balanced(text, face, size, width)
+        leading = size * 1.5
+        height = (len(lines) - 1) * leading + size
+
+        def render(top: float) -> None:
+            draw_block(c, text, x, top - size, width, face, size, leading,
+                       colour, centred=True, balance=True, on_line=self._note_line)
+
+        return StackItem(height, render)
+
+    def _stack_rule(self, c, cx: float, width: float, colour: str) -> StackItem:
+        def render(top: float) -> None:
+            rule(c, cx - width / 2, top - 1, width, colour, 1.6)
+
+        return StackItem(2.0, render)
+
+    def _stack_badge(self, c, cx: float, fill: str, ink: str,
+                     outline: bool = False) -> StackItem | None:
+        """The flash that says what the book gives you: '109 PROMPTS'."""
         if not self.badge:
-            return y
+            return None
         face = font("sans", "bold")
-        size = 8.5
-        tracking = 2.0
+        size = 10.0
+        tracking = 2.2
         text_width = tracked_width(self.badge, face, size, tracking)
-        pad_x, pad_y = 13.0, 7.0
-        box_w = text_width + pad_x * 2
-        box_h = size + pad_y * 2
-        left = x - box_w / 2 if centred else x
-        if outline:
-            c.setStrokeColor(hex_color(ink))
-            c.setLineWidth(1.1)
-            c.roundRect(left, y - pad_y, box_w, box_h, box_h / 2, stroke=1, fill=0)
-        else:
-            c.setFillColor(hex_color(fill))
-            c.roundRect(left, y - pad_y, box_w, box_h, box_h / 2, stroke=0, fill=1)
-        draw_tracked(c, self.badge, left + pad_x, y + 1.5, face, size, ink,
-                     tracking, centred=False)
-        self._note_extent(left, left + box_w)
-        return y - pad_y
+        pad_x, pad_y = 15.0, 8.0
+        box_w, box_h = text_width + pad_x * 2, size + pad_y * 2
+
+        def render(top: float) -> None:
+            left = cx - box_w / 2
+            bottom = top - box_h
+            if outline:
+                c.setStrokeColor(hex_color(ink))
+                c.setLineWidth(1.3)
+                c.roundRect(left, bottom, box_w, box_h, box_h / 2, stroke=1, fill=0)
+            else:
+                c.setFillColor(hex_color(fill))
+                c.roundRect(left, bottom, box_w, box_h, box_h / 2, stroke=0, fill=1)
+            draw_tracked(c, self.badge, left + pad_x, bottom + pad_y + 1.5, face,
+                         size, ink, tracking, centred=False)
+            self._note_extent(left, left + box_w)
+
+        return StackItem(box_h, render)
+
+    def _assemble(self, build, zone_h: float, start: float, minimum: float,
+                  step: float = 3.0) -> list:
+        """Size the title so the whole group fits its zone.
+
+        Centring a stack that is taller than its zone just moves the overflow
+        to both ends: the title ran over the artwork below it. So the title
+        starts at the size the composition wants and comes down until the
+        assembled group fits.
+        """
+        size = start
+        items = build(size)
+        while size > minimum and _stack_height(items) > zone_h:
+            size -= step
+            items = build(size)
+        return items
+
+    def _draw_stack(self, items: list, zone_y: float, zone_h: float,
+                    lift: float = 0.06) -> None:
+        """Centre a group of blocks in its zone, lifted a little.
+
+        Text centred by arithmetic sits low to the eye, so the stack is raised
+        by a fraction of the zone. This is the whole reason the covers stopped
+        looking top-heavy: the type is placed as a group, not flowed from the
+        top edge until it runs out.
+        """
+        items = [item for item in items if item is not None]
+        if not items:
+            return
+        total = _stack_height(items)
+        top = zone_y + (zone_h + total) / 2 + zone_h * lift
+        top = min(top, zone_y + zone_h)
+        for index, item in enumerate(items):
+            if index:
+                top -= item.gap
+            item.render(top)
+            top -= item.height
 
     def _author(self, c, cx: float, y: float, colour: str) -> None:
         author = self.brand.author.strip()
         if author:
             width = draw_tracked(c, author, cx, y, font("sans", "bold"), 9.5,
-                                 colour, 2.4)
+                                 colour, 2.6)
             self._note_extent(cx - width / 2, cx + width / 2)
 
     # ------------------------------------------------------- compositions
     def _compose_banded(self, c) -> None:
-        """A field of colour on top, the type on a clean band below."""
+        """A field of colour above, the type centred on a clean band below."""
         pal = self.palette
         px, py, pw, ph = self._panel_box()
         x, y, width, height = self._safe_frame()
 
-        band_y = py + ph * 0.42
+        band_y = py + ph * 0.54
         c.setFillColor(hex_color(pal.panel))
         c.rect(px, py, pw, ph, stroke=0, fill=1)
         c.setFillColor(hex_color(pal.bold))
         c.rect(px, band_y, pw, ph - band_y, stroke=0, fill=1)
-        self._art(c, px, band_y, pw, ph - band_y, pal.bold, 1.0,
-                  primary=pal.bold_ink)
+        self._art(c, px, band_y, pw, ph - band_y, pal.bold, 1.0, primary=pal.bold_ink)
 
-        cursor = band_y - 46
-        cursor = self._title_block(c, x, cursor, width, font("poster", "bold"),
-                                   40, 17, pal.title_ink, background=pal.panel)
-        cursor -= 16
-        if self.subtitle:
-            face = font("text", "regular")
-            size = fit_size(self.subtitle, face, width * 0.9, 12, 8.5, 3)
-            cursor = draw_block(c, self.subtitle, x + width * 0.05, cursor,
-                                width * 0.9, face, size, size * 1.5,
-                                pal.panel_ink, centred=True, balance=True,
-                                on_line=self._note_line)
-        self._badge(c, x + width / 2, band_y + 16, pal.panel, pal.title_ink)
+        zone_y, zone_h = y + 26, band_y - y - 36
+        items = self._assemble(lambda size: [
+            self._stack_badge(c, x + width / 2, pal.bold, pal.bold_ink),
+            _gap(self._stack_title(c, x, width, font("poster", "bold"), size, 20,
+                                   pal.title_ink, pal.panel), 20),
+            _gap(self._stack_subtitle(c, x + width * 0.05, width * 0.9,
+                                      pal.panel_ink), 18),
+        ], zone_h, 58, 20)
+        self._draw_stack(items, zone_y, zone_h)
         self._author(c, x + width / 2, y + 2, pal.title_ink)
 
     def _compose_reversed(self, c) -> None:
-        """Dark panel, art behind, title reversed out of it."""
+        """Dark panel, art behind, the title reversed out of the middle."""
         pal = self.palette
         px, py, pw, ph = self._panel_box()
         x, y, width, height = self._safe_frame()
 
         gradient_ground(c, px, py, pw, ph, pal.ground, pal.ground_deep)
-        self._art(c, px, py + ph * 0.06, pw, ph * 0.62, pal.ground, 1.05)
+        # The art sits below the type rather than behind it. A translucent scrim
+        # over the artwork reads as exactly what it is — a grey rectangle — and
+        # the cover is stronger when the title has clean ground under it.
+        foot = 0.42 * INCH          # a clear strip for the imprint
+        art_h = ph * 0.52
+        self._art(c, px, py + foot, pw, art_h - foot, pal.ground, 1.1)
 
-        cursor = y + height * 0.94
-        cursor = self._title_block(c, x, cursor, width, font("poster", "bold"),
-                                   40, 17, pal.ground_ink, background=pal.ground)
-        cursor -= 14
-        rule(c, x + width * 0.38, cursor, width * 0.24, pal.accent, 1.4)
-        cursor -= 22
-        if self.subtitle:
-            face = font("text", "regular")
-            size = fit_size(self.subtitle, face, width * 0.88, 12, 8.5, 3)
-            cursor = draw_block(c, self.subtitle, x + width * 0.06, cursor,
-                                width * 0.88, face, size, size * 1.5,
-                                pal.ground_ink_soft, centred=True, balance=True,
-                                on_line=self._note_line)
-        self._badge(c, x + width / 2, y + 34, pal.ground, pal.accent, outline=True)
-        self._author(c, x + width / 2, y + 2, pal.ground_ink)
+        items = self._assemble(lambda size: [
+            self._stack_badge(c, x + width / 2, pal.ground, pal.accent, outline=True),
+            _gap(self._stack_title(c, x, width, font("poster", "bold"), size, 20,
+                                   pal.ground_ink, pal.ground), 22),
+            _gap(self._stack_rule(c, x + width / 2, width * 0.22, pal.accent), 20),
+            _gap(self._stack_subtitle(c, x + width * 0.06, width * 0.88,
+                                      pal.ground_ink_soft), 18),
+        ], zone_h := (y + height) - (py + art_h) - 16, 58, 20)
+        self._draw_stack(items, py + art_h + 8, zone_h, lift=0.0)
+        self._author(c, x + width / 2, y + 4, pal.ground_ink)
 
     def _compose_framed(self, c) -> None:
-        """A thick border holds everything; the art is a block inside it."""
+        """A thick border holds it; art below, type centred above."""
         pal = self.palette
         px, py, pw, ph = self._panel_box()
         x, y, width, height = self._safe_frame()
 
         c.setFillColor(hex_color(pal.bold))
         c.rect(px, py, pw, ph, stroke=0, fill=1)
-        inset = 0.30 * INCH
+        inset = 0.26 * INCH
         inner_x = (self.geo.front_panel_x + self.geo.bleed) * INCH + inset
         inner_y = self.geo.bleed * INCH + inset
         inner_w = self.geo.trim.width * INCH - inset * 2
@@ -358,49 +414,51 @@ class CoverRenderer:
         c.setFillColor(hex_color(pal.panel))
         c.rect(inner_x, inner_y, inner_w, inner_h, stroke=0, fill=1)
 
-        art_h = inner_h * 0.40
-        self._art(c, inner_x, inner_y, inner_w, art_h, pal.panel, 0.88)
+        art_h = inner_h * 0.38
+        c.setFillColor(hex_color(pal.bold))
+        c.rect(inner_x, inner_y, inner_w, art_h, stroke=0, fill=1)
+        self._art(c, inner_x, inner_y, inner_w, art_h, pal.bold, 0.95,
+                  primary=pal.bold_ink)
 
-        cursor = inner_y + inner_h - 46
-        cursor = self._title_block(c, inner_x + 14, cursor, inner_w - 28,
-                                   font("display", "bold"), 62, 24, pal.title_ink,
-                                   background=pal.panel)
-        cursor -= 14
-        self._badge(c, inner_x + inner_w / 2, cursor - 6, pal.bold, pal.bold_ink)
-        cursor -= 34
-        if self.subtitle:
-            face = font("text", "regular")
-            size = fit_size(self.subtitle, face, inner_w * 0.82, 12, 8.5, 3)
-            draw_block(c, self.subtitle, inner_x + inner_w * 0.09, cursor,
-                       inner_w * 0.82, face, size, size * 1.5, pal.panel_ink,
-                       centred=True, balance=True, on_line=self._note_line)
-        self._author(c, x + width / 2, inner_y + 12, pal.title_ink)
+        zone_y = inner_y + art_h + 16
+        zone_h = inner_h - art_h - 46
+        items = self._assemble(lambda size: [
+            self._stack_badge(c, inner_x + inner_w / 2, pal.bold, pal.bold_ink),
+            _gap(self._stack_title(c, inner_x + 12, inner_w - 24,
+                                   font("display", "bold"), size, 26,
+                                   pal.title_ink, pal.panel), 20),
+            _gap(self._stack_subtitle(c, inner_x + inner_w * 0.08, inner_w * 0.84,
+                                      pal.panel_ink), 18),
+        ], zone_h, 88, 26)
+        self._draw_stack(items, zone_y, zone_h, lift=0.02)
+        self._author(c, x + width / 2, inner_y + 14, pal.title_ink)
 
     def _compose_emblem(self, c) -> None:
-        """Light panel, one big mark low, the title above it."""
+        """Light panel, one big mark low, the title centred above it."""
         pal = self.palette
         px, py, pw, ph = self._panel_box()
         x, y, width, height = self._safe_frame()
 
         gradient_ground(c, px, py, pw, ph, pal.panel, pal.panel_deep)
-        self._art(c, px, py + ph * 0.05, pw, ph * 0.46, pal.panel, 1.0)
+        art_h = ph * 0.42
+        c.setFillColor(hex_color(pal.bold))
+        c.rect(px, py, pw, art_h, stroke=0, fill=1)
+        foot = 0.40 * INCH          # a clear strip for the imprint
+        self._art(c, px, py + foot, pw, art_h - foot, pal.bold, 1.0,
+                  primary=pal.bold_ink)
 
-        cursor = y + height * 0.96
-        cursor = self._title_block(c, x, cursor, width, font("display", "bold"),
-                                   74, 26, pal.title_ink, background=pal.panel)
-        cursor -= 18
-        rule(c, x + width * 0.36, cursor, width * 0.28, pal.accent, 1.3)
-        cursor -= 24
-        if self.subtitle:
-            face = font("text", "regular")
-            size = fit_size(self.subtitle, face, width * 0.88, 13, 9, 3)
-            cursor = draw_block(c, self.subtitle, x + width * 0.06, cursor,
-                                width * 0.88, face, size, size * 1.52,
-                                pal.panel_ink, centred=True, balance=True,
-                                on_line=self._note_line)
-        self._badge(c, x + width / 2, cursor - 18, pal.bold, pal.bold_ink)
-        self._author(c, x + width / 2, y + 2, pal.title_ink)
-
+        zone_y = py + art_h + 18
+        zone_h = (y + height) - zone_y
+        items = self._assemble(lambda size: [
+            self._stack_badge(c, x + width / 2, pal.bold, pal.bold_ink),
+            _gap(self._stack_title(c, x, width, font("display", "bold"), size, 28,
+                                   pal.title_ink, pal.panel), 22),
+            _gap(self._stack_rule(c, x + width / 2, width * 0.24, pal.accent), 20),
+            _gap(self._stack_subtitle(c, x + width * 0.06, width * 0.88,
+                                      pal.panel_ink), 18),
+        ], zone_h, 92, 28)
+        self._draw_stack(items, zone_y, zone_h, lift=0.0)
+        self._author(c, x + width / 2, y + 4, pal.bold_ink)
     def _spine(self, c: pdfcanvas.Canvas) -> None:
         geo, pal = self.geo, self.palette
         gradient_ground(c, geo.spine_x * INCH, 0, geo.spine_width_pt, geo.height_pt,
@@ -422,80 +480,98 @@ class CoverRenderer:
         c.drawCentredString(-available * 0.06, -size * 0.34, text)
         imprint = self.brand.imprint.strip()
         if imprint and geo.spine_width_pt >= 36:
-            self._tracked(c, imprint, available * 0.40, -size * 0.34,
-                          font("sans", "regular"), min(size * 0.5, 7.5),
-                          pal.ground_ink_soft, 1.2)
+            draw_tracked(c, imprint, available * 0.40, -size * 0.34,
+                         font("sans", "regular"), min(size * 0.5, 7.5),
+                         pal.ground_ink_soft, 1.2)
         c.restoreState()
 
     def _back_panel(self, c: pdfcanvas.Canvas) -> None:
+        """Back cover: one selling block, centred, clear of the barcode."""
         geo, pal = self.geo, self.palette
-        gradient_ground(c, 0, 0, (geo.trim.width + geo.bleed) * INCH, geo.height_pt,
-                        pal.ground, pal.ground_deep)
-
         back_w = (geo.trim.width + geo.bleed) * INCH
+        gradient_ground(c, 0, 0, back_w, geo.height_pt, pal.ground, pal.ground_deep)
+
         c.saveState()
         clip = c.beginPath()
         clip.rect(0, 0, back_w, geo.height_pt)
         c.clipPath(clip, stroke=0, fill=0)
-        draw_motif(c, self.motif, MotifSpec(
-            x=-back_w * 0.15, y=geo.height_pt * 0.10, width=back_w * 1.3,
-            height=geo.height_pt * 0.34, color=pal.accent, alpha=0.10,
-            seed=self.seed, weight=1.0,
-            extras={"step": 18.0, "radius": 1.0}))
+        self._art(c, -back_w * 0.2, geo.height_pt * 0.04, back_w * 1.4,
+                  geo.height_pt * 0.34, pal.ground, 0.8)
         c.restoreState()
 
         safe = geo.safe_margin
-        x = (geo.back_panel_x + safe + 0.12) * INCH
-        width = (geo.trim.width - 2 * safe - 0.24) * INCH
+        x = (geo.back_panel_x + safe + 0.14) * INCH
+        width = (geo.trim.width - 2 * safe - 0.28) * INCH
         top = (geo.height - geo.bleed - safe) * INCH
-        y = top - 34
+        bottom = (geo.bleed + safe) * INCH
 
-        self._tracked(c, self.brand.imprint or "", x, y + 16,
-                      font("sans", "regular"), 7.5, pal.ground_ink_soft, 2.0, centred=False)
+        draw_tracked(c, self.brand.imprint or "", x, top - 12,
+                     font("sans", "regular"), 7.5, pal.ground_ink_soft, 2.2,
+                     centred=False)
 
+        items: list[StackItem] = []
         hook = self.back_copy.get("hook", "")
         if hook:
             face = font("display", "bold")
-            size = self._fit(hook, face, width, 21, 13, 3)
-            y = self._block(c, hook, x, y, width, face, size, size * 1.18,
-                            pal.ground_ink, centred=False, balanced=True)
-            y -= 12
-
-        c.setStrokeColor(hex_color(pal.accent, 0.8))
-        c.setLineWidth(0.9)
-        c.line(x, y + 4, x + width * 0.22, y + 4)
-        y -= 18
+            size = fit_size(hook, face, width, 23, 13, 3)
+            hook_lines = balanced(hook, face, size, width)
+            leading = size * 1.2
+            items.append(StackItem(
+                (len(hook_lines) - 1) * leading + size * 0.74,
+                lambda top_y, f=face, sz=size, ld=leading: draw_block(
+                    c, hook, x, top_y - sz * 0.74, width, f, sz, ld,
+                    pal.ground_ink, balance=True, on_line=self._note_line)))
+            items.append(_gap(StackItem(
+                2.0, lambda top_y: rule(c, x, top_y - 1, width * 0.2, pal.accent, 1.4)),
+                16))
 
         body = self.back_copy.get("body", "")
         if body:
-            y = self._block(c, body, x, y, width, font("text", "regular"), 10.5, 15.5,
-                            pal.ground_ink_soft, centred=False)
-            y -= 14
+            face = font("text", "regular")
+            body_lines = wrap(body, face, 10.5, width)
+            items.append(_gap(StackItem(
+                (len(body_lines) - 1) * 15.5 + 10.5,
+                lambda top_y, f=face: draw_block(
+                    c, body, x, top_y - 10.5, width, f, 10.5, 15.5,
+                    pal.ground_ink_soft, on_line=self._note_line)), 18))
 
         text_face = font("text", "regular")
-        for benefit in self.back_copy.get("benefits", []):
-            c.setFillColor(hex_color(pal.accent))
-            c.circle(x + 2.4, y + 3.4, 1.9, stroke=0, fill=1)
-            y = self._block(c, benefit, x + 14, y, width - 14, text_face, 10, 14.5,
-                            pal.ground_ink, centred=False)
-            y -= 7
+        for index, benefit in enumerate(self.back_copy.get("benefits", [])):
+            benefit_lines = wrap(benefit, text_face, 10, width - 16)
+            height = (len(benefit_lines) - 1) * 14.5 + 10
 
-        barcode_top = self._barcode_box()[1] + self._barcode_box()[3]
+            def render(top_y, text=benefit, h=height):
+                c.setFillColor(hex_color(pal.accent))
+                c.circle(x + 2.6, top_y - 4.6, 2.1, stroke=0, fill=1)
+                draw_block(c, text, x + 16, top_y - 10, width - 16, text_face, 10,
+                           14.5, pal.ground_ink, on_line=self._note_line)
+
+            items.append(_gap(StackItem(height, render), 18 if index == 0 else 9))
+
+        # The zone stops above the barcode: KDP prints there, so nothing that
+        # has to be read may sit in it.
+        barcode_x, barcode_y, _, barcode_h = self._barcode_box()
+        zone_bottom = barcode_y + barcode_h + 22
+        self._draw_stack(items, zone_bottom, (top - 26) - zone_bottom, lift=0.02)
+
         closing = self.back_copy.get("closing", "")
-        if closing and y > barcode_top + 26:
-            self._block(c, closing, x, barcode_top + 26, width * 0.62,
-                        font("text", "italic"), 10, 14, pal.accent, centred=False)
+        if closing:
+            draw_block(c, closing, x, zone_bottom - 14, width * 0.55,
+                       font("text", "italic"), 10, 14, pal.accent,
+                       on_line=self._note_line)
 
         website = self.brand.website.strip()
         if website:
-            self._tracked(c, website, x, (geo.bleed + safe) * INCH + 2,
-                          font("sans", "regular"), 7, pal.ground_ink_soft, 1.4, centred=False)
+            draw_tracked(c, website, x, bottom, font("sans", "regular"), 7,
+                         pal.ground_ink_soft, 1.4, centred=False)
 
-        self._barcode_keepout(c)
-
-    # ------------------------------------------------------------- barcode
     def _barcode_box(self) -> tuple[float, float, float, float]:
-        """(x, y, w, h) in points of the area KDP prints the barcode over."""
+        """(x, y, w, h) in points of the area KDP prints the barcode over.
+
+        The design keeps text and focal artwork out of it; the background runs
+        underneath, as it does on every trade paperback. Only the proof draws
+        the box, so you can check the area before uploading.
+        """
         from ..spec.kdp import KDP_SPEC
 
         offsets = KDP_SPEC["cover"]["barcode_offset_in"]
@@ -503,11 +579,6 @@ class CoverRenderer:
         x = (self.geo.spine_x - float(offsets["from_spine_edge"]) - width) * INCH
         y = (self.geo.bleed + float(offsets["from_bottom_trim"])) * INCH
         return x, y, width * INCH, height * INCH
-
-    def _barcode_keepout(self, c: pdfcanvas.Canvas) -> None:
-        x, y, width, height = self._barcode_box()
-        c.setFillColor(hex_color("#FFFFFF"))
-        c.rect(x, y, width, height, stroke=0, fill=1)
 
     # -------------------------------------------------------------- guides
     def _guides(self, c: pdfcanvas.Canvas) -> None:
@@ -544,13 +615,13 @@ class CoverRenderer:
                      f"Do not upload this file.")
 
     # --------------------------------------------------------- legibility
-    def legibility(self, thumbnail_height_px: int = 200) -> dict[str, Any]:
+    def legibility(self, thumbnail_height_px: int = 160) -> dict[str, Any]:
         """Can this cover be read in a search grid?
 
-        Amazon shows a paperback at roughly 200 pixels tall. At that size a
-        title has a cap height of a few pixels, and a colour pairing that looked
-        fine at full size can vanish. Both are arithmetic, so both are checked
-        rather than admired.
+        The phone is the hard case: Amazon's app shows a paperback at roughly
+        160 pixels tall. At that size a title has a cap height of a few pixels,
+        and a colour pairing that looked fine at full size can vanish. Both are
+        arithmetic, so both are checked rather than admired.
         """
         metrics = self.title_metrics
         if not metrics:
@@ -568,6 +639,7 @@ class CoverRenderer:
             "art_style": self.art_style,
             "palette": self.palette.key,
             "has_badge": bool(self.badge),
+            "barcode_area_clear": not self.text_in_barcode_area(),
         }
 
     # -------------------------------------------------------------- output

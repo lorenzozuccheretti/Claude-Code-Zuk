@@ -103,9 +103,11 @@ the engine rather than something to redo per book in another tool.
   licence, so a build is hermetic: Archivo Black for poster-weight titles,
   Cormorant Garamond for the quieter covers and title pages, Lora for the page
   a buyer writes on, Karla for labels, IBM Plex Mono for puzzle grids.
-- **Eleven colour worlds** (`render/design.py`), each carrying a saturated
+- **Fifteen colour worlds** (`render/design.py`), each carrying a saturated
   field colour for the artwork — the first pass used the accent, which at
   2.5:1 against the panel disappeared the moment the cover was a thumbnail.
+  They are tagged to the buyer as well as the topic: someone shopping for a
+  burnout journal is not shopping for a funeral.
 - **Seven artwork styles** (`render/artwork.py`): arch, bloom, strata,
   sunburst, rings, tiles, wave. Filled vector shapes at full strength, drawn in
   whatever contrasts with the field they sit on.
@@ -115,6 +117,12 @@ the engine rather than something to redo per book in another tool.
   a large title. Each commits to one idea.
 - **A badge** carrying the number that sells the book — "109 prompts",
   "56 undated weeks", "76 puzzles + answers".
+- **The title is centred and sized to its zone.** The type is placed as a
+  group, optically centred, and the title comes down in size until the whole
+  group fits — before that it ran over the artwork below it.
+- **A short subtitle on the cover.** The listing subtitle is written for a
+  product page; at 160px tall it is a smudge, so the cover carries its first
+  clause and the listing keeps the whole thing.
 - **The inside matches the outside.** Cover and interior take the same palette
   from `render/identity.py`.
 
@@ -128,12 +136,23 @@ The print gate measures what a shopper's eye actually gets:
 
 ```
 PASS  typography_embedded       the book is set in CormorantGaramond, Karla, Lora
-PASS  cover_reads_at_thumbnail  at 200px tall the title has a 13.8px cap height
-                                at 12.0:1 contrast (bars: 6.5px, 4.5:1)
+PASS  barcode_area_clear        nothing that has to be read sits where KDP
+                                prints its barcode
+PASS  cover_reads_at_thumbnail  at 160px tall the title has a 10.3px cap height
+                                at 5.5:1 contrast (bars: 7.5px, 4.5:1)
 ```
+
+The bar is the phone, not the desktop: Amazon's app shows a paperback at about
+160 pixels tall, and that is the size the title has to survive.
 
 It measures size and contrast, not how heavy the face is — that part is still
 your eye's job, which is why station 6 asks you to look at the cover at 100%.
+
+**On the barcode.** KDP prints its own barcode over the bottom-right of the
+back cover. The background runs underneath it, as on every trade paperback; what
+the engine guarantees is that nothing you need to read is placed there. The
+white rectangle earlier versions painted was never required and looked like a
+sticker. The proof file still draws the keep-out so you can check it.
 
 ## What is computed, never estimated
 

@@ -104,9 +104,9 @@ class QualityBar:
     # The engine ships real typefaces; a book set in Helvetica means the vendored
     # fonts did not load, which is a defect worth stopping for.
     require_vendored_fonts: bool = True
-    # A cover is first seen at about 200px tall in a grid of twenty. Below these
+    # A cover is first seen on a phone, about 160px tall in a grid. Below these
     # the title is decoration rather than a title.
-    min_title_cap_px: float = 6.5
+    min_title_cap_px: float = 7.5
     min_title_contrast: float = 4.5
     forbidden_tokens: list[str] = field(
         default_factory=lambda: [

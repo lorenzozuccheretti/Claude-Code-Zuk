@@ -126,6 +126,13 @@ class PrintReadyGate(Gate):
         ratio = float(legibility.get("title_contrast", 0))
         report.metrics["legibility"] = legibility
         report.add(
+            "barcode_area_clear",
+            bool(legibility.get("barcode_area_clear", True)),
+            "nothing that has to be read sits where KDP prints its barcode"
+            if legibility.get("barcode_area_clear", True)
+            else "text is placed in the barcode keep-out; KDP will print over it",
+        )
+        report.add(
             "cover_reads_at_thumbnail",
             cap >= bar.min_title_cap_px and ratio >= bar.min_title_contrast,
             f"at {legibility['thumbnail_height_px']}px tall the title has a "
