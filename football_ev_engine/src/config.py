@@ -83,12 +83,12 @@ class Settings(BaseSettings):
     aliases_json: Path = Path("data/team_aliases.json")
 
     sharp_bookmaker: str = "pinnacle"
+    # Keys The Odds API actually returns for regions=eu (checked Sep 2026).
+    # Exchanges (commission) and offshore books are left out on purpose.
     soft_bookmakers: list[str] = [
-        "bet365",
-        "unibet_eu",
-        "unibet",
-        "sport888",
-        "marathonbet",
+        "williamhill", "marathonbet", "sport888", "betsson", "nordicbet", "tipico_de",
+        "unibet_fr", "unibet_nl", "unibet_se", "betclic_fr", "winamax_fr", "winamax_de",
+        "leovegas_se", "pmu_fr", "codere_it", "coolbet",
     ]
 
     # Value filters (section 3C of the spec).
@@ -111,6 +111,9 @@ class Settings(BaseSettings):
     decay_xi: float = Field(0.005, ge=0)  # per day
     training_window_days: int = Field(1095, gt=0)
     max_goals: int = Field(10, ge=5)
+    # Below this many matches in the fit, a team's ratings are mostly noise and
+    # the model is ignored for its fixtures (the de-vigged market is used alone).
+    min_team_matches: int = Field(10, ge=0)
 
     @model_validator(mode="after")
     def _check(self) -> "Settings":

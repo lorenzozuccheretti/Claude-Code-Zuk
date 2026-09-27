@@ -216,7 +216,7 @@ def predict(
     ).df()
 
     def price(home: str, away: str) -> MatchProbabilities | None:
-        return model.predict(home, away) if model.knows(home) and model.knows(away) else None
+        return model.predict(home, away) if model.can_price(home, away, settings.min_team_matches) else None
 
     bets, notes = scan(fixtures, odds, price, rules, settings.sharp_bookmaker, settings.soft_bookmakers)
     table = _bets_frame(bets, fixtures, bankroll)

@@ -267,6 +267,14 @@ class DixonColes:
     def knows(self, team: str) -> bool:
         return team in self._require().attack
 
+    def reliable(self, team: str, min_matches: int = 10) -> bool:
+        """Known *and* fitted on enough matches to trust (promoted sides aren't, early on)."""
+        p = self._require()
+        return team in p.attack and p.matches_per_team.get(team, 0) >= min_matches
+
+    def can_price(self, home: str, away: str, min_matches: int = 10) -> bool:
+        return self.reliable(home, min_matches) and self.reliable(away, min_matches)
+
     def expected_goals(self, home: str, away: str) -> tuple[float, float]:
         p = self._require()
         missing = [t for t in (home, away) if t not in p.attack]

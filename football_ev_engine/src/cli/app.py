@@ -199,6 +199,7 @@ def backtest(
         config = BacktestConfig(seasons=season_list, rules=rules, bankroll=bankroll or s.bankroll,
                                 refit_every_days=refit_days, training_window_days=s.training_window_days,
                                 xi=s.decay_xi, max_goals=s.max_goals, include_totals=totals,
+                                min_team_matches=s.min_team_matches,
                                 ml_kind=None if ml == "none" else ml)
         with console.status(f"Backtesting {lg.name} {', '.join(season_list)}..."), session(s.db_file) as con:
             result = pipeline.backtest(con, s, lg, config)
@@ -272,3 +273,9 @@ def aliases(
     for raw, canon, method, score, verified in rows:
         table.add_row(raw, canon, method, f"{score:.0f}", "yes" if verified else "[yellow]review[/]")
     console.print(table)
+
+
+# Registered last: agent_app imports console and _fail from this module.
+from src.cli.agent_app import agent_app  # noqa: E402
+
+app.add_typer(agent_app, name="agent")
