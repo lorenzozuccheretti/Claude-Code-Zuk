@@ -134,6 +134,65 @@ The ML benchmark (`models/ml_classifier.py`) uses rolling pre-match form
 or `--ml gbm` for scikit-learn's gradient boosting. XGBoost isn't needed. The
 benchmark is refit before each test season.
 
+## Daily Telegram agent
+
+`python main.py agent run` does the whole day's job in one pass and posts at
+most two picks to a Telegram chat:
+
+1. Refreshes the current season from football-data (the full history on the first run) and settles earlier picks.
+2. Refits Dixon-Coles for all five leagues.
+3. Fetches fresh odds. That costs 10 credits a run, about 300 a month on the free tier's 500.
+4. Keeps outcomes priced **1.75–2.25** with **EV ≥ +3.5%** and kick-off 1–36 hours away. It ranks them by **EV × P_model** and sends the top 1–2 (0 if nothing qualifies).
+5. Never sends a fixture twice. Only one pick per match is allowed, because a home win and an under on the same game are correlated. The cap is 2 per local calendar day, even if the job runs more than once.
+
+Each message carries the match, local kick-off time, selection, best soft price with its bookmaker,
+engine probability and fair odds, EV, a quarter-Kelly stake, and a two-sentence rationale. The last message of the day also shows the running track record.
+
+**The rationale.** It is built from facts the engine computed: last-five form,
+the model's expected goals, defensive rank, and the shots-on-target trend.
+football-data has no xG, so the model's expected goals and shots on target
+stand in for it. With `ANTHROPIC_API_KEY` set, Claude (`claude-opus-5`, low
+effort) writes the two sentences under a "use only these facts" instruction,
+with server-side refusal fallback enabled. Without a key, or if the call
+fails, a deterministic template writes them.
+
+**The track record.** Once a match appears in football-data (usually the next
+day), each pick is graded, and its **CLV against Pinnacle's de-vigged closing
+line** is recorded. `python main.py agent history` lists every pick. Watch
+the CLV: after 50–100 picks, it tells you whether the edge is real long before profit does.
+
+### Setup
+
+1. Create a bot: message [@BotFather](https://t.me/BotFather), send `/newbot`, and copy the token.
+2. Get your chat id: send any message to the bot, then open `https://api.telegram.org/bot<TOKEN>/getUpdates` and read `message.chat.id`. For a channel, add the bot as an admin and use `@channelname` or the channel's `-100…` id.
+3. Put `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` and `ODDS_API_KEY` in `.env` (see `.env.example`).
+4. Check the connection with `python main.py agent test-telegram`, and preview a run with `python main.py agent run --dry-run`.
+
+### Running it every day
+
+| Where | How |
+|---|---|
+| Local machine or server | `python main.py agent schedule` runs every day at `RUN_TIME` in `TIMEZONE` (APScheduler). Add `--run-now` to also run once immediately |
+| Docker | `docker compose up -d --build` runs the scheduler, with the database in `./data` |
+| GitHub Actions | `.github/workflows/football-agent.yml` runs daily at 08:00 UTC and can also be started by hand, with a dry-run option. Add the secrets it lists. The database is carried between runs in the Actions cache, and GitHub evicts that cache after 7 days without a run |
+| cron | `0 10 * * * cd /path/football_ev_engine && python main.py agent run` |
+
+### What the backtest says about these rules
+
+These are the agent's exact rules, run walk-forward over 2024-25 and 2025-26 on
+all five leagues. Stakes are 1 unit on Bet365 prices, with the default model
+weight of 0.35:
+
+| Picks | Hit rate | Yield | Avg CLV |
+|---|---|---|---|
+| 277 | 46.2% | −8.1% | −4.4% |
+
+At every model weight tested (0.2–1.0), CLV comes out around −4.5%. That is
+about the soft book's margin, so the chosen prices are no better than random
+ones. Live, the agent takes the best price across ~16 bookmakers rather than
+Bet365 alone, which helps somewhat. Still, treat the first weeks as a paper
+trial, and let the recorded CLV decide.
+
 ## Tests
 
 ```bash
@@ -141,14 +200,14 @@ cd football_ev_engine
 pytest -q
 ```
 
-There are 90 tests. They run offline: HTTP is mocked with `respx`, and a
+There are 117 tests. They run offline: HTTP is mocked with `respx`, and a
 synthetic league generator (`tests/synthetic.py`) produces files in the
 football-data and Odds API formats. `tests/test_cli.py` runs every command from
 start to finish.
 
 ## Known limits
 
-* **Bookmaker keys.** The default soft books are `bet365, unibet_eu, unibet, sport888, marathonbet`. The Odds API may not offer every one of them (Bet365 in particular) in the `eu` region. Books it doesn't return are skipped. Set `SOFT_BOOKMAKERS='["unibet_eu","sport888",...]'` to match what your region returns.
+* **Bookmaker keys.** The default soft books are the ~16 mainstream European books The Odds API returns for `regions=eu` (William Hill, Unibet, Betclic, Winamax, Tipico, Codere and others; see `soft_bookmakers` in `src/config.py`). Bet365 is not offered there. Exchanges and offshore books are left out. To bet only where you hold an account (for example ADM-licensed books in Italy), set `SOFT_BOOKMAKERS='["codere_it","williamhill",...]'`.
 * **Promoted teams** can't be priced by Dixon-Coles until they have played in the league. For those fixtures the engine uses the Pinnacle price alone, or skips them if there is none.
 * **Correlated bets.** Several bets on one match (e.g. home win and under 2.5) are each staked on their own. The 2.5% cap limits the exposure, but the stakes are not jointly optimised.
 * **Kick-off timing.** The historical "pre-match" odds were collected a day or two before kick-off (football-data's convention), so live execution at other times will differ.

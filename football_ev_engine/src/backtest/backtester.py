@@ -49,6 +49,7 @@ class BacktestConfig:
     max_goals: int = 10
     include_totals: bool = True
     ml_kind: str | None = "logreg"  # None skips the ML benchmark
+    min_team_matches: int = 10  # skip matches where a side has fewer in the fit
 
 
 @dataclass
@@ -129,7 +130,7 @@ def run_backtest(matches: pd.DataFrame, config: BacktestConfig) -> BacktestResul
                 block_start = block_end
                 continue
             for idx, row in block.iterrows():
-                if not (model.knows(row["home_team"]) and model.knows(row["away_team"])):
+                if not model.can_price(row["home_team"], row["away_team"], config.min_team_matches):
                     continue
                 probs = model.predict(row["home_team"], row["away_team"])
                 h2h = probs.h2h()

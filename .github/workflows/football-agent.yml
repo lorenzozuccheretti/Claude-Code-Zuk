@@ -1,0 +1,64 @@
+# Daily run of the football value-pick agent (football_ev_engine/).
+#
+# Secrets to add under Settings -> Secrets and variables -> Actions:
+#   ODDS_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, and optionally ANTHROPIC_API_KEY.
+#
+# The DuckDB file (history, sent picks for dedup, track record) is carried
+# between runs in the Actions cache. GitHub evicts caches unused for 7 days,
+# so if the workflow is paused for longer the pick history starts afresh.
+name: Football value agent
+
+on:
+  schedule:
+    - cron: "0 8 * * *"  # 08:00 UTC = 10:00 Rome in summer, 09:00 in winter
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Compute picks without sending them"
+        type: boolean
+        default: false
+
+concurrency:
+  group: football-agent
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: football_ev_engine
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: football_ev_engine/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: Restore database
+        uses: actions/cache/restore@v4
+        with:
+          path: football_ev_engine/data
+          key: football-agent-db-${{ github.run_id }}
+          restore-keys: football-agent-db-
+
+      - name: Run agent
+        run: python main.py agent run ${{ inputs.dry_run && '--dry-run' || '' }}
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          COLUMNS: "160"
+
+      - name: Save database
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: football_ev_engine/data
+          key: football-agent-db-${{ github.run_id }}
