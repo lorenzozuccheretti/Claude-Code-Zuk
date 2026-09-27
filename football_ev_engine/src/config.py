@@ -24,8 +24,13 @@ class League:
 
     slug: str  # CLI name, e.g. "serie-a"
     name: str
-    fd_code: str  # football-data.co.uk division code
+    fd_code: str  # history key: football-data division code, or "INT" for national teams
     odds_api_key: str  # The Odds API sport key
+    source: str = "football-data"  # or "international" (martj42/international_results)
+    # National teams play ~10 matches a year, so they need a slower decay and a
+    # longer window than clubs; None means the global setting.
+    decay_xi: float | None = None
+    window_days: int | None = None
 
 
 LEAGUES: dict[str, League] = {
@@ -36,10 +41,14 @@ LEAGUES: dict[str, League] = {
         League("la-liga", "La Liga", "SP1", "soccer_spain_la_liga"),
         League("bundesliga", "Bundesliga", "D1", "soccer_germany_bundesliga"),
         League("ligue-1", "Ligue 1", "F1", "soccer_france_ligue_one"),
+        # Half-life ~1 year and 4 years of results: roughly 40 matches per side.
+        League("nations-league", "UEFA Nations League", "INT", "soccer_uefa_nations_league",
+               source="international", decay_xi=0.0019, window_days=4 * 365),
     )
 }
 
-_LEAGUE_ALIASES = {"epl": "premier-league", "serie_a": "serie-a", "laliga": "la-liga", "ligue1": "ligue-1"}
+_LEAGUE_ALIASES = {"epl": "premier-league", "serie_a": "serie-a", "laliga": "la-liga", "ligue1": "ligue-1",
+                   "nations": "nations-league", "uefa-nations-league": "nations-league"}
 
 
 def get_league(name: str) -> League:
@@ -76,6 +85,9 @@ class Settings(BaseSettings):
     odds_api_min_remaining: int = 20
 
     football_data_base_url: str = "https://www.football-data.co.uk/mmz4281"
+    international_results_url: str = (
+        "https://raw.githubusercontent.com/martj42/international_results/master/results.csv"
+    )
     history_seasons: int = Field(5, ge=1, le=20)
 
     db_path: Path = Path("data/football.duckdb")

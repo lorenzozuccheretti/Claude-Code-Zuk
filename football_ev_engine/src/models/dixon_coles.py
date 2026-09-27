@@ -166,6 +166,8 @@ class DixonColes:
         ai = df["away_team"].map(idx).to_numpy()
         x = df["fthg"].to_numpy(dtype=float)
         y = df["ftag"].to_numpy(dtype=float)
+        # Home advantage only applies away from neutral venues.
+        hf = (1.0 - df["neutral"].fillna(False).astype(float).to_numpy()) if "neutral" in df else np.ones(len(df))
         w = w / w.sum()
         const = (w * (gammaln(x + 1) + gammaln(y + 1))).sum()
 
@@ -176,7 +178,7 @@ class DixonColes:
 
         def objective(theta: np.ndarray) -> tuple[float, np.ndarray]:
             attack, defence, gamma, rho = unpack(theta)
-            log_lam = attack[hi] + defence[ai] + gamma
+            log_lam = attack[hi] + defence[ai] + gamma * hf
             log_mu = attack[ai] + defence[hi]
             lam, mu = np.exp(log_lam), np.exp(log_mu)
             t = tau(x, y, lam, mu, rho)
@@ -205,11 +207,11 @@ class DixonColes:
             g_att = np.bincount(hi, g_lam, n) + np.bincount(ai, g_mu, n)
             g_def = np.bincount(ai, g_lam, n) + np.bincount(hi, g_mu, n)
             grad = np.concatenate(
-                [g_att[: n - 1] - g_att[n - 1], g_def, [g_lam.sum(), (w * dr).sum()]]
+                [g_att[: n - 1] - g_att[n - 1], g_def, [(g_lam * hf).sum(), (w * dr).sum()]]
             )
             return -ll, -grad
 
-        theta0 = self._initial_theta(teams, df, w, init)
+        theta0 = self._initial_theta(teams, df, w, hf, init)
         bounds = [(-4, 4)] * (2 * n - 1) + [(-1, 1), self.rho_bounds]
         res = minimize(objective, theta0, jac=True, method="L-BFGS-B", bounds=bounds,
                        options={"maxiter": 2000, "ftol": 1e-12, "gtol": 1e-8})
@@ -233,7 +235,7 @@ class DixonColes:
         return self
 
     def _initial_theta(
-        self, teams: list[str], df: pd.DataFrame, w: np.ndarray, init: DixonColesParams | None
+        self, teams: list[str], df: pd.DataFrame, w: np.ndarray, hf: np.ndarray, init: DixonColesParams | None
     ) -> np.ndarray:
         """Warm start from a previous fit, else from an independent-Poisson GLM."""
         n = len(teams)
@@ -243,7 +245,7 @@ class DixonColes:
             dfn = np.array([init.defence.get(t, 0.0) + mean_att for t in teams])
             return np.concatenate([att[: n - 1], dfn, [init.home_advantage, init.rho]])
         try:
-            att, dfn, gamma = _poisson_glm_start(teams, df, w)
+            att, dfn, gamma = _poisson_glm_start(teams, df, w, hf)
         except Exception as exc:  # noqa: BLE001 - any GLM failure just means a cold start
             log.debug("GLM warm start failed (%s); starting from zeros", exc)
             att, dfn, gamma = np.zeros(n), np.zeros(n), 0.25
@@ -275,19 +277,19 @@ class DixonColes:
     def can_price(self, home: str, away: str, min_matches: int = 10) -> bool:
         return self.reliable(home, min_matches) and self.reliable(away, min_matches)
 
-    def expected_goals(self, home: str, away: str) -> tuple[float, float]:
+    def expected_goals(self, home: str, away: str, neutral: bool = False) -> tuple[float, float]:
         p = self._require()
         missing = [t for t in (home, away) if t not in p.attack]
         if missing:
             raise KeyError(f"Team(s) not in the fitted model: {', '.join(missing)}")
-        lam = np.exp(p.attack[home] + p.defence[away] + p.home_advantage)
+        lam = np.exp(p.attack[home] + p.defence[away] + (0.0 if neutral else p.home_advantage))
         mu = np.exp(p.attack[away] + p.defence[home])
         return float(lam), float(mu)
 
-    def predict(self, home: str, away: str) -> MatchProbabilities:
+    def predict(self, home: str, away: str, neutral: bool = False) -> MatchProbabilities:
         """Full score matrix (0..max_goals each side), renormalised to sum to 1."""
         p = self._require()
-        lam, mu = self.expected_goals(home, away)
+        lam, mu = self.expected_goals(home, away, neutral)
         goals = np.arange(self.max_goals + 1)
         matrix = np.outer(poisson.pmf(goals, lam), poisson.pmf(goals, mu))
         matrix[0, 0] *= 1 - lam * mu * p.rho
@@ -299,7 +301,9 @@ class DixonColes:
         return MatchProbabilities(home, away, lam, mu, matrix)
 
 
-def _poisson_glm_start(teams: list[str], df: pd.DataFrame, w: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
+def _poisson_glm_start(
+    teams: list[str], df: pd.DataFrame, w: np.ndarray, hf: np.ndarray
+) -> tuple[np.ndarray, np.ndarray, float]:
     """Independent Poisson log-linear model (= Dixon-Coles with rho = 0) via statsmodels.
 
     Design: log E[goals] = attack[scorer] + defence[conceder] + gamma * is_home,
@@ -317,7 +321,7 @@ def _poisson_glm_start(teams: list[str], df: pd.DataFrame, w: np.ndarray) -> tup
     X[np.arange(2 * m), scorer] = 1
     X[np.arange(2 * m), n + conceder] = 1
     X = np.delete(X, n, axis=1)  # drop first defence dummy
-    home = np.concatenate([np.ones(m), np.zeros(m)])
+    home = np.concatenate([hf, np.zeros(m)])
     X = np.column_stack([X, home])
     yv = np.concatenate([df["fthg"].to_numpy(float), df["ftag"].to_numpy(float)])
     weights = np.concatenate([w, w]) * m  # rescale so weights are O(1)

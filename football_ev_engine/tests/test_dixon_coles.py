@@ -97,3 +97,15 @@ def test_params_roundtrip_json(fitted):
 def test_too_few_matches(synthetic_matches):
     with pytest.raises(ValueError):
         DixonColes().fit(synthetic_matches.head(10))
+
+
+def test_glm_warm_start_is_used(synthetic_matches, monkeypatch):
+    """A failing warm start falls back silently, so check it actually runs."""
+    import src.models.dixon_coles as dc
+
+    calls = []
+    real = dc._poisson_glm_start
+    monkeypatch.setattr(dc, "_poisson_glm_start", lambda *a: calls.append(1) or real(*a))
+    monkeypatch.setattr(dc.log, "debug", lambda *a: (_ for _ in ()).throw(AssertionError(a)))
+    DixonColes().fit(synthetic_matches)
+    assert calls == [1]

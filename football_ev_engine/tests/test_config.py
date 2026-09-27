@@ -33,7 +33,7 @@ def test_league_lookup():
     assert get_league("E0").slug == "premier-league"
     assert get_league("epl").slug == "premier-league"
     assert get_league("soccer_france_ligue_one").slug == "ligue-1"
-    assert len(resolve_leagues("all")) == 5
+    assert len(resolve_leagues("all")) == 6
     assert [lg.slug for lg in resolve_leagues("serie-a,la-liga")] == ["serie-a", "la-liga"]
     with pytest.raises(KeyError):
         get_league("eredivisie")

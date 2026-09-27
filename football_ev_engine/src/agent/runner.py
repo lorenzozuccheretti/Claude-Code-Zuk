@@ -53,14 +53,18 @@ class RunReport:
 
 
 def _refresh_history(con: duckdb.DuckDBPyConnection, s: AgentSettings, report: RunReport, fd_client) -> None:
-    empty = con.execute("SELECT count(*) FROM matches").fetchone()[0] == 0
-    seasons = recent_seasons(s.history_seasons if empty else 1)
-    results = pipeline.fetch_historical(con, s, list(LEAGUES.values()), seasons, client=fd_client)
-    report.history_rows = sum(r.rows for r in results)
-    for r in results:
-        # The current season's file can 404 in July; that's not worth an alert.
-        if r.error and not (r.season == seasons[-1] and "404" in r.error):
-            report.errors.append(f"history {r.league} {r.season}: {r.error}")
+    have = {r[0] for r in con.execute("SELECT DISTINCT league FROM matches").fetchall()}
+    new = [lg for lg in LEAGUES.values() if lg.fd_code not in have]  # full history, once
+    known = [lg for lg in LEAGUES.values() if lg.fd_code in have]    # current season only
+    for leagues, seasons in ((new, recent_seasons(s.history_seasons)), (known, recent_seasons(1))):
+        if not leagues:
+            continue
+        results = pipeline.fetch_historical(con, s, leagues, seasons, client=fd_client)
+        report.history_rows += sum(r.rows for r in results)
+        for r in results:
+            # The current season's file can 404 in July; that's not worth an alert.
+            if r.error and not (r.season == seasons[-1] and "404" in r.error):
+                report.errors.append(f"history {r.league} {r.season}: {r.error}")
 
 
 def _candidates(con: duckdb.DuckDBPyConnection, s: AgentSettings, now: datetime,
