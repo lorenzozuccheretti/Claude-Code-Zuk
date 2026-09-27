@@ -145,3 +145,20 @@ def test_cli_dry_run(settings, monkeypatch):
     get_agent_settings.cache_clear()
     assert result.exit_code == 0, result.output
     assert "DRY RUN" in result.output and "Value Pick 1/2" in result.output and "Engine probability" in result.output
+
+
+def test_refresh_downloads_full_history_only_for_new_leagues(settings, monkeypatch):
+    from src import pipeline
+    from src.agent.runner import RunReport, _refresh_history
+    from src.config import current_season_start
+
+    calls = []
+    monkeypatch.setattr(pipeline, "fetch_historical",
+                        lambda con, s, leagues, seasons, client=None: calls.append(
+                            (sorted(lg.fd_code for lg in leagues), seasons)) or [])
+    con = connect(settings.db_file)
+    _refresh_history(con, settings, RunReport(started_at=NOW, dry_run=True), None)
+    con.close()
+    new, known = calls
+    assert "INT" in new[0] and "I1" not in new[0] and len(new[1]) == settings.history_seasons
+    assert known[0] == ["I1"] and known[1] == [f"{current_season_start()}-{current_season_start() + 1}"]

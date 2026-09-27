@@ -11,7 +11,7 @@ import asyncio
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 import duckdb
 import httpx
@@ -19,10 +19,11 @@ import numpy as np
 import pandas as pd
 
 from src.backtest.backtester import BacktestConfig, BacktestResult, brier, run_backtest
-from src.config import League, Settings
+from src.config import League, Settings, parse_season
 from src.data.alias_matcher import AliasMatcher
 from src.data.database import load_matches, upsert_df
 from src.data.ingest_csv import FetchResult, download_seasons
+from src.data.ingest_international import download_results
 from src.data.ingest_odds_api import OddsApiClient, Quota, events_to_frames, store_snapshot
 from src.engine.value import ValueBet, ValueRules, scan
 from src.models.dixon_coles import DixonColes, DixonColesParams, MatchProbabilities
@@ -42,11 +43,24 @@ def fetch_historical(
     seasons: list[str],
     client: httpx.AsyncClient | None = None,
 ) -> list[FetchResult]:
-    frames, results = asyncio.run(
-        download_seasons(leagues, seasons, settings.football_data_base_url, client=client)
-    )
-    for frame in frames:
-        upsert_df(con, "matches", frame)
+    """Download history for ``leagues``; each league's ``source`` decides where from."""
+    results: list[FetchResult] = []
+    clubs = [lg for lg in leagues if lg.source == "football-data"]
+    if clubs:
+        frames, results = asyncio.run(
+            download_seasons(clubs, seasons, settings.football_data_base_url, client=client)
+        )
+        for frame in frames:
+            upsert_df(con, "matches", frame)
+    if any(lg.source == "international" for lg in leagues):
+        # One file covers every national team; start from January of the oldest season.
+        since = date(parse_season(seasons[0])[0], 1, 1)
+        try:
+            frame = asyncio.run(download_results(settings.international_results_url, since, client=client))
+            upsert_df(con, "matches", frame)
+            results.append(FetchResult("international", f"since {since}", len(frame)))
+        except (httpx.HTTPError, ValueError) as exc:
+            results.append(FetchResult("international", f"since {since}", 0, str(exc)))
     return results
 
 
@@ -139,8 +153,10 @@ def train(
     if matches.empty:
         raise ValueError(f"No historical matches for {league.name}; run fetch-historical first")
     as_of = matches["match_date"].max() + pd.Timedelta(days=1)
-    window = matches[matches["match_date"] >= as_of - pd.Timedelta(days=settings.training_window_days)]
-    dc = DixonColes(xi=settings.decay_xi, max_goals=settings.max_goals).fit(window, as_of=as_of)
+    window_days = league.window_days or settings.training_window_days
+    window = matches[matches["match_date"] >= as_of - pd.Timedelta(days=window_days)]
+    xi = settings.decay_xi if league.decay_xi is None else league.decay_xi
+    dc = DixonColes(xi=xi, max_goals=settings.max_goals).fit(window, as_of=as_of)
     assert dc.params is not None
     save_params(con, league.fd_code, dc.params)
     report = TrainReport(league.slug, dc.params.n_matches, len(dc.params.teams), dc.params.home_advantage,

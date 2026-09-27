@@ -4,8 +4,9 @@ A command-line engine that prices football matches with a Dixon-Coles model,
 strips the margin from sharp (Pinnacle) odds, looks for positive expected
 value (+EV) at soft bookmakers, and sizes stakes with quarter-Kelly.
 
-It covers Serie A, the Premier League, La Liga, the Bundesliga and Ligue 1.
-Historical data comes from football-data.co.uk and live odds come from The Odds API.
+It covers Serie A, the Premier League, La Liga, the Bundesliga, Ligue 1 and the UEFA Nations League.
+Club history comes from football-data.co.uk, national-team history from
+[martj42/international_results](https://github.com/martj42/international_results), and live odds from The Odds API.
 
 > **Read this first.** Closing lines at sharp books are among the most
 > efficient prices in sport. Most days, the honest result of this engine is
@@ -92,6 +93,12 @@ Cold starts come from an independent-Poisson GLM (statsmodels). Refits in the
 backtest are warm-started from the previous fit. One fit takes well under a
 second. The test suite checks that the model recovers the known parameters of simulated leagues.
 
+### National teams (UEFA Nations League)
+
+National-team results come from one free CSV: every men's international since 1872, with a neutral-venue flag. The model keeps 4 years of these, with a slower decay (half-life about a year), because a national side plays only about 10 matches a year. Home advantage is switched off at neutral venues, both in fitting and in prediction. Non-FIFA sides (CONIFA and similar) are left out.
+
+On 1,009 internationals held out of the fit (July 2025 onwards), the model's Brier score was 0.491, against 0.635 for "always the average". **No archive of past odds exists for internationals, so the betting strategy cannot be backtested there.** The only market test is the bot's own recorded CLV. Two more limits: the dataset is maintained by hand and can lag real results by days or weeks, so recent form may be missing and settlement waits for the update; and national sides rotate squads far more than clubs do.
+
 ### 4. De-vigging, value and stakes
 
 * **De-vig** (`engine/devig.py`): P_fair = (1/O) / (1 + M). A `power` method is also available (`DEVIG_METHOD=power`); it puts more of the margin on longshots.
@@ -141,7 +148,7 @@ most two picks to a Telegram chat:
 
 1. Refreshes the current season from football-data (the full history on the first run) and settles earlier picks.
 2. Refits Dixon-Coles for all five leagues.
-3. Fetches fresh odds. That costs 10 credits a run, about 300 a month on the free tier's 500.
+3. Fetches fresh odds. That costs 10 credits a run for the five leagues, plus 2 while the Nations League is on: about 300–360 a month on the free tier's 500.
 4. Keeps outcomes priced **1.75–2.25** with **EV ≥ +3.5%** and kick-off 1–36 hours away. It ranks them by **EV × P_model** and sends the top 1–2 (0 if nothing qualifies).
 5. Never sends a fixture twice. Only one pick per match is allowed, because a home win and an under on the same game are correlated. The cap is 2 per local calendar day, even if the job runs more than once.
 
@@ -200,7 +207,7 @@ cd football_ev_engine
 pytest -q
 ```
 
-There are 117 tests. They run offline: HTTP is mocked with `respx`, and a
+There are 126 tests. They run offline: HTTP is mocked with `respx`, and a
 synthetic league generator (`tests/synthetic.py`) produces files in the
 football-data and Odds API formats. `tests/test_cli.py` runs every command from
 start to finish.

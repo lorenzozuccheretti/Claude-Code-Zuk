@@ -39,6 +39,7 @@ SCHEMA: tuple[str, ...] = (
         b365_over25 DOUBLE, b365_under25 DOUBLE,
         ps_over25 DOUBLE, ps_under25 DOUBLE,
         psc_over25 DOUBLE, psc_under25 DOUBLE,
+        neutral BOOLEAN DEFAULT false,      -- played at a neutral venue (internationals)
         PRIMARY KEY (league, match_date, home_team, away_team)
     )
     """,
@@ -176,8 +177,16 @@ def session(path: Path | str) -> Iterator[duckdb.DuckDBPyConnection]:
         con.close()
 
 
+# Columns added after the first release; ALTER keeps existing databases in step.
+MIGRATIONS: tuple[str, ...] = (
+    "ALTER TABLE matches ADD COLUMN IF NOT EXISTS neutral BOOLEAN DEFAULT false",
+)
+
+
 def init_schema(con: duckdb.DuckDBPyConnection) -> None:
     for ddl in SCHEMA:
+        con.execute(ddl)
+    for ddl in MIGRATIONS:
         con.execute(ddl)
 
 
