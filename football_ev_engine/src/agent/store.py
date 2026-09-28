@@ -70,6 +70,27 @@ def mark(con: duckdb.DuckDBPyConnection, key: str, status: str, message_id: int 
     )
 
 
+# --- once-a-day events -------------------------------------------------------
+
+
+def event_done(con: duckdb.DuckDBPyConnection, kind: str, day: date) -> bool:
+    return con.execute(
+        "SELECT count(*) FROM agent_events WHERE kind = ? AND local_date = ?", [kind, day]
+    ).fetchone()[0] > 0
+
+
+def record_event(con: duckdb.DuckDBPyConnection, kind: str, day: date, detail: str = "") -> None:
+    con.execute(
+        "INSERT OR REPLACE INTO agent_events VALUES (?, ?, ?, ?)", [kind, day, utcnow(), detail]
+    )
+
+
+def event_done_since(con: duckdb.DuckDBPyConnection, kind: str, day: date) -> bool:
+    return con.execute(
+        "SELECT count(*) FROM agent_events WHERE kind = ? AND local_date >= ?", [kind, day]
+    ).fetchone()[0] > 0
+
+
 # --- settlement ---------------------------------------------------------------
 
 _CLOSE_COLS = {
@@ -86,8 +107,10 @@ def settle(con: duckdb.DuckDBPyConnection, now: datetime | None = None) -> int:
     Returns the number of picks settled.
     """
     now = now or utcnow()
+    # Picks graded from live scores still lack CLV until football-data has the closing prices.
     pending = con.execute(
-        "SELECT * FROM sent_picks WHERE status = 'sent' AND won IS NULL AND commence_time < ?", [now]
+        "SELECT * FROM sent_picks WHERE status = 'sent' AND (won IS NULL OR clv IS NULL) AND commence_time < ?",
+        [now],
     ).df()
     settled = 0
     for p in pending.itertuples(index=False):
@@ -101,13 +124,7 @@ def settle(con: duckdb.DuckDBPyConnection, now: datetime | None = None) -> int:
         if match.empty:
             continue
         m = match.iloc[0]
-        goals = int(m["fthg"]) + int(m["ftag"])
-        if p.market == "h2h":
-            won = {"H": "home", "D": "draw", "A": "away"}[m["ftr"]] == p.outcome
-        elif p.outcome == "over":
-            won = goals > p.point
-        else:
-            won = goals < p.point
+        won = grade(p.market, p.outcome, p.point, int(m["fthg"]), int(m["ftag"]))
         clv = None
         outcomes, cols = _CLOSE_COLS.get(p.market, ((), ()))
         if cols and (p.market == "h2h" or p.point == 2.5):
@@ -115,12 +132,56 @@ def settle(con: duckdb.DuckDBPyConnection, now: datetime | None = None) -> int:
             if all(pd.notna(x) and x > 1 for x in closing):
                 fair = dict(zip(outcomes, devig(closing)))
                 clv = float(p.price * fair[p.outcome] - 1)
-        con.execute(
-            "UPDATE sent_picks SET won = ?, profit_units = ?, clv = ? WHERE fixture_key = ?",
-            [bool(won), float(p.price - 1) if won else -1.0, clv, p.fixture_key],
-        )
+        if pd.isna(p.won):
+            con.execute(
+                "UPDATE sent_picks SET won = ?, profit_units = ?, clv = ? WHERE fixture_key = ?",
+                [bool(won), float(p.price - 1) if won else -1.0, clv, p.fixture_key],
+            )
+            settled += 1
+        elif clv is not None:
+            con.execute("UPDATE sent_picks SET clv = ? WHERE fixture_key = ?", [clv, p.fixture_key])
+    return settled
+
+
+def grade(market: str, outcome: str, point: float, home_goals: int, away_goals: int) -> bool:
+    if market == "h2h":
+        result = "home" if home_goals > away_goals else "away" if home_goals < away_goals else "draw"
+        return result == outcome
+    total = home_goals + away_goals
+    return total > point if outcome == "over" else total < point
+
+
+def settle_from_scores(con: duckdb.DuckDBPyConnection, scores: list[dict]) -> int:
+    """Grade pending picks from The Odds API ``/scores`` payload (completed events only)."""
+    by_id = {s["id"]: s for s in scores if s.get("completed") and s.get("scores")}
+    if not by_id:
+        return 0
+    pending = con.execute(
+        f"SELECT fixture_key, event_id, market, outcome, point, price FROM sent_picks "
+        f"WHERE status = 'sent' AND won IS NULL AND event_id IN ({', '.join('?' for _ in by_id)})",
+        list(by_id),
+    ).fetchall()
+    settled = 0
+    for key, event_id, market, outcome, point, price in pending:
+        ev = by_id[event_id]
+        goals = {s["name"]: int(float(s["score"])) for s in ev["scores"]}
+        if ev["home_team"] not in goals or ev["away_team"] not in goals:
+            continue
+        won = grade(market, outcome, point, goals[ev["home_team"]], goals[ev["away_team"]])
+        con.execute("UPDATE sent_picks SET won = ?, profit_units = ? WHERE fixture_key = ?",
+                    [won, float(price - 1) if won else -1.0, key])
         settled += 1
     return settled
+
+
+def unsettled_sports(con: duckdb.DuckDBPyConnection, now: datetime) -> list[str]:
+    """Odds API sport keys with sent picks that should have finished (kick-off 2h-3 days ago)."""
+    rows = con.execute(
+        "SELECT DISTINCT f.sport_key FROM sent_picks p JOIN fixtures f USING (event_id) "
+        "WHERE p.status = 'sent' AND p.won IS NULL AND p.commence_time BETWEEN ? AND ?",
+        [now - timedelta(days=3), now - timedelta(hours=2)],
+    ).fetchall()
+    return [r[0] for r in rows]
 
 
 @dataclass

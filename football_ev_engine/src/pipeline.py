@@ -113,6 +113,23 @@ def fetch_odds(
     return asyncio.run(run())
 
 
+def fetch_scores(
+    con: duckdb.DuckDBPyConnection, settings: Settings, sport_keys: list[str],
+    client: httpx.AsyncClient | None = None,
+) -> int:
+    """Grade pending agent picks from The Odds API results; returns how many were settled."""
+    from src.agent.store import settle_from_scores
+
+    async def run() -> int:
+        settled = 0
+        async with OddsApiClient(settings, con, client=client) as api:
+            for key in sport_keys:
+                settled += settle_from_scores(con, await api.scores(key))
+        return settled
+
+    return asyncio.run(run()) if sport_keys else 0
+
+
 # --- train ------------------------------------------------------------------
 
 

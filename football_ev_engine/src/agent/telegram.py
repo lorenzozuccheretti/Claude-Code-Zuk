@@ -11,6 +11,7 @@ import asyncio
 import html
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -71,6 +72,25 @@ class TelegramClient:
                     raise TelegramError(f"Telegram {resp.status_code}: {data.get('description', resp.text[:200])}")
                 return int(data["result"]["message_id"])
             raise TelegramError("Telegram rate limit persisted after retries")
+        finally:
+            if own:
+                await client.aclose()
+
+
+    async def send_document(self, path: Path, caption: str = "") -> int:
+        """Send a file (e.g. the CSV history); returns Telegram's message_id."""
+        own = self.client is None
+        client = self.client or httpx.AsyncClient(timeout=60)
+        try:
+            resp = await client.post(
+                f"{API}/bot{self.token}/sendDocument",
+                data={"chat_id": self.chat_id, "caption": caption[:1024], "parse_mode": "HTML"},
+                files={"document": (path.name, path.read_bytes(), "text/csv")},
+            )
+            data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
+            if not data.get("ok"):
+                raise TelegramError(f"Telegram {resp.status_code}: {data.get('description', resp.text[:200])}")
+            return int(data["result"]["message_id"])
         finally:
             if own:
                 await client.aclose()

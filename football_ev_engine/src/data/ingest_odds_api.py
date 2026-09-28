@@ -178,6 +178,11 @@ class OddsApiClient:
         return [Event.model_validate(e) for e in data]
 
 
+    async def scores(self, sport_key: str, days_from: int = 3) -> list[dict]:
+        """``GET /v4/sports/{sport}/scores`` - results of the last ``days_from`` days (2 credits)."""
+        return await self._get(f"sports/{sport_key}/scores", {"daysFrom": days_from, "dateFormat": "iso"}, cost=2)
+
+
 # --- Flattening -------------------------------------------------------------
 
 
