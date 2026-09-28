@@ -109,3 +109,15 @@ def test_glm_warm_start_is_used(synthetic_matches, monkeypatch):
     monkeypatch.setattr(dc.log, "debug", lambda *a: (_ for _ in ()).throw(AssertionError(a)))
     DixonColes().fit(synthetic_matches)
     assert calls == [1]
+
+
+def test_recovers_from_a_bad_warm_start(synthetic_matches, monkeypatch, fitted):
+    """A wild GLM start (as rank-deficient national-team data can produce) must not strand the fit."""
+    import src.models.dixon_coles as dc
+
+    n = len(TEAMS)
+    monkeypatch.setattr(dc, "_poisson_glm_start",
+                        lambda *a: (np.full(n, 50.0), np.full(n, -50.0), 5.0))
+    m = DixonColes(xi=0.0).fit(synthetic_matches)
+    assert m.params.converged
+    assert m.params.log_likelihood == pytest.approx(fitted.params.log_likelihood, abs=1e-6)

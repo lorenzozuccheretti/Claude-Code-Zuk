@@ -200,3 +200,12 @@ def test_weekly_report_on_its_weekday_once(settings):
     assert any("Weekly report" in m for m in r.messages) and tg.call_count == 3  # 2 picks + report
     run_daily(s, now=NOW + timedelta(hours=1), refresh=False, force=True)
     assert doc.call_count == 1
+
+
+@respx.mock
+def test_notices_are_counted(settings):
+    strict = settings.model_copy(update={"min_ev": 5.0})
+    mock_odds()
+    tg_ok()
+    r = run_daily(strict, now=NOW, refresh=False)
+    assert (r.sent, r.notices) == (0, 1)

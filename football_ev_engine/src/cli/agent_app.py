@@ -31,7 +31,8 @@ def _plain(html_text: str) -> str:
 
 
 def _print_report(r: RunReport) -> None:
-    mode = "[yellow]DRY RUN[/] - nothing sent" if r.dry_run else f"{r.sent} message(s) sent"
+    mode = ("[yellow]DRY RUN[/] - nothing sent" if r.dry_run
+            else f"{r.sent} pick(s) and {r.notices} other message(s) sent to Telegram")
     console.print(f"[bold]Agent run[/] {r.started_at:%Y-%m-%d %H:%M} UTC · {mode}")
     if r.skipped:
         console.print(f"Nothing to do: {r.skipped} (use --force to run again).")
