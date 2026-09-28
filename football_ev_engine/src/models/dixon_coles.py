@@ -211,10 +211,21 @@ class DixonColes:
             )
             return -ll, -grad
 
-        theta0 = self._initial_theta(teams, df, w, hf, init)
         bounds = [(-4, 4)] * (2 * n - 1) + [(-1, 1), self.rho_bounds]
-        res = minimize(objective, theta0, jac=True, method="L-BFGS-B", bounds=bounds,
-                       options={"maxiter": 2000, "ftol": 1e-12, "gtol": 1e-8})
+        lower, upper = np.array(bounds, dtype=float).T
+
+        def solve(theta0: np.ndarray):
+            theta0 = np.clip(np.nan_to_num(theta0), lower, upper)
+            return minimize(objective, theta0, jac=True, method="L-BFGS-B", bounds=bounds,
+                            options={"maxiter": 2000, "ftol": 1e-12, "gtol": 1e-8})
+
+        res = solve(self._initial_theta(teams, df, w, hf, init))
+        if not res.success:
+            # A poor warm start (e.g. a rank-deficient GLM on sparse national-team
+            # data) can strand L-BFGS; a neutral start is slower but reliable.
+            cold = solve(np.concatenate([np.zeros(2 * n - 1), [0.25, -0.05]]))
+            if cold.success or cold.fun < res.fun:
+                res = cold
         if not res.success:
             log.warning("Dixon-Coles optimiser did not converge: %s", res.message)
         attack, defence, gamma, rho = unpack(res.x)
@@ -325,7 +336,10 @@ def _poisson_glm_start(
     X = np.column_stack([X, home])
     yv = np.concatenate([df["fthg"].to_numpy(float), df["ftag"].to_numpy(float)])
     weights = np.concatenate([w, w]) * m  # rescale so weights are O(1)
-    res = sm.GLM(yv, X, family=sm.families.Poisson(), freq_weights=weights).fit()
+    # Teams with no goals in the window push the IRLS weights to zero; the fit
+    # still converges, it just warns. It is only a starting point anyway.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        res = sm.GLM(yv, X, family=sm.families.Poisson(), freq_weights=weights).fit()
     coef = np.asarray(res.params)
     att = coef[:n]
     dfn = np.concatenate([[0.0], coef[n : 2 * n - 1]])

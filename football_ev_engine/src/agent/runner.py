@@ -49,7 +49,8 @@ class RunReport:
     candidates: int = 0
     picks: list[Pick] = field(default_factory=list)
     messages: list[str] = field(default_factory=list)
-    sent: int = 0
+    sent: int = 0  # picks delivered
+    notices: int = 0  # other messages delivered (no-pick notice, weekly report)
     skipped: str = ""  # why the run stopped early, if it did
     report_sent: bool = False
     errors: list[str] = field(default_factory=list)
@@ -204,6 +205,7 @@ def run_daily(
                 try:
                     asyncio.run(telegram.send(text))
                     store.record_event(con, "no_picks_notice", local_today)
+                    report.notices += 1
                 except Exception as exc:  # noqa: BLE001
                     report.errors.append(f"telegram send failed: {exc}")
 
@@ -213,6 +215,7 @@ def run_daily(
                 report.report_sent = send_report(con, s, telegram, now, report, dry_run)
                 if report.report_sent and not dry_run:
                     store.record_event(con, "weekly_report", local_today)
+                    report.notices += 1
 
         # A failed Telegram send leaves the day open, so a backup run can retry it.
         if not dry_run and not any("telegram" in e for e in report.errors):
