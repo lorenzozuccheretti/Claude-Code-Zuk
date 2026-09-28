@@ -30,7 +30,7 @@ def settings(tmp_path, synthetic_matches):
     # Wide-open value rules so the synthetic prices always yield candidates.
     return AgentSettings(_env_file=None, db_path=db, aliases_json=tmp_path / "a.json", odds_api_key="k",
                          telegram_bot_token="T", telegram_chat_id="1", min_ev=-1.0, min_odds=1.01,
-                         max_odds=100.0, timezone="Europe/Rome")
+                         max_odds=100.0, timezone="Europe/Rome", report_weekday=-1)
 
 
 def mock_odds(hours_ahead: int = 10):
@@ -162,3 +162,41 @@ def test_refresh_downloads_full_history_only_for_new_leagues(settings, monkeypat
     new, known = calls
     assert "INT" in new[0] and "I1" not in new[0] and len(new[1]) == settings.history_seasons
     assert known[0] == ["I1"] and known[1] == [f"{current_season_start()}-{current_season_start() + 1}"]
+
+
+@respx.mock
+def test_backup_run_is_a_no_op_after_the_daily_run(settings):
+    mock_odds()
+    tg = tg_ok()
+    run_daily(settings, now=NOW, refresh=False)
+    calls = tg.call_count
+    backup = run_daily(settings, now=NOW + timedelta(hours=2), refresh=False)
+    assert backup.skipped and tg.call_count == calls
+    forced = run_daily(settings, now=NOW + timedelta(hours=2), refresh=False, force=True)
+    assert not forced.skipped and forced.picks == []  # daily cap still holds
+
+
+@respx.mock
+def test_no_pick_notice_only_once_a_day(settings):
+    strict = settings.model_copy(update={"min_ev": 5.0})  # nothing can qualify
+    mock_odds()
+    tg = tg_ok()
+    first = run_daily(strict, now=NOW, refresh=False)
+    assert len(first.messages) == 1 and "No pick today" in first.messages[0] and tg.call_count == 1
+    again = run_daily(strict, now=NOW + timedelta(hours=1), refresh=False, force=True)
+    assert again.messages == [] and tg.call_count == 1
+
+
+@respx.mock
+def test_weekly_report_on_its_weekday_once(settings):
+    local = NOW.replace(tzinfo=timezone.utc).astimezone(ZoneInfo("Europe/Rome"))
+    s = settings.model_copy(update={"report_weekday": local.weekday()})
+    mock_odds()
+    tg = tg_ok()
+    doc = respx.post("https://api.telegram.org/botT/sendDocument").mock(
+        return_value=httpx.Response(200, json={"ok": True, "result": {"message_id": 8}}))
+    r = run_daily(s, now=NOW, refresh=False)
+    assert r.report_sent and doc.call_count == 1
+    assert any("Weekly report" in m for m in r.messages) and tg.call_count == 3  # 2 picks + report
+    run_daily(s, now=NOW + timedelta(hours=1), refresh=False, force=True)
+    assert doc.call_count == 1

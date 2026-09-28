@@ -24,6 +24,7 @@ import duckdb
 from src import pipeline
 from src.agent import store
 from src.agent.reasoning import build_facts, write_reasoning
+from src.agent.report import build_report, export_csv, format_report
 from src.agent.selector import Pick, select, to_picks
 from src.agent.settings import AgentSettings
 from src.agent.telegram import TelegramClient, format_no_picks, format_pick, format_record
@@ -49,6 +50,8 @@ class RunReport:
     picks: list[Pick] = field(default_factory=list)
     messages: list[str] = field(default_factory=list)
     sent: int = 0
+    skipped: str = ""  # why the run stopped early, if it did
+    report_sent: bool = False
     errors: list[str] = field(default_factory=list)
 
 
@@ -120,22 +123,33 @@ def run_daily(
     fd_client=None,
     odds_client=None,
     llm_client=None,
+    force: bool = False,
 ) -> RunReport:
     s = settings
     now = now or store.utcnow()
     report = RunReport(started_at=now, dry_run=dry_run)
+    local_today = now.replace(tzinfo=timezone.utc).astimezone(s.tz).date()
     if not dry_run and telegram is None:
         if not s.telegram_configured:
             raise ValueError("TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set (or use --dry-run)")
         telegram = TelegramClient(s.telegram_bot_token, s.telegram_chat_id)
 
     with session(s.db_file) as con:
+        # Backup runs (and accidental re-runs) stop here once the day's run is done.
+        if not dry_run and not force and store.event_done(con, "daily_run", local_today):
+            report.skipped = "today's run already completed"
+            return report
         if refresh:
             try:
                 _refresh_history(con, s, report, fd_client)
             except Exception as exc:  # noqa: BLE001 - stored history is still usable
                 report.errors.append(f"history refresh failed: {exc}")
         report.settled = store.settle(con, now)
+        if fetch:
+            try:
+                report.settled += pipeline.fetch_scores(con, s, store.unsettled_sports(con, now), client=odds_client)
+            except Exception as exc:  # noqa: BLE001 - football-data will settle them later
+                report.errors.append(f"live results unavailable: {exc}")
 
         for lg in LEAGUES.values():
             try:
@@ -157,7 +171,6 @@ def run_daily(
                 return report
 
         candidates, models = _candidates(con, s, now, report)
-        local_today = now.replace(tzinfo=timezone.utc).astimezone(s.tz).date()
         sent_today = store.sent_count_on(con, local_today, s.tz)
         report.picks = select(candidates, now, store.blocked_fixtures(con), sent_today,
                               s.max_daily_picks, s.pick_horizon_hours, s.min_lead_minutes)
@@ -183,13 +196,48 @@ def run_daily(
             store.mark(con, pick.fixture_key, "sent", message_id)
             report.sent += 1
 
-        if not report.picks and s.notify_no_picks and sent_today == 0:
+        if (not report.picks and s.notify_no_picks and sent_today == 0
+                and not store.event_done(con, "no_picks_notice", local_today)):
             text = format_no_picks(now, s.tz, report.scanned, report.candidates) + "\n\n" + record_line
             report.messages.append(text)
             if not dry_run:
                 try:
                     asyncio.run(telegram.send(text))
+                    store.record_event(con, "no_picks_notice", local_today)
                 except Exception as exc:  # noqa: BLE001
                     report.errors.append(f"telegram send failed: {exc}")
+
+        if s.report_weekday == local_today.weekday():
+            week_start = local_today - timedelta(days=6)
+            if not store.event_done_since(con, "weekly_report", week_start) or dry_run:
+                report.report_sent = send_report(con, s, telegram, now, report, dry_run)
+                if report.report_sent and not dry_run:
+                    store.record_event(con, "weekly_report", local_today)
+
+        # A failed Telegram send leaves the day open, so a backup run can retry it.
+        if not dry_run and not any("telegram" in e for e in report.errors):
+            store.record_event(con, "daily_run", local_today, f"sent={report.sent}")
     return report
+
+
+def send_report(con, s: AgentSettings, telegram: TelegramClient | None, now: datetime,
+                report: RunReport | None = None, dry_run: bool = False, days: int = 7,
+                title: str = "Weekly report") -> bool:
+    """Send the summary message plus the CSV history. Returns True on success."""
+    text = format_report(build_report(con, s.tz, days=days, now=now), title)
+    if report is not None:
+        report.messages.append(text)
+    if dry_run:
+        return True
+    csv_path = s.resolve(s.db_path).parent / "picks_history.csv"
+    rows = export_csv(con, csv_path)
+    try:
+        asyncio.run(telegram.send(text))
+        if rows:
+            asyncio.run(telegram.send_document(csv_path, f"Full pick history · {rows} picks"))
+        return True
+    except Exception as exc:  # noqa: BLE001
+        if report is not None:
+            report.errors.append(f"telegram report failed: {exc}")
+        return False
 

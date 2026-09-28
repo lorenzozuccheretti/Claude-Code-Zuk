@@ -33,6 +33,8 @@ class AgentSettings(Settings):
     pick_horizon_hours: int = Field(36, gt=0)
     min_lead_minutes: int = Field(60, ge=0)
     notify_no_picks: bool = True
+    # Weekly summary + CSV on this local weekday (0 = Monday); -1 disables it.
+    report_weekday: int = Field(0, ge=-1, le=6)
 
     # Reasoning: Claude writes it when a key is configured, otherwise a template does.
     anthropic_api_key: str = ""

@@ -163,10 +163,11 @@ effort) writes the two sentences under a "use only these facts" instruction,
 with server-side refusal fallback enabled. Without a key, or if the call
 fails, a deterministic template writes them.
 
-**The track record.** Once a match appears in football-data (usually the next
-day), each pick is graded, and its **CLV against Pinnacle's de-vigged closing
-line** is recorded. `python main.py agent history` lists every pick. Watch
-the CLV: after 50–100 picks, it tells you whether the edge is real long before profit does.
+**The track record.** Each pick is graded the day after the match from The Odds API's results endpoint (2 credits per competition with a pending pick). Once football-data publishes Pinnacle's closing prices, the pick also gets its **CLV against the de-vigged closing line**. After 50–100 picks, the CLV tells you whether the edge is real, long before profit does.
+
+**Reporting.** Every Monday (`REPORT_WEEKDAY`, 0 = Monday, -1 = off), the agent posts a summary. It covers the week and all-time results, P/L at flat 1-unit stakes and at the suggested Kelly stakes, average odds, EV and CLV, a breakdown by competition, market and month, and the last 10 picks with ✅/❌/⏳. A verdict line is based on CLV. The full history comes attached as `picks_history.csv`, which opens in Excel or Google Sheets. On demand: `python main.py agent report [--send] [--days 30] [--csv file.csv]`, or **Run workflow → mode: report** on GitHub. `agent history` lists each pick.
+
+**Once a day, even with retries.** Every run records itself. A second run on the same local day (a backup cron, or a re-run) stops before spending any credits, unless it is started with `--force`. The "no pick today" notice and the weekly report are also sent at most once. A failed Telegram send leaves the day open, so the next backup retries it.
 
 ### Setup
 
@@ -181,7 +182,7 @@ the CLV: after 50–100 picks, it tells you whether the edge is real long before
 |---|---|
 | Local machine or server | `python main.py agent schedule` runs every day at `RUN_TIME` in `TIMEZONE` (APScheduler). Add `--run-now` to also run once immediately |
 | Docker | `docker compose up -d --build` runs the scheduler, with the database in `./data` |
-| GitHub Actions | `.github/workflows/football-agent.yml` runs daily at 08:00 UTC and can also be started by hand, with a dry-run option. Add the secrets it lists. The database is carried between runs in the Actions cache, and GitHub evicts that cache after 7 days without a run |
+| GitHub Actions | `.github/workflows/football-agent.yml` runs daily at 07:41 UTC, with backups at 09:23 and 11:07 that do nothing once the day is done (GitHub often starts top-of-the-hour schedules late, or skips them). It can also be started by hand in `run`, `dry-run` or `report` mode. Add the secrets it lists. The database is carried between runs in the Actions cache, and GitHub evicts that cache after 7 days without a run |
 | cron | `0 10 * * * cd /path/football_ev_engine && python main.py agent run` |
 
 ### What the backtest says about these rules
@@ -207,7 +208,7 @@ cd football_ev_engine
 pytest -q
 ```
 
-There are 126 tests. They run offline: HTTP is mocked with `respx`, and a
+There are 136 tests. They run offline: HTTP is mocked with `respx`, and a
 synthetic league generator (`tests/synthetic.py`) produces files in the
 football-data and Odds API formats. `tests/test_cli.py` runs every command from
 start to finish.

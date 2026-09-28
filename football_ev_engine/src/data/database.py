@@ -134,6 +134,17 @@ SCHEMA: tuple[str, ...] = (
         clv            DOUBLE                -- EV vs Pinnacle's de-vigged closing line
     )
     """,
+    # Once-a-day agent events (daily run, no-pick notice, weekly report), so a
+    # backup run or a retry never repeats them.
+    """
+    CREATE TABLE IF NOT EXISTS agent_events (
+        kind        VARCHAR NOT NULL,
+        local_date  DATE NOT NULL,
+        created_at  TIMESTAMP NOT NULL,
+        detail      VARCHAR,
+        PRIMARY KEY (kind, local_date)
+    )
+    """,
     # Every bet the predict command recommends, for later review.
     """
     CREATE TABLE IF NOT EXISTS value_bets (

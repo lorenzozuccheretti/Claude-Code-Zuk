@@ -10,13 +10,22 @@ name: Football value agent
 
 on:
   schedule:
-    - cron: "0 8 * * *"  # 08:00 UTC = 10:00 Rome in summer, 09:00 in winter
+    # GitHub often starts scheduled runs late (or drops them) at the top of the
+    # hour, so the main run sits at :41. The two backups do nothing, and cost no
+    # credits, once the day's run has completed.
+    - cron: "41 7 * * *"   # 09:41 Rome in summer (08:41 in winter)
+    - cron: "23 9 * * *"   # backup
+    - cron: "7 11 * * *"   # backup
   workflow_dispatch:
     inputs:
-      dry_run:
-        description: "Compute picks without sending them"
-        type: boolean
-        default: false
+      mode:
+        description: "What to do"
+        type: choice
+        default: run
+        options:
+          - run       # send today's picks (runs again even if today's run already happened)
+          - dry-run   # compute and show picks, send nothing
+          - report    # send the summary + CSV history to Telegram
 
 concurrency:
   group: football-agent
@@ -48,7 +57,13 @@ jobs:
           restore-keys: football-agent-db-
 
       - name: Run agent
-        run: python main.py agent run ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: |
+          case "${{ github.event_name }}:${{ inputs.mode }}" in
+            workflow_dispatch:dry-run) python main.py agent run --dry-run ;;
+            workflow_dispatch:report)  python main.py agent report --send ;;
+            workflow_dispatch:*)       python main.py agent run --force ;;
+            *)                         python main.py agent run ;;
+          esac
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}

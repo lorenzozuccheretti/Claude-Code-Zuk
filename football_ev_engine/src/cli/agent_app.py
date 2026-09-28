@@ -6,14 +6,16 @@ import asyncio
 import html
 import re
 from datetime import timezone
-from typing import Annotated
+from pathlib import Path
+from typing import Annotated, Optional
 
 import typer
 from rich.markup import escape
 from rich.table import Table
 
 from src.agent import store
-from src.agent.runner import RunReport, run_daily
+from src.agent.report import build_report, export_csv, format_report
+from src.agent.runner import RunReport, run_daily, send_report
 from src.agent.scheduler import build_scheduler
 from src.agent.settings import get_agent_settings
 from src.agent.telegram import TelegramClient, TelegramError, format_record
@@ -31,6 +33,9 @@ def _plain(html_text: str) -> str:
 def _print_report(r: RunReport) -> None:
     mode = "[yellow]DRY RUN[/] - nothing sent" if r.dry_run else f"{r.sent} message(s) sent"
     console.print(f"[bold]Agent run[/] {r.started_at:%Y-%m-%d %H:%M} UTC · {mode}")
+    if r.skipped:
+        console.print(f"Nothing to do: {r.skipped} (use --force to run again).")
+        return
     credits = f", {r.credits_remaining} Odds API credits left" if r.credits_remaining is not None else ""
     console.print(f"History +{r.history_rows} rows · {r.settled} picks settled · models: {len(r.trained)} leagues · "
                   f"{r.odds_events} events priced{credits}")
@@ -50,11 +55,12 @@ def run(
     dry_run: Annotated[bool, typer.Option("--dry-run", help="Compute and print the picks without sending or recording")] = False,
     refresh: Annotated[bool, typer.Option(help="Refresh football-data history first")] = True,
     fetch: Annotated[bool, typer.Option(help="Fetch fresh odds (2 credits per league)")] = True,
+    force: Annotated[bool, typer.Option("--force", help="Run even if today's run already completed")] = False,
 ) -> None:
     """Run the daily job once: refresh, train, fetch odds, pick, send."""
     s = get_agent_settings()
     try:
-        report = run_daily(s, dry_run=dry_run, refresh=refresh, fetch=fetch)
+        report = run_daily(s, dry_run=dry_run, refresh=refresh, fetch=fetch, force=force)
     except ValueError as exc:
         _fail(str(exc))
     _print_report(report)
@@ -96,6 +102,30 @@ def test_telegram() -> None:
     except TelegramError as exc:
         _fail(str(exc))
     console.print(f"[green]Sent[/] (message id {mid}).")
+
+
+@agent_app.command("report")
+def report(
+    send: Annotated[bool, typer.Option("--send", help="Send it to Telegram with the CSV history attached")] = False,
+    days: Annotated[int, typer.Option(help="Length of the 'this period' window in days")] = 7,
+    csv: Annotated[Optional[Path], typer.Option(help="Also write the full history to this CSV file")] = None,
+) -> None:
+    """Summary of every pick sent so far: results, P/L, CLV, by competition and market."""
+    s = get_agent_settings()
+    if send and not s.telegram_configured:
+        _fail("TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set")
+    with session(s.db_file) as con:
+        store.settle(con)
+        title = "Weekly report" if days == 7 else f"Report ({days} days)"
+        text = format_report(build_report(con, s.tz, days=days), title)
+        console.print(_plain(text))
+        if csv:
+            console.print(f"Wrote {export_csv(con, csv)} picks to {csv}")
+        if send:
+            tg = TelegramClient(s.telegram_bot_token, s.telegram_chat_id)
+            if not send_report(con, s, tg, store.utcnow(), days=days, title=title):
+                _fail("Telegram send failed")
+            console.print("[green]Report sent to Telegram.[/]")
 
 
 @agent_app.command("history")
