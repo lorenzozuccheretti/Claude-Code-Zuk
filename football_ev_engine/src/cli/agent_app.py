@@ -38,8 +38,11 @@ def _print_report(r: RunReport) -> None:
         console.print(f"Nothing to do: {r.skipped} (use --force to run again).")
         return
     credits = f", {r.credits_remaining} Odds API credits left" if r.credits_remaining is not None else ""
-    console.print(f"History +{r.history_rows} rows · {r.settled} picks settled · models: {len(r.trained)} leagues · "
+    live = f" (+{r.live_results} fresh results)" if r.live_results else ""
+    console.print(f"History +{r.history_rows} rows{live} · {r.settled} picks settled · models: {len(r.trained)} leagues · "
                   f"{r.odds_events} events priced{credits}")
+    if r.data_through:
+        console.print("Results up to: " + " · ".join(f"{k} {v}" for k, v in r.data_through.items()))
     console.print(f"{r.scanned} fixtures in the window · {r.candidates} passed the value filters · "
                   f"{len(r.picks)} selected")
     for text in r.messages:

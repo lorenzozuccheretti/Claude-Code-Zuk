@@ -147,6 +147,7 @@ benchmark is refit before each test season.
 most two picks to a Telegram chat:
 
 1. Refreshes the current season from football-data (the full history on the first run) and settles earlier picks.
+   Results the slow sources don't have yet (football-data updates a couple of times a week; the national-team file can lag by weeks) are filled from The Odds API `/scores` as *provisional* rows, so the model trains on last night's games. It only calls `/scores` for a league whose round is over, or whose oldest missing result is about to leave the API's 3-day window: about 2 credits per league per round. Provisional rows are dropped once the official source publishes the match.
 2. Refits Dixon-Coles for all five leagues.
 3. Fetches fresh odds. That costs 10 credits a run for the five leagues, plus 2 while the Nations League is on: about 300–360 a month on the free tier's 500.
 4. Keeps outcomes priced **1.75–2.25** with **EV ≥ +3.5%** and kick-off 1–36 hours away. It ranks them by **EV × P_model** and sends the top 1–2 (0 if nothing qualifies).
