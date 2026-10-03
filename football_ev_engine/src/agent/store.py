@@ -117,7 +117,7 @@ def settle(con: duckdb.DuckDBPyConnection, now: datetime | None = None) -> int:
         kick = pd.Timestamp(p.commence_time)
         match = con.execute(
             "SELECT * FROM matches WHERE league = ? AND home_team = ? AND away_team = ? "
-            "AND match_date BETWEEN ? AND ?",
+            "AND match_date BETWEEN ? AND ? ORDER BY coalesce(provisional, false)",
             [p.league, p.home_team, p.away_team, (kick - pd.Timedelta(days=1)).date(),
              (kick + pd.Timedelta(days=1)).date()],
         ).df()

@@ -40,6 +40,7 @@ SCHEMA: tuple[str, ...] = (
         ps_over25 DOUBLE, ps_under25 DOUBLE,
         psc_over25 DOUBLE, psc_under25 DOUBLE,
         neutral BOOLEAN DEFAULT false,      -- played at a neutral venue (internationals)
+        provisional BOOLEAN DEFAULT false,  -- score from The Odds API, until the slow source has it
         PRIMARY KEY (league, match_date, home_team, away_team)
     )
     """,
@@ -191,6 +192,7 @@ def session(path: Path | str) -> Iterator[duckdb.DuckDBPyConnection]:
 # Columns added after the first release; ALTER keeps existing databases in step.
 MIGRATIONS: tuple[str, ...] = (
     "ALTER TABLE matches ADD COLUMN IF NOT EXISTS neutral BOOLEAN DEFAULT false",
+    "ALTER TABLE matches ADD COLUMN IF NOT EXISTS provisional BOOLEAN DEFAULT false",
 )
 
 

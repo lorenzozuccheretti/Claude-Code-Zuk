@@ -1,7 +1,8 @@
 """One daily agent run, end to end.
 
 1. Refresh the current season from football-data.co.uk (full history on first run).
-2. Settle earlier picks whose results are now in.
+2. Settle earlier picks whose results are now in, and fill results the slow
+   sources lack from The Odds API ``/scores`` (only for leagues that need it).
 3. Refit Dixon-Coles for every league.
 4. Fetch fresh odds from The Odds API (2 credits per league).
 5. Scan, select at most ``MAX_DAILY_PICKS``, write reasoning.
@@ -30,6 +31,7 @@ from src.agent.settings import AgentSettings
 from src.agent.telegram import TelegramClient, format_no_picks, format_pick, format_record
 from src.config import LEAGUES, recent_seasons
 from src.data.database import session
+from src.data.live_results import sports_to_refresh
 from src.engine.value import ValueRules, scan
 from src.models.dixon_coles import DixonColes
 
@@ -41,6 +43,8 @@ class RunReport:
     started_at: datetime
     dry_run: bool
     history_rows: int = 0
+    live_results: int = 0  # provisional results added from The Odds API
+    data_through: dict[str, str] = field(default_factory=dict)  # league -> latest result date
     settled: int = 0
     trained: list[str] = field(default_factory=list)
     odds_events: int = 0
@@ -148,10 +152,14 @@ def run_daily(
         report.settled = store.settle(con, now)
         if fetch:
             try:
-                report.settled += pipeline.fetch_scores(con, s, store.unsettled_sports(con, now), client=odds_client)
-            except Exception as exc:  # noqa: BLE001 - football-data will settle them later
+                keys = sorted(set(store.unsettled_sports(con, now)) | set(sports_to_refresh(con, now, timedelta(hours=24))))
+                settled, report.live_results = pipeline.fetch_scores(con, s, keys, client=odds_client, now=now)
+                report.settled += settled
+            except Exception as exc:  # noqa: BLE001 - the history sources will catch up later
                 report.errors.append(f"live results unavailable: {exc}")
 
+        report.data_through = {lg: str(d) for lg, d in con.execute(
+            "SELECT league, max(match_date) FROM matches GROUP BY 1 ORDER BY 1").fetchall()}
         for lg in LEAGUES.values():
             try:
                 pipeline.train(con, s, lg, ml_kind=None)

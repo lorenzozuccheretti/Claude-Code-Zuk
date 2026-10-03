@@ -25,6 +25,7 @@ from src.data.database import load_matches, upsert_df
 from src.data.ingest_csv import FetchResult, download_seasons
 from src.data.ingest_international import download_results
 from src.data.ingest_odds_api import OddsApiClient, Quota, events_to_frames, store_snapshot
+from src.data.live_results import purge_superseded, store_results
 from src.engine.value import ValueBet, ValueRules, scan
 from src.models.dixon_coles import DixonColes, DixonColesParams, MatchProbabilities
 from src.models.ml_classifier import MLBenchmark
@@ -51,16 +52,17 @@ def fetch_historical(
             download_seasons(clubs, seasons, settings.football_data_base_url, client=client)
         )
         for frame in frames:
-            upsert_df(con, "matches", frame)
+            upsert_df(con, "matches", frame.assign(provisional=False))
     if any(lg.source == "international" for lg in leagues):
         # One file covers every national team; start from January of the oldest season.
         since = date(parse_season(seasons[0])[0], 1, 1)
         try:
             frame = asyncio.run(download_results(settings.international_results_url, since, client=client))
-            upsert_df(con, "matches", frame)
+            upsert_df(con, "matches", frame.assign(provisional=False))
             results.append(FetchResult("international", f"since {since}", len(frame)))
         except (httpx.HTTPError, ValueError) as exc:
             results.append(FetchResult("international", f"since {since}", 0, str(exc)))
+    purge_superseded(con)
     return results
 
 
@@ -115,19 +117,28 @@ def fetch_odds(
 
 def fetch_scores(
     con: duckdb.DuckDBPyConnection, settings: Settings, sport_keys: list[str],
-    client: httpx.AsyncClient | None = None,
-) -> int:
-    """Grade pending agent picks from The Odds API results; returns how many were settled."""
+    client: httpx.AsyncClient | None = None, now: datetime | None = None,
+) -> tuple[int, int]:
+    """Pull The Odds API results for ``sport_keys`` (2 credits each).
+
+    They grade pending agent picks and fill ``matches`` with provisional
+    results the slow history sources don't have yet. Returns
+    ``(picks settled, results added)``.
+    """
     from src.agent.store import settle_from_scores
 
-    async def run() -> int:
-        settled = 0
+    now = now or datetime.now(timezone.utc).replace(tzinfo=None)
+
+    async def run() -> tuple[int, int]:
+        settled = added = 0
         async with OddsApiClient(settings, con, client=client) as api:
             for key in sport_keys:
-                settled += settle_from_scores(con, await api.scores(key))
-        return settled
+                scores = await api.scores(key)
+                settled += settle_from_scores(con, scores)
+                added += store_results(con, scores, now)
+        return settled, added
 
-    return asyncio.run(run()) if sport_keys else 0
+    return asyncio.run(run()) if sport_keys else (0, 0)
 
 
 # --- train ------------------------------------------------------------------
