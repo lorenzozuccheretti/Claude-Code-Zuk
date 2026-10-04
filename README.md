@@ -256,3 +256,20 @@ efficiently.
 
 No income claims. Publishing outcomes depend on your niche, your quality and
 your market. Verify print specs against KDP's current documentation.
+
+## KDP-Intelligence-Engine (non-fiction, Italian market)
+
+`kdp_intel/` is a second engine in this repo for researched, premium-priced
+Italian non-fiction: a LangGraph pipeline of four agents (Analyst, Review
+Miner, Writer, Fact-Checker), a RAG vector store (ChromaDB or Pinecone) of
+official and press sources, live market data (SerpAPI, Apify, Bright Data,
+DataForSEO, Helium 10 exports) and a Typst / WeasyPrint typesetter that
+reuses this repo's KDP spec card. A chapter whose numbers cannot be proved
+from a cited source blocks the book.
+
+```bash
+pip install -e '.[intel,dev]'
+kdpi run intel_projects/successione-2026.yaml
+```
+
+Full design, credentials and limits: [docs/intel-architecture.md](docs/intel-architecture.md).

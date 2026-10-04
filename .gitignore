@@ -13,3 +13,6 @@ htmlcov/
 .venv/
 venv/
 .DS_Store
+
+# kdp_intel work directories (vector store, drafts, PDFs)
+.kdp_intel/
