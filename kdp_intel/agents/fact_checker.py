@@ -151,7 +151,12 @@ class FactChecker:
         query = " ".join(w for w in verdict.claim.text.split() if not w.startswith("[[S:"))[:200]
         specs = []
         for dom in self.verify_domains[:3]:
-            specs += [SourceSpec(url=r.url, title=r.title) for r in self.web.search(f"{query} site:{dom}", num=2)]
+            try:
+                found = self.web.search(f"{query} site:{dom}", num=2)
+            except Exception as exc:  # noqa: BLE001 - the claim still fails; say why no help came
+                verdict.note = f"{verdict.note}; verifica web non disponibile ({exc})".lstrip("; ")
+                return verdict
+            specs += [SourceSpec(url=r.url, title=r.title) for r in found]
         if not specs:
             return verdict
         self.ingestor.ingest_all(specs)

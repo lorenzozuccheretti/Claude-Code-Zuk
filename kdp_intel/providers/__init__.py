@@ -1,13 +1,15 @@
 """Choose a concrete provider for each capability from the credentials at hand.
 
-Preference order is fixed and visible here: a paid API beats a scraper, a
-scraper beats nothing, and nothing is reported as a gap in the run log
-instead of being filled with invented data.
+Preference order is fixed and visible here: free first (a free API key,
+autocomplete, files you export or save yourself), a paid service only when
+its credentials are present, and a missing capability is reported as a gap
+in the run log instead of being filled with invented data.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from ..config import Credentials, Project
@@ -39,44 +41,71 @@ class Providers:
         )
 
 
-def build_providers(creds: Credentials, project: Project | None = None) -> Providers:
+def build_providers(creds: Credentials, project: Project | None = None,
+                    cache_dir: Path | None = None) -> Providers:
+    """Free providers first; a paid one only replaces a free one when its
+    credentials are present."""
     from .apify import Apify
     from .brightdata import BrightData
     from .dataforseo import DataForSEO
+    from .free import CachedSearch, DuckDuckGoSearch, SavedAmazonPages, Suggestions, TavilySearch, TrendsCSV
     from .helium10 import Helium10Export
     from .reddit import Reddit
     from .serpapi import SerpAPI
 
+    research = project.research if project else None
+    cache = Path(cache_dir) if cache_dir else None
     p = Providers(fetcher=DirectFetcher())
-    if creds.serpapi_key:
-        serp = SerpAPI(creds.serpapi_key)
-        p.web_search = p.trends = p.marketplace = serp
-    else:
-        p.gaps.append("no SERPAPI_API_KEY: Google, Trends and Amazon.it search are off")
 
+    # web search: Tavily (free key) > SerpAPI (paid) > DuckDuckGo (no key, often blocked)
+    search = None
+    if creds.tavily_key:
+        search = TavilySearch(creds.tavily_key)
+    elif creds.serpapi_key:
+        search = SerpAPI(creds.serpapi_key)
+    else:
+        search = DuckDuckGoSearch()
+        p.gaps.append("nessuna TAVILY_API_KEY (gratuita): ricerca web via DuckDuckGo, spesso bloccata")
+    p.web_search = CachedSearch(search, cache / "search") if cache else search
+
+    # trends: exported CSV (free) > SerpAPI
+    if research and research.trends_dir:
+        p.trends = TrendsCSV(research.trends_dir)
+    elif creds.serpapi_key:
+        p.trends = SerpAPI(creds.serpapi_key)
+    else:
+        p.gaps.append("nessun CSV di Google Trends in research.trends_dir: andamento non misurato")
+
+    # competitors, BSR, reviews: pages saved from the browser (free) > paid scrapers
+    if research and research.amazon_pages_dir:
+        saved = SavedAmazonPages(research.amazon_pages_dir)
+        p.marketplace = p.bsr = p.reviews = saved
+    if creds.serpapi_key and p.marketplace is None:
+        p.marketplace = SerpAPI(creds.serpapi_key)
     if creds.brightdata_token and creds.brightdata_zone:
         bd = BrightData(creds.brightdata_token, creds.brightdata_zone)
         p.unblocker = bd
-        p.bsr = bd
-        p.reviews = bd
-    if creds.apify_token and creds.apify_reviews_actor:
-        p.reviews = Apify(creds.apify_token, creds.apify_reviews_actor)  # preferred over HTML
-    if p.reviews is None:
-        p.gaps.append("no Apify actor or Bright Data zone: competitor reviews must come from a CSV")
-    if p.bsr is None:
-        p.gaps.append("no Bright Data zone: BSR is not measured")
+        p.bsr = p.bsr or bd
+        p.reviews = p.reviews or bd
+    if creds.apify_token and creds.apify_reviews_actor and p.reviews is None:
+        p.reviews = Apify(creds.apify_token, creds.apify_reviews_actor)
+    if p.marketplace is None:
+        p.gaps.append("nessuna pagina Amazon.it salvata in research.amazon_pages_dir: concorrenti non misurati")
 
+    # demand: autocomplete (free) always; volumes if a paid source or an export exists
+    p.volumes.append(Suggestions(folder=cache / "suggest" if cache else None))
+    if research and research.helium10_csv:
+        p.volumes.append(Helium10Export(research.helium10_csv))
     if creds.dataforseo_login and creds.dataforseo_password:
         p.volumes.append(DataForSEO(creds.dataforseo_login, creds.dataforseo_password))
-    if project and project.research.helium10_csv:
-        p.volumes.append(Helium10Export(project.research.helium10_csv))
-    if not p.volumes:
-        p.gaps.append("no DataForSEO login or Helium 10 export: Amazon search volume unknown")
 
-    try:
-        p.community = Reddit(creds.reddit_client_id, creds.reddit_client_secret)
-    except ProviderError as exc:
-        p.gaps.append(f"reddit unavailable: {exc}")
+    if creds.reddit_client_id and creds.reddit_client_secret:
+        try:
+            p.community = Reddit(creds.reddit_client_id, creds.reddit_client_secret)
+        except ProviderError as exc:
+            p.gaps.append(f"reddit non disponibile: {exc}")
+    else:
+        p.gaps.append("nessuna app Reddit (gratuita): niente thread dai forum")
     return p
 
 

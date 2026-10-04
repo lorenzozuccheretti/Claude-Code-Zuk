@@ -34,6 +34,16 @@ def score_demand(keywords: list[KeywordMetric], trend_values: list[int]) -> tupl
     if volumes:
         total = sum(volumes)
         return round(_clamp(math.log10(total + 1) / 4) * 10, 2), f"{total} ricerche/mese su {len(volumes)} keyword"
+    suggested = [k for k in keywords if k.suggestions is not None]
+    if suggested:  # free proxy: how much long tail people actually type
+        tail = sum(k.suggestions or 0 for k in suggested)
+        on_amazon = sum(1 for k in suggested if k.on_amazon)
+        score = _clamp(tail / 30) * 10 * (1.0 if on_amazon else 0.6)
+        note = f"proxy autocompletamento: {tail} varianti, {on_amazon}/{len(suggested)} keyword note ad Amazon.it"
+        if trend_values:
+            score = (score + statistics.mean(trend_values) / 10) / 2
+            note += " + media Google Trends"
+        return round(score, 2), note
     if trend_values:
         return round(statistics.mean(trend_values) / 10, 2), "proxy: media Google Trends (nessun volume Amazon)"
     return None, "domanda non misurata"
@@ -93,7 +103,12 @@ class Analyst:
         specs: dict[str, SourceSpec] = {}
         for seed in seeds:
             for dom in domains:
-                for r in self.p.web_search.search(f"{seed} site:{dom}", num=per_query):
+                try:
+                    results = self.p.web_search.search(f"{seed} site:{dom}", num=per_query)
+                except Exception as exc:  # noqa: BLE001 - a blocked search is a gap, not a crash
+                    self.log.append(f"ricerca web non disponibile: {exc}")
+                    return list(specs.values())
+                for r in results:
                     specs.setdefault(r.url, SourceSpec(url=r.url, title=r.title))
         if self.ingestor is not None:
             self.ingestor.ingest_all(list(specs.values()))
@@ -135,7 +150,10 @@ class Analyst:
         for source in self.p.volumes:
             try:
                 for k in source.volumes(seeds):
-                    keywords.setdefault(k.keyword.lower(), k)
+                    known = keywords.setdefault(k.keyword.lower(), k)
+                    for fname, value in k.model_dump().items():  # merge what each source measured
+                        if getattr(known, fname) is None and value is not None:
+                            setattr(known, fname, value)
             except Exception as exc:  # noqa: BLE001
                 self.log.append(f"volumi {type(source).__name__}: {exc}")
         comps = self._competitors(seeds)

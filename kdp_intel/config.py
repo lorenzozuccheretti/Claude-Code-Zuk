@@ -43,6 +43,8 @@ class ResearchPlan(BaseModel):
     competitor_asins: list[str] = []
     review_csv: str = ""  # optional local export of reviews
     helium10_csv: str = ""  # optional Cerebro/Magnet export
+    trends_dir: str = ""  # Google Trends CSV exports (free)
+    amazon_pages_dir: str = ""  # Amazon.it pages saved from the browser (free)
     subreddits: list[str] = ["italy", "ItaliaPersonalFinance", "commercialisti"]
     reddit_queries: list[str] = []
     verify_domains: list[str] = [
@@ -103,7 +105,14 @@ class Project(BaseModel):
 
 @dataclass(frozen=True)
 class Credentials:
-    """Which paid services this run may call. Read once from the environment."""
+    """Which services this run may call. Read once from the environment.
+    The first block is free (no card); the second is paid and optional."""
+
+    gemini_key: str = ""
+    tavily_key: str = ""
+    openrouter_key: str = ""
+    reddit_client_id: str = ""
+    reddit_client_secret: str = ""
 
     serpapi_key: str = ""
     apify_token: str = ""
@@ -114,13 +123,14 @@ class Credentials:
     dataforseo_password: str = ""
     pinecone_key: str = ""
     pinecone_index: str = ""
-    reddit_client_id: str = ""
-    reddit_client_secret: str = ""
 
     @classmethod
     def from_env(cls) -> "Credentials":
         env = os.environ.get
         return cls(
+            gemini_key=env("GEMINI_API_KEY", ""),
+            tavily_key=env("TAVILY_API_KEY", ""),
+            openrouter_key=env("OPENROUTER_API_KEY", ""),
             serpapi_key=env("SERPAPI_API_KEY", ""),
             apify_token=env("APIFY_TOKEN", ""),
             apify_reviews_actor=env("APIFY_REVIEWS_ACTOR", ""),
@@ -136,10 +146,13 @@ class Credentials:
 
     def available(self) -> dict[str, bool]:
         return {
+            "gemini (gratis)": bool(self.gemini_key),
+            "tavily (gratis)": bool(self.tavily_key),
+            "openrouter (gratis)": bool(self.openrouter_key),
+            "reddit_oauth (gratis)": bool(self.reddit_client_id and self.reddit_client_secret),
             "serpapi": bool(self.serpapi_key),
             "apify": bool(self.apify_token and self.apify_reviews_actor),
             "brightdata": bool(self.brightdata_token and self.brightdata_zone),
             "dataforseo": bool(self.dataforseo_login and self.dataforseo_password),
             "pinecone": bool(self.pinecone_key and self.pinecone_index),
-            "reddit_oauth": bool(self.reddit_client_id and self.reddit_client_secret),
         }

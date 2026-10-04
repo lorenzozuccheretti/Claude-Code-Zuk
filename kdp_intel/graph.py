@@ -24,7 +24,7 @@ from typing import Any, TypedDict
 
 from .agents import Analyst, Architect, FactChecker, ReviewMiner, Writer
 from .agents.writer import lint
-from .config import Project
+from .config import BookMeta, Project
 from .llm import LLM
 from .models import (
     ChapterDraft, FactCheckReport, GapReport, NicheReport, Outline, PersonaDraft,
@@ -65,6 +65,7 @@ class Runtime:
     draft_proof: bool = False  # typeset even if a chapter failed fact-checking
     resume: bool = True
     chapters_hint: int = 12
+    stop_after: str = ""  # "architect": stop for the outline to be approved (and edited)
 
     def __post_init__(self) -> None:
         self.ingestor = Ingestor(self.store, self.workdir / "sources.json", self.providers.fetcher,
@@ -209,10 +210,11 @@ def build_graph(rt: Runtime):
             facts_as_of=p.facts_as_of.isoformat(), index_terms=p.index_terms,
         )
         result = typeset(book, rt.workdir / "05_interior")
-        status = "printed" if result.preflight.ok and not state.get("blocked") else "proof"
+        problems = result.preflight.problems + metadata_problems(p.book)
+        status = "printed" if not problems and not state.get("blocked") else "proof"
         return {"pdf": str(result.pdf), "status": status,
-                "log": _log(state, f"typeset: {result.preflight.pages} pagine, preflight "
-                                   f"{'OK' if result.preflight.ok else result.preflight.problems}")}
+                "log": _log(state, f"typeset: {result.preflight.pages} pagine, "
+                                   f"{'OK' if not problems else problems}")}
 
     def blocked_node(state: BookState) -> BookState:
         rt.save("blocked.json", {"chapters": state["blocked"]})
@@ -229,7 +231,11 @@ def build_graph(rt: Runtime):
     g.add_edge("ingest", "analyst")
     g.add_edge("analyst", "review_miner")
     g.add_edge("review_miner", "architect")
-    g.add_edge("architect", "writer")
+    g.add_conditional_edges("architect", lambda s: "pause" if rt.stop_after == "architect" else "write",
+                            {"pause": "outline_ready", "write": "writer"})
+    g.add_node("outline_ready", lambda s: {"status": "outline_ready", "log": _log(
+        s, "indice pronto: rivedi 04_outline.json, poi rilancia senza --stop-after")})
+    g.add_edge("outline_ready", END)
     g.add_edge("writer", "fact_checker")
     g.add_conditional_edges("fact_checker", route, {"advance": "advance", "revise": "revise",
                                                      "give_up": "advance"})
@@ -240,14 +246,33 @@ def build_graph(rt: Runtime):
     return g.compile()
 
 
+def metadata_problems(book: BookMeta) -> list[str]:
+    """Placeholders that must not reach a printed copyright page."""
+    out = []
+    for name in ("author", "publisher", "title"):
+        value = getattr(book, name) or ""
+        if not value.strip() or "da definire" in value.lower():
+            out.append(f"book.{name} non impostato ({value!r})")
+    return out
+
+
 def run(rt: Runtime, niche: str = "") -> BookState:
+    from .llm_free import PendingLLM  # noqa: PLC0415
+
     graph = build_graph(rt)
     max_chapters = len(rt.project.outline.chapters) if rt.project.outline else 40
     limit = 20 + max_chapters * (rt.project.quality.max_revisions + 1) * 4
     state: BookState = {"log": []}
     if niche:
         state["niche"] = niche
-    final = graph.invoke(state, config={"recursion_limit": limit})
+    try:
+        final = graph.invoke(state, config={"recursion_limit": limit})
+    except PendingLLM as pending:
+        # A hand-off request is waiting. Everything answered so far is cached,
+        # so the next run replays it for free and stops at the next question.
+        final = {"status": "waiting", "pending": [str(pending.folder / f"{t}.request.md")
+                                                  for t in pending.task_ids],
+                 "log": [f"in attesa di risposta: {', '.join(pending.task_ids)}"]}
     rt.save("run_log.json", {"status": final.get("status"), "log": final.get("log", []),
-                             "pdf": final.get("pdf", "")})
+                             "pdf": final.get("pdf", ""), "pending": final.get("pending", [])})
     return final

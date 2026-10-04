@@ -76,6 +76,8 @@ class KeywordMetric(BaseModel):
     keyword: str
     search_volume: int | None = None
     competing_products: int | None = None
+    suggestions: int | None = None  # long-tail autocomplete completions (free proxy)
+    on_amazon: bool | None = None  # Amazon.it autocomplete knows the phrase
     source: str = ""
 
 

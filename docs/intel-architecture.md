@@ -6,15 +6,29 @@ per capitolo con RAG, fact-checking che blocca la stampa, impaginazione PDF
 conforme KDP. Vive accanto a `kdp_factory` (libri low-content) e ne riusa la
 scheda tecnica KDP (`kdp_factory/spec/kdp_spec.yaml`) e i font.
 
+**Costo predefinito: zero.** Ogni capacità ha un'opzione gratuita, e i
+servizi a pagamento entrano in gioco solo se ne imposti le credenziali.
+
+| Serve | Gratis (predefinito) | A pagamento (facoltativo) |
+|---|---|---|
+| Modello linguistico | hand-off a questa sessione Claude Code o a una chat; Gemini free tier; OpenRouter `:free`; Ollama locale | Claude API |
+| Ricerca web | Tavily (chiave gratuita, 1.000 ricerche/mese, senza carta); DuckDuckGo (senza chiave, spesso bloccato dal cloud) | SerpAPI |
+| Domanda | autocompletamento Amazon.it e Google (senza chiave) | DataForSEO; Helium 10 (export CSV) |
+| Andamento | CSV esportato da trends.google.it | SerpAPI Trends |
+| Concorrenti, BSR, recensioni | pagine Amazon.it salvate dal tuo browser | SerpAPI, Bright Data, Apify |
+| Forum | app Reddit "script" (gratuita) | — |
+| Archivio vettoriale, embedding | ChromaDB locale, embedding hashing o multilingue locale | Pinecone |
+| Impaginazione, copertina | Typst / WeasyPrint; Canva (piano gratuito) con il modello generato da `kdpi cover-spec` | — |
+
 ```
                  ┌────────────── vector store (Chroma | Pinecone | memoria) ◄──────────────┐
                  │                 BM25 + vettori, filtri per autorevolezza e data          │
                  ▼                                                                          │
 ingest ─► Analyst ─► Review Miner ─► Architect ─► Writer ─► Fact-Checker ─┬─► Typesetter ─► PDF
- fonti     SerpAPI    Apify /          persona      RAG       5 controlli  │   Typst |
- ufficiali Trends     Bright Data /    + indice     + lint    + verifica   │   WeasyPrint
- Reddit    DataForSEO CSV              validato               web          │
-           Helium 10                                  ▲                    │
+ fonti     autocompl. pagine Amazon    persona      RAG       5 controlli  │   Typst |      │
+ ufficiali Trends CSV salvate / CSV    + indice     + lint    + verifica   │   WeasyPrint   ▼
+ Reddit    Tavily                      (pausa per              web          │         cover-spec
+                                        approvarlo)   ▲                    │         → Canva
                                                       └── revisione ◄──────┤ (max N)
                                                                            └─► bloccato
 ```
@@ -90,25 +104,53 @@ bozza lo stesso).
 
 ## Fornitori di dati (`providers/`)
 
+Gratuiti (`providers/free.py`, scelti per primi):
+
+| Dove | Servizio | Fornisce |
+|---|---|---|
+| `TAVILY_API_KEY` | Tavily (gratis, senza carta) | Ricerca web; `site:dominio` diventa `include_domains` |
+| nessuna chiave | DuckDuckGo HTML | Ricerca web di riserva; dal cloud risponde spesso con una verifica anti-bot, e allora la run lo annota invece di fermarsi |
+| nessuna chiave | Autocompletamento Amazon.it e Google | Segnale di domanda: varianti a coda lunga che le persone digitano davvero. È un indicatore, non un volume, e il report lo dice |
+| `research.trends_dir` | Google Trends, CSV esportato | Andamento a 12 mesi (Italia), una colonna per termine |
+| `research.amazon_pages_dir` | Pagine Amazon.it salvate (Ctrl+S) | Risultati di ricerca (titolo, voto, recensioni, prezzo), BSR dalle schede prodotto, recensioni dalle pagine filtrate per 1-3 stelle |
+| `research.review_csv` | CSV di recensioni | Recensioni copiate o esportate a mano |
+| `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET` | App Reddit "script" (gratis) | Thread dei subreddit italiani. Dal cloud Reddit rifiuta l'accesso anonimo |
+
+Ricerche web e autocompletamento sono salvati in `cache/`: una run ripetuta
+non consuma quota.
+
+A pagamento (facoltativi, entrano solo con le credenziali):
+
 | Variabile d'ambiente | Servizio | Fornisce |
 |---|---|---|
-| `SERPAPI_API_KEY` | SerpAPI | Google.it (`gl=it`, `hl=it`), Google Trends (`geo=IT`), ricerca Amazon.it |
-| `APIFY_TOKEN`, `APIFY_REVIEWS_ACTOR` | Apify | Recensioni Amazon.it tramite un actor a scelta (`owner~name`); input configurabile, campi di output letti tramite alias |
-| `BRIGHTDATA_API_TOKEN`, `BRIGHTDATA_ZONE` | Bright Data Web Unlocker | Pagine che rifiutano HTTP semplice, BSR "Posizione nella classifica Bestseller", recensioni HTML |
-| `DATAFORSEO_LOGIN`, `DATAFORSEO_PASSWORD` | DataForSEO | Volumi di ricerca Amazon (Labs) e Google Ads per l'Italia (`location_code` 2380) |
-| `research.helium10_csv` | Helium 10 | Export CSV di Cerebro/Magnet: Helium 10 non ha un'API pubblica per questi strumenti |
-| `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET` | Reddit | OAuth app-only; senza, JSON pubblico (soggetto a limiti) |
+| `SERPAPI_API_KEY` | SerpAPI | Google.it, Google Trends (`geo=IT`), ricerca Amazon.it |
+| `APIFY_TOKEN`, `APIFY_REVIEWS_ACTOR` | Apify | Recensioni Amazon.it tramite un actor a scelta |
+| `BRIGHTDATA_API_TOKEN`, `BRIGHTDATA_ZONE` | Bright Data Web Unlocker | Pagine che rifiutano HTTP semplice, BSR, recensioni |
+| `DATAFORSEO_LOGIN`, `DATAFORSEO_PASSWORD` | DataForSEO | Volumi di ricerca Amazon e Google per l'Italia |
 | `PINECONE_API_KEY`, `PINECONE_INDEX` | Pinecone | Vector store gestito |
-| credenziali Anthropic | Claude | Modelli per Review Miner, Architect, Writer e Fact-Checker |
 
 Un servizio senza credenziali viene disattivato e la mancanza compare nel log
 della run. Nessun dato viene inventato al suo posto.
 
-Claude è chiamato tramite l'SDK ufficiale (`kdp_intel/llm.py`): richieste in
-streaming, output strutturato (`output_config.format` con JSON schema
-generato dai modelli pydantic), prompt di sistema in cache, `effort` per
-compito, e il fallback lato server sui rifiuti (`fallbacks: "default"`).
-Modello predefinito `claude-opus-5-5`, configurabile con `--model`.
+## Modelli linguistici (`llm.py`, `llm_free.py`)
+
+Gli agenti chiedono sempre un oggetto JSON conforme a uno schema pydantic, quindi
+qualunque backend capace di restituire JSON va bene. Si sceglie con `--llm`:
+
+| `--llm` | Costo | Note |
+|---|---|---|
+| `handoff` | zero | Ogni richiesta diventa un file `llm_cache/<id>.request.md` (istruzioni, evidenze, schema). Chi risponde (questa sessione Claude Code, o tu incollandola in una chat) scrive `<id>.json`; `kdpi answer` lo valida. La run successiva riparte da lì |
+| `gemini` | zero (free tier) | `GEMINI_API_KEY` da aistudio.google.com, senza carta. Modello predefinito `gemini-3.8-flash`, ritmo limitato al tetto al minuto; a quota giornaliera esaurita si ferma e riprende il giorno dopo. Sul piano gratuito Google può usare i contenuti inviati per migliorare i suoi prodotti: va bene per fonti pubbliche, non per dati privati |
+| `openrouter` | zero (modelli `:free`) | `OPENROUTER_API_KEY`; modello predefinito `openrouter/free` |
+| `ollama` | zero (hardware tuo) | `OLLAMA_BASE_URL`, modello locale a scelta con `--model` |
+| `claude` | a pagamento | Claude API via SDK ufficiale: streaming, output strutturato, fallback sui rifiuti |
+| `auto` | — | `gemini` se c'è `GEMINI_API_KEY`, altrimenti `handoff` |
+
+Ogni risposta è salvata in `llm_cache/` con l'hash di (schema, istruzioni,
+richiesta). Una richiesta già risposta non viene mai rifatta, quindi una quota
+esaurita non fa perdere nulla e una run interrotta riparte dove si era
+fermata. Le risposte vengono validate contro lo schema; se una non è conforme,
+il modello riceve un tentativo di correzione con l'errore.
 
 ## Impaginazione (`typeset/`)
 
@@ -141,20 +183,47 @@ fascia del conteggio reale, font incorporati.
 
 ```bash
 pip install -e '.[intel,dev]'
-kdpi providers                                        # quali servizi sono attivi
-kdpi ingest   intel_projects/successione-2026.yaml    # fonti nel vector store
-kdpi research intel_projects/successione-2026.yaml    # punteggio delle nicchie
-kdpi mine     intel_projects/successione-2026.yaml    # lacune dei concorrenti
-kdpi run      intel_projects/successione-2026.yaml    # tutto, fino al PDF
-kdpi check    intel_projects/successione-2026.yaml --chapter 3
-kdpi typeset  intel_projects/successione-2026.yaml --engine weasyprint
+kdpi providers                                    # cosa è attivo, gratis e no
+P=intel_projects/successione-2026.yaml
+kdpi ingest   $P                                  # fonti nel vector store (una volta)
+kdpi research $P                                  # punteggio delle nicchie
+kdpi run      $P --stop-after architect           # persona e indice, poi pausa
+#   rivedi .kdp_intel/successione-2026/04_outline.json, modificalo se serve
+kdpi run      $P                                  # scrittura, verifica, PDF
+kdpi pending  $P                                  # (handoff) richieste da rispondere
+kdpi answer   $P <id> risposta.json               # (handoff) valida e archivia
+kdpi cover-spec  $P                               # misure e modello per Canva
+kdpi cover-check $P copertina.pdf                 # controlla il PDF esportato da Canva
 ```
 
-Opzioni comuni: `--store chroma|pinecone|memory`, `--embedder`,
-`--offline fixtures.json` (tutti i fornitori sostituiti da un file),
-`--today AAAA-MM-GG` (data fissa per run riproducibili), `--model`.
+Opzioni comuni: `--llm`, `--model`, `--store chroma|pinecone|memory`,
+`--embedder`, `--offline fixtures.json`, `--today AAAA-MM-GG`.
 
-Uscita di `kdpi run`: `0` libro stampabile, `2` bloccato o solo bozza.
+Uscita di `kdpi run`: `0` stampabile, `2` bloccato o solo bozza, `3` in attesa
+di risposte (handoff), `4` indice pronto per l'approvazione.
+
+Il libro non viene dichiarato stampabile se autore, editore o titolo sono
+segnaposto ("da definire").
+
+## Copertina con Canva (gratis)
+
+Il dorso dipende dal numero di pagine, quindi la copertina si fa dopo l'interno
+definitivo.
+
+1. `kdpi cover-spec PROGETTO` legge `05_interior/interior.pdf` e scrive in
+   `06_cover/`: `cover_spec.json` (misure in pollici e mm, dorso, area del
+   codice a barre), `cover_guide.pdf` e `cover_guide.png` (rosso: abbondanza
+   da rifilare; blu: taglio e pieghe del dorso; verde: zona sicura per i
+   testi; grigio: area del codice a barre, da lasciare vuota).
+2. In Canva: "Crea un design" → "Dimensioni personalizzate" in pollici, con le
+   misure del file. Carica `cover_guide.png` come primo livello, costruisci la
+   copertina sopra, poi elimina la guida.
+3. Scarica come "PDF per la stampa" **senza** segni di taglio e di
+   smarginatura: KDP vuole l'abbondanza dentro le misure, non segni intorno.
+4. `kdpi cover-check PROGETTO copertina.pdf` controlla pagina unica e misure
+   esatte, e riconosce un'esportazione con i segni di taglio.
+
+Testo sul dorso solo sopra le 100 pagine (regola KDP, nella scheda tecnica).
 
 ## Limiti noti
 
@@ -166,6 +235,15 @@ Uscita di `kdpi run`: `0` libro stampabile, `2` bloccato o solo bozza.
   usare zero.
 - L'embedder `hashing` è lessicale. Per domande parafrasate serve
   `--embedder multilingual`.
-- Copertina e scheda prodotto non sono ancora generate da `kdp_intel`.
-  `kdp_factory` ha le stazioni per farlo (`stations/s3_cover.py`,
-  `s4_listing.py`), ma non sono collegate a questo motore.
+- La scheda prodotto (descrizione, keyword, categorie, prezzo in euro) non è
+  ancora generata da `kdp_intel`; la scheda tecnica KDP del repository ha i
+  costi di stampa solo per amazon.com in dollari.
+- `cover-check` non misura la risoluzione delle immagini dentro il PDF: in
+  Canva usa immagini ad almeno 300 dpi alla dimensione di stampa.
+- Brocardi.it è usato solo per il testo degli articoli del Codice civile:
+  note, massime e commenti della pagina vengono scartati, perché sono
+  opinioni (una nota all'art. 542 attribuisce al coniuge 1/3 dove l'articolo
+  dice un quarto).
+- Con l'hand-off ogni richiesta ferma la run: un libro di 12 capitoli richiede
+  decine di cicli rispondi → rilancia. Con Gemini free tier il ciclo è
+  automatico.

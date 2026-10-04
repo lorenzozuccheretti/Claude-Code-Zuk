@@ -58,6 +58,26 @@ def source_id(url: str) -> str:
     return f"{re.sub(r'[^a-z0-9]', '', label)[:12] or 'src'}-{hashlib.sha1(url.encode()).hexdigest()[:6]}"
 
 
+_BROCARDI_ARTICLE = re.compile(r'<div class="corpoDelTesto dispositivo">(.*?)</div>', re.S)
+_NOTE_REF = re.compile(r'<sup><a class="nota-ref"[^>]*>.*?</a></sup>', re.S)
+
+
+def article_only(url: str, page: str) -> str:
+    """For sites that wrap a law in commentary, keep only the law.
+
+    Brocardi.it prints the article text in ``corpoDelTesto dispositivo`` and
+    then notes, case law and comments. Those are opinions, sometimes wrong
+    (a note on art. 542 c.c. gives the spouse 1/3 where the article says
+    1/4), and must never be filed as the text of a law."""
+    if domain(url).endswith("brocardi.it"):
+        m = _BROCARDI_ARTICLE.search(page)
+        if m:
+            title = _TITLE.search(page)
+            body = _NOTE_REF.sub("", m.group(1))
+            return f"<title>{title.group(1) if title else ''}</title><p>{body}</p>"
+    return page
+
+
 def html_to_text(page: str) -> tuple[str, str, date | None]:
     """(title, text, published) from an HTML page."""
     title_m = _TITLE.search(page)
@@ -115,8 +135,9 @@ def to_chunks(doc: SourceDoc) -> list[Chunk]:
 
 class Ingestor:
     def __init__(self, store: VectorStore, manifest_path: str | Path, fetcher: Any,
-                 unblocker: Any = None, today: date | None = None) -> None:
+                 unblocker: Any = None, today: date | None = None, refresh: bool = False) -> None:
         self.store = store
+        self.refresh = refresh  # False: a source already in the store is not fetched again
         self.manifest_path = Path(manifest_path)
         self.fetcher, self.unblocker = fetcher, unblocker
         self.today = today or date.today()
@@ -151,7 +172,15 @@ class Ingestor:
             except Exception:  # noqa: BLE001
                 raise first from None
 
+    def _have(self, sid: str) -> int:
+        known = self.manifest.get(sid, {}).get("chunks", 0)
+        if known and not self.refresh and self.store.query(sid, 1, source_ids=[sid]):
+            return int(known)
+        return 0
+
     def ingest_url(self, spec: SourceSpec) -> int:
+        if have := self._have(source_id(spec.url)):
+            return have
         try:
             body, ctype = self._get(spec.url)
         except Exception as exc:  # noqa: BLE001 - one bad source must not stop the run
@@ -160,7 +189,7 @@ class Ingestor:
         if "pdf" in ctype or spec.url.lower().endswith(".pdf") or body[:5] == b"%PDF-":
             title, text, published = spec.title, pdf_to_text(body), None
         else:
-            title, text, published = html_to_text(body.decode("utf-8", errors="replace"))
+            title, text, published = html_to_text(article_only(spec.url, body.decode("utf-8", errors="replace")))
         kind, tier = classify(spec.url)
         if spec.kind:
             kind = spec.kind
@@ -176,6 +205,8 @@ class Ingestor:
 
     def ingest_thread(self, thread: dict[str, Any]) -> int:
         """A forum thread is evidence of how readers talk, never of facts."""
+        if have := self._have(source_id(thread["url"])):
+            return have
         text = "\n\n".join([thread.get("title", ""), thread.get("text", ""), *thread.get("comments", [])])
         doc = SourceDoc(
             id=source_id(thread["url"]), url=thread["url"], title=thread.get("title", ""),

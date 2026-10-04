@@ -21,7 +21,6 @@ upload = ["playwright>=1.40"]
 llm = ["anthropic>=0.40"]
 # KDP-Intelligence-Engine (kdp_intel): agents, RAG and typesetting for non-fiction.
 intel = [
-    "anthropic>=1.0",
     "langgraph>=1.0",
     "chromadb>=1.0",
     "typst>=0.13",
@@ -29,6 +28,7 @@ intel = [
     "httpx>=0.27",
     "pydantic>=2.7",
 ]
+claude = ["anthropic>=1.0"]  # optional paid backend; the free ones need nothing extra
 pinecone = ["pinecone>=5.0"]
 embeddings = ["sentence-transformers>=3.0"]
 dev = ["pytest>=7.4"]

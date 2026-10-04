@@ -70,6 +70,116 @@ sources:
   - url: "https://www.altroconsumo.it/soldi/conti-correnti/consigli/conto-corrente-e-successione"
     publisher: "Altroconsumo"
 
+  # Prassi ufficiale sulla riforma: la fonte più importante del libro.
+  - url: "https://www.agenziaentrate.gov.it/portale/documents/20143/8410821/Circolare_decreto_delegato_Successioni_Donazioni.pdf"
+    title: "Circolare n. 3/E del 16 aprile 2025 - Novità dell'imposta sulle successioni e donazioni"
+    publisher: "Agenzia delle Entrate"
+    kind: official
+    published: 2025-04-16
+  - url: "https://www.agenziaentrate.gov.it/portale/imposta-agevolata-su-successioni-e-donazioni"
+    title: "L'imposta agevolata su successioni e donazioni"
+    publisher: "Agenzia delle Entrate"
+  - url: "https://www.agenziaentrate.gov.it/portale/documents/20143/244895/Succ_FASCICOLO_I_Nov_23.pdf/ebc28cca-a79f-5a00-5a9a-7e4b70611a6b?t=1752664229629"
+    title: "Dichiarazione di successione - Istruzioni, fascicolo 1"
+    publisher: "Agenzia delle Entrate"
+    kind: official
+  - url: "https://www.agenziaentrate.gov.it/portale/documents/20143/244895/Succ_FASCICOLO_II_Nov_23.pdf/7f369d23-164f-7679-a44e-fb941984bdcd?t=1752664112684"
+    title: "Dichiarazione di successione - Istruzioni, fascicolo 2"
+    publisher: "Agenzia delle Entrate"
+    kind: official
+  - url: "https://www.inps.it/it/it/dettaglio-scheda.it.schede-servizio-strumento.schede-servizi.pensione-ai-superstiti-indiretta-e-di-reversibilit--50605.pensione-ai-superstiti-indiretta-e-di-reversibilit-.html"
+    title: "Pensione ai superstiti indiretta e di reversibilità"
+    publisher: "INPS"
+  - url: "https://www.inps.it/it/it/dettaglio-scheda.it.schede-servizio-strumento.schede-servizi.liquidazione-di-quote-di-pensione-agli-eredi-50311.liquidazione-di-quote-di-pensione-agli-eredi.html"
+    title: "Liquidazione di quote di pensione agli eredi"
+    publisher: "INPS"
+  # Codice civile, libro II (successioni): testo degli articoli da Brocardi,
+  # marcato come norma perché il libro cita l'articolo, non il commento.
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-i/capo-i/art456.html"
+    title: "Codice civile, art. 456"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-i/capo-i/art459.html"
+    title: "Codice civile, art. 459"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-i/capo-v/sezione-i/art470.html"
+    title: "Codice civile, art. 470"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-i/capo-v/sezione-i/art476.html"
+    title: "Codice civile, art. 476"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-i/capo-v/sezione-i/art480.html"
+    title: "Codice civile, art. 480"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-i/capo-v/sezione-ii/art484.html"
+    title: "Codice civile, art. 484"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-i/capo-v/sezione-ii/art485.html"
+    title: "Codice civile, art. 485"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-i/capo-vii/art519.html"
+    title: "Codice civile, art. 519"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-i/capo-vii/art521.html"
+    title: "Codice civile, art. 521"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-i/capo-x/sezione-i/art536.html"
+    title: "Codice civile, art. 536"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-i/capo-x/sezione-i/art537.html"
+    title: "Codice civile, art. 537"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-i/capo-x/sezione-i/art540.html"
+    title: "Codice civile, art. 540"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-i/capo-x/sezione-i/art542.html"
+    title: "Codice civile, art. 542"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-ii/art565.html"
+    title: "Codice civile, art. 565"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-ii/capo-i/art566.html"
+    title: "Codice civile, art. 566"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-ii/capo-ii/art581.html"
+    title: "Codice civile, art. 581"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-ii/capo-ii/art582.html"
+    title: "Codice civile, art. 582"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-iii/capo-i/art587.html"
+    title: "Codice civile, art. 587"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-iii/capo-iv/sezione-i/art602.html"
+    title: "Codice civile, art. 602"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-iv/capo-i/art713.html"
+    title: "Codice civile, art. 713"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-iv/capo-ii/art737.html"
+    title: "Codice civile, art. 737"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
+
 index_terms:
   - "dichiarazione di successione"
   - "autoliquidazione"

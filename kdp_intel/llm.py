@@ -1,10 +1,14 @@
-"""The one place the engine talks to Claude.
+"""The model interface every agent uses, plus the paid Claude backend.
 
-Agents ask for a pydantic model back (`structured`) and never parse prose.
-Requests stream, because a chapter is long and a non-streaming call with a
-large ``max_tokens`` risks the HTTP timeout. Refusals are routed server-side
-to a fallback model (``fallbacks: "default"``); a refusal that survives the
-chain raises instead of returning an empty object.
+Agents ask for a pydantic model back (``structured``) and never parse prose,
+so any backend that can return JSON for a schema will do. The free backends
+(this Claude Code session by hand-off, Gemini's free tier, OpenRouter's free
+models, a local Ollama) live in ``llm_free.py``.
+
+``ClaudeLLM`` streams, because a chapter is long and a non-streaming call
+with a large ``max_tokens`` risks the HTTP timeout. Refusals are routed
+server-side to a fallback model (``fallbacks: "default"``); a refusal that
+survives the chain raises instead of returning an empty object.
 
 Tests use ``ScriptedLLM``, which answers from a function and costs nothing.
 """
@@ -32,6 +36,23 @@ class LLM(Protocol):
         self, *, system: str, prompt: str, schema: type[T], effort: str = "high",
         max_tokens: int = 32000,
     ) -> T: ...
+
+
+def inline_refs(schema: dict[str, Any]) -> dict[str, Any]:
+    """The same schema with every ``$ref`` to ``$defs`` replaced by its
+    definition. Not every provider resolves references; all accept this."""
+    defs = schema.get("$defs", {})
+
+    def resolve(node: Any) -> Any:
+        if isinstance(node, dict):
+            if "$ref" in node and node["$ref"].startswith("#/$defs/"):
+                return resolve(copy.deepcopy(defs[node["$ref"].split("/")[-1]]))
+            return {k: resolve(v) for k, v in node.items() if k != "$defs"}
+        if isinstance(node, list):
+            return [resolve(v) for v in node]
+        return node
+
+    return resolve(schema)
 
 
 def strict_schema(model: type[BaseModel]) -> dict[str, Any]:
