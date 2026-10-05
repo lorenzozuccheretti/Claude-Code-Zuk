@@ -48,6 +48,7 @@ class ResearchPlan(BaseModel):
     subreddits: list[str] = ["italy", "ItaliaPersonalFinance", "commercialisti"]
     reddit_queries: list[str] = []
     discover_sources: bool = True  # search the web for more official pages before writing
+    chapter_search: bool = False  # before each chapter, search the web with its own queries
     verify_domains: list[str] = [
         "gazzettaufficiale.it",
         "normattiva.it",

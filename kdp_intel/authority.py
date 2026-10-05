@@ -8,6 +8,7 @@ for a number or a legal rule.
 
 from __future__ import annotations
 
+import re
 from urllib.parse import urlparse
 
 from .models import SourceKind
@@ -24,8 +25,12 @@ _PRESS = {
     "money.it", "investireoggi.it", "ecnews.it", "diritto.it", "brocardi.it",
     "assolombarda.it", "italiaoggi.it", "corriere.it", "repubblica.it",
     "agendadigitale.eu", "informazionefiscale.it", "fiscoetasse.com", "ansa.it",
-    "lavoripubblici.it", "orizzontescuola.it", "quotidianopiu.it",
+    "lavoripubblici.it", "orizzontescuola.it", "quotidianopiu.it", "studiocataldi.it",
+    "lentepubblica.it", "laleggepertutti.it", "puntosicuro.it",
 }
+# Regions, provinces, municipalities and the public health service publish under their own
+# domains, not .gov.it: regione.lazio.it, comune.milano.it, asufc.sanita.fvg.it.
+_PUBLIC_BODY = re.compile(r"(^|\.)(regione|provincia|comune)\.[a-z-]+\.it$|(^|\.)sanita\.[a-z-]+\.it$")
 _COMMUNITY = {"reddit.com", "quora.com", "facebook.com", "forumfree.it"}
 _REVIEW = {"amazon.it", "amazon.com", "goodreads.com"}
 
@@ -43,7 +48,7 @@ def classify(url: str) -> tuple[SourceKind, int]:
     host = domain(url)
     if _matches(host, _LAW):
         return "law", 1
-    if _matches(host, _OFFICIAL) or host.endswith(".gov.it"):
+    if _matches(host, _OFFICIAL) or host.endswith(".gov.it") or _PUBLIC_BODY.search(host):
         return "official", 1
     if _matches(host, _PRESS):
         return "press", 2

@@ -154,6 +154,11 @@ def build_graph(rt: Runtime):
         spec = outline.chapters[idx]
         rev = state.get("revision", 0)
         name = f"chapters/{spec.number:02d}"
+        if (rev == 0 and p.research.chapter_search and rt.providers.web_search is not None
+                and not (rt.resume and (rt.workdir / f"{name}.draft.json").exists())):
+            # The topic's sources rarely cover every chapter (this year's amounts, one form's
+            # rules): search with the chapter's own questions before retrieving its evidence.
+            analyst.discover_sources(spec.queries[:2], [""], per_query=5)
         evidence = retrieve(rt.store, spec.queries, k=6, max_age_days=p.quality.max_source_age_days,
                             today=rt.today)
         if rev == 0 and rt.resume:
@@ -163,7 +168,13 @@ def build_graph(rt: Runtime):
             prior = rt.load(f"{name}.draft.json", ChapterDraft)
             if prior is not None:
                 status = "già verificato" if done is not None and done.passed else "ripreso dall'ultima bozza"
-                return {"draft": prior, "lint": lint(prior, {h.chunk.source_id for h in evidence}, p.quality),
+                # The archive grows between runs (later chapters search for their own sources), which
+                # reorders this chapter's evidence. A saved draft may cite anything in the archive: the
+                # fact-checker proves each citation against its source either way.
+                archived = set(json.loads(manifest.read_text(encoding="utf-8"))) if (
+                    manifest := rt.workdir / "sources.json").exists() else set()
+                allowed = {h.chunk.source_id for h in evidence} | archived
+                return {"draft": prior, "lint": lint(prior, allowed, p.quality),
                         "log": _log(state, f"writer: cap. {spec.number} {status}")}
         previous = state.get("draft") if rev else None
         report = state.get("reports", {}).get(spec.number) if rev else None

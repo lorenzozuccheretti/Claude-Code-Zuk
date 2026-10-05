@@ -151,7 +151,7 @@ class Scout:
         tail |= {s for s in self.google(f"{kw} ") if s.startswith(kw) and s != kw}
         check = KeywordCheck(keyword=kw, amazon_prefix=found, longtail=len(tail))
         if not found:
-            check.notes.append("Amazon.it non la suggerisce nella ricerca libri")
+            check.notes.append("Amazon.it non la suggerisce")
         if check.longtail < self.gates.min_longtail:
             check.notes.append(f"coda lunga {check.longtail} < {self.gates.min_longtail}")
         check.passed = bool(found) and check.longtail >= self.gates.min_longtail

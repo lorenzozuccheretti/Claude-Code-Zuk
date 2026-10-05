@@ -118,6 +118,7 @@ def project_data(profile: AutopilotProfile, decision, manifest: dict[str, dict],
                      # the scout has already searched; more searching is the writer's evidence
                      # retrieval, not new web queries
                      "discover_sources": False,
+                     "chapter_search": True,
                      "reddit_queries": keywords[:3]},
         "sources": sources,
         "index_terms": keywords[:12],
