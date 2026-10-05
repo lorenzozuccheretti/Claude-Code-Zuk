@@ -221,3 +221,35 @@ class SavedAmazonPages:
             if asin in page and 'data-hook="review"' in page:
                 out.extend(parse_reviews(page, asin))
         return out[:max_reviews]
+
+
+SEARCH_SYSTEM = """Sei un ricercatore. Esegui la ricerca web indicata con il tuo strumento di \
+ricerca e riporta solo risultati che hai visto davvero: titolo, URL esatto, un estratto e la data \
+di pubblicazione se la pagina la mostra. Preferisci pagine italiane e fonti ufficiali. Non inventare \
+URL: ogni pagina verrà scaricata e una pagina inesistente viene scartata. Se una query contiene \
+site:dominio, limita la ricerca a quel dominio."""
+
+
+class HandoffSearch:
+    """Web search answered through the hand-off folder.
+
+    With no search key, a cloud session cannot reach a search engine (they
+    answer bots with challenge pages), but the agent answering the hand-off
+    requests has its own search tool. Each query becomes a request; the
+    answer lists the pages it saw. Nothing is trusted on the answer's word:
+    every URL is fetched and classified before it can be cited, so an invented
+    one simply fails to ingest.
+    """
+
+    interactive = True
+
+    def __init__(self, llm) -> None:
+        self.llm = llm
+
+    def search(self, query: str, num: int = 10) -> list[SearchResult]:
+        from ..models import WebResults  # noqa: PLC0415
+
+        answer = self.llm.structured(system=SEARCH_SYSTEM, schema=WebResults, effort="low",
+                                     prompt=f"Query: {query}\nRisultati richiesti: fino a {num}")
+        return [SearchResult(r.title, r.url, r.snippet, r.published)
+                for r in answer.results[:num] if r.url.startswith(("http://", "https://"))]

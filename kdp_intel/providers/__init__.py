@@ -30,6 +30,9 @@ class Providers:
     unblocker: PageFetcher | None = None  # for pages that refuse plain HTTP
     community: CommunitySearch | None = None
     bsr: Any = None  # anything with .bsr(asin) -> int | None
+    catalog: Any = None  # anything with .search_catalog(query) -> (total, [CatalogBook])
+    suggest: Any = None  # anything with .amazon(prefix) and .google(prefix) -> [str]
+    search_is_handoff: bool = False  # web search answered through the hand-off folder
     gaps: list[str] = field(default_factory=list)
 
     @classmethod
@@ -37,18 +40,22 @@ class Providers:
         return cls(
             web_search=fixtures, trends=fixtures, marketplace=fixtures, reviews=fixtures,
             volumes=[fixtures], fetcher=fixtures, unblocker=fixtures, community=fixtures,
-            bsr=fixtures,
+            bsr=fixtures, catalog=fixtures, suggest=fixtures,
         )
 
 
 def build_providers(creds: Credentials, project: Project | None = None,
-                    cache_dir: Path | None = None) -> Providers:
+                    cache_dir: Path | None = None, handoff_llm: Any = None) -> Providers:
     """Free providers first; a paid one only replaces a free one when its
-    credentials are present."""
+    credentials are present. ``handoff_llm``: with no search key, web
+    searches become hand-off requests answered by an agent with a search tool."""
     from .apify import Apify
     from .brightdata import BrightData
     from .dataforseo import DataForSEO
-    from .free import CachedSearch, DuckDuckGoSearch, SavedAmazonPages, Suggestions, TavilySearch, TrendsCSV
+    from .catalog import IbsCatalog
+    from .free import (
+        CachedSearch, DuckDuckGoSearch, HandoffSearch, SavedAmazonPages, Suggestions, TavilySearch, TrendsCSV,
+    )
     from .helium10 import Helium10Export
     from .reddit import Reddit
     from .serpapi import SerpAPI
@@ -57,12 +64,16 @@ def build_providers(creds: Credentials, project: Project | None = None,
     cache = Path(cache_dir) if cache_dir else None
     p = Providers(fetcher=DirectFetcher())
 
-    # web search: Tavily (free key) > SerpAPI (paid) > DuckDuckGo (no key, often blocked)
+    # web search: Tavily (free key) > SerpAPI (paid) > hand-off (free, an agent searches)
+    # > DuckDuckGo (no key, refused from most cloud networks)
     search = None
     if creds.tavily_key:
         search = TavilySearch(creds.tavily_key)
     elif creds.serpapi_key:
         search = SerpAPI(creds.serpapi_key)
+    elif handoff_llm is not None:
+        search = HandoffSearch(handoff_llm)
+        p.search_is_handoff = True
     else:
         search = DuckDuckGoSearch()
         p.gaps.append("nessuna TAVILY_API_KEY (gratuita): ricerca web via DuckDuckGo, spesso bloccata")
@@ -92,8 +103,12 @@ def build_providers(creds: Credentials, project: Project | None = None,
     if p.marketplace is None:
         p.gaps.append("nessuna pagina Amazon.it salvata in research.amazon_pages_dir: concorrenti non misurati")
 
+    # competition in the Italian book catalogue (free, public search pages)
+    p.catalog = IbsCatalog(folder=cache / "catalog" if cache else None)
+
     # demand: autocomplete (free) always; volumes if a paid source or an export exists
-    p.volumes.append(Suggestions(folder=cache / "suggest" if cache else None))
+    p.suggest = Suggestions(folder=cache / "suggest" if cache else None)
+    p.volumes.append(p.suggest)
     if research and research.helium10_csv:
         p.volumes.append(Helium10Export(research.helium10_csv))
     if creds.dataforseo_login and creds.dataforseo_password:

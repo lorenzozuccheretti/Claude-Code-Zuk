@@ -267,3 +267,81 @@ class FactCheckReport(BaseModel):
 
     def failures(self) -> list[ClaimVerdict]:
         return [v for v in self.verdicts if v.status != "supported"]
+
+
+# --------------------------------------------------------------------- autopilot
+
+
+class WebHit(BaseModel):
+    title: str
+    url: str
+    snippet: str
+    published: str  # ISO date when the page shows one, else ""
+
+
+class WebResults(BaseModel):
+    """A web search answered by whoever holds a search tool (hand-off)."""
+
+    results: list[WebHit]
+
+
+class NicheIdea(BaseModel):
+    name: str
+    reader: str  # who buys it, in one sentence
+    problem: str  # the concrete problem the book solves
+    why_now: str  # what changed recently (a law, a deadline, a new procedure)
+    keywords: list[str]  # copied from the autocomplete suggestions given
+
+
+class NicheIdeas(BaseModel):
+    ideas: list[NicheIdea]
+
+
+class CatalogBook(BaseModel):
+    title: str
+    author: str = ""
+    publisher: str = ""
+    year: int | None = None
+    price_eur: float | None = None
+    ratings: int | None = None
+    url: str = ""
+
+
+class KeywordCheck(BaseModel):
+    keyword: str
+    amazon_prefix: str = ""  # shortest prefix whose Amazon.it book suggestions contain the keyword
+    longtail: int = 0  # distinct autocomplete completions that extend it
+    catalog_total: int | None = None  # books found for it in the Italian catalogue
+    recent_titles: int | None = None  # of which published in the last two years
+    passed: bool = False
+    notes: list[str] = []
+
+
+class Gate(BaseModel):
+    name: str
+    passed: bool
+    reasons: list[str]
+
+
+class TopicAssessment(BaseModel):
+    idea: NicheIdea
+    keywords: list[KeywordCheck]
+    primary_keyword: str = ""
+    official_sources: list[str] = []  # source ids of tier-1 pages about the topic
+    fresh_sources: list[str] = []  # tier 1-2 pages published in the last 18 months
+    competitors: list[CatalogBook] = []
+    source_urls: list[str] = []  # every page the web search found for it
+    gates: list[Gate] = []
+    score: float = 0.0
+
+    @property
+    def passed(self) -> bool:
+        return bool(self.gates) and all(g.passed for g in self.gates)
+
+
+class ListingDraft(BaseModel):
+    title: str
+    subtitle: str
+    description: str  # Amazon product description, plain text with blank lines between paragraphs
+    backend_keywords: list[str]  # the seven KDP keyword boxes
+    categories: list[str]  # two BISAC-style browse paths, most specific last

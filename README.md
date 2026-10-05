@@ -274,7 +274,13 @@ Apify, Bright Data, DataForSEO, Pinecone) are optional plug-ins.
 
 ```bash
 pip install -e '.[intel,dev]'
-kdpi run intel_projects/successione-2026.yaml
+kdpi autopilot intel_projects/autopilot.yaml --llm handoff   # topic → validation → book
+kdpi run intel_projects/successione-2026.yaml                 # a project you wrote yourself
 ```
+
+The autopilot picks the topic from what Amazon.it users type in the book
+search, validates the keyword (Amazon autocomplete), the competition (IBS.it
+catalogue) and the official sources (web search, fetched pages), then writes,
+fact-checks and typesets the book and drafts the KDP listing.
 
 Full design, credentials and limits: [docs/intel-architecture.md](docs/intel-architecture.md).

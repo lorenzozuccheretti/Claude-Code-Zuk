@@ -47,6 +47,7 @@ class ResearchPlan(BaseModel):
     amazon_pages_dir: str = ""  # Amazon.it pages saved from the browser (free)
     subreddits: list[str] = ["italy", "ItaliaPersonalFinance", "commercialisti"]
     reddit_queries: list[str] = []
+    discover_sources: bool = True  # search the web for more official pages before writing
     verify_domains: list[str] = [
         "gazzettaufficiale.it",
         "normattiva.it",

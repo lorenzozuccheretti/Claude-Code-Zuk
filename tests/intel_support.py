@@ -10,7 +10,8 @@ from pathlib import Path
 from kdp_intel.config import BookMeta, Project, QualityBar, ResearchPlan
 from kdp_intel.llm import ScriptedLLM
 from kdp_intel.models import (
-    ChapterDraft, ChapterSpec, EntailmentBatch, Outline, PersonaDraft, ReviewThemesDraft,
+    ChapterDraft, ChapterSpec, EntailmentBatch, ListingDraft, NicheIdeas, Outline, PersonaDraft,
+    ReviewThemesDraft, WebResults,
 )
 from kdp_intel.rag.ingest import source_id
 from kdp_intel.text import canonical_numbers_in, numbers, sentences, strip_cites
@@ -147,6 +148,25 @@ def brain(wrong: dict[int, bool] | None = None, fabricate: bool = False):
                 results.append({"claim_id": cid, "verdict": "supported" if quote else "not_enough_info",
                                 "source_id": sid, "quote": quote, "note": ""})
             return {"results": results}
+        if schema is NicheIdeas:  # one real topic, one the user never typed
+            return {"ideas": [
+                {"name": "Successione dopo la riforma", "reader": "eredi", "problem": "dichiarazione e imposta",
+                 "why_now": "autoliquidazione dal 2025",
+                 "keywords": ["dichiarazione di successione", "imposta di successione", "successione senza notaio"]},
+                {"name": "Cucina veloce", "reader": "chi cucina", "problem": "poco tempo", "why_now": "-",
+                 "keywords": ["ricette veloci", "torte facili"]}]}
+        if schema is ListingDraft:
+            return {"title": "Dichiarazione di successione",
+                    "subtitle": "La guida 2026 per gli eredi: imposta in autoliquidazione, rate e scadenze",
+                    "description": "Chi eredita ha dodici mesi e molte domande. " * 20,
+                    "backend_keywords": ["imposta di successione rate", "eredità conto bloccato",
+                                         "successione senza notaio", "voltura catastale eredi",
+                                         "rinuncia eredità", "testamento olografo", "pensione reversibilità",
+                                         "bestseller successione", "dichiarazione di successione"],
+                    "categories": ["Libri > Diritto > Diritto civile", "Libri > Economia > Fisco"]}
+        if schema is WebResults:
+            return {"results": [{"title": "Dichiarazione di successione", "url": ADE_URL,
+                                 "snippet": "entro 12 mesi", "published": ""}]}
         raise AssertionError(f"unexpected schema {schema.__name__}")
 
     return respond

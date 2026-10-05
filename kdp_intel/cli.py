@@ -1,6 +1,7 @@
 """``kdpi``: the KDP-Intelligence-Engine command line.
 
     kdpi providers                         which services this environment can call
+    kdpi autopilot [PROFILE]               choose a topic, validate it, write and typeset the book
     kdpi ingest   PROJECT                  fetch the project's sources into the vector store
     kdpi research PROJECT                  Analyst only: score the candidate niches
     kdpi mine     PROJECT                  Review Miner only: what competitors' readers miss
@@ -40,10 +41,11 @@ def _runtime(args: argparse.Namespace, need_llm: bool = True):
     project = Project.load(args.project)
     workdir = project.workdir(args.root)
     creds = Credentials.from_env()
-    providers = (Providers.offline(Fixtures(args.offline)) if args.offline
-                 else build_providers(creds, project, cache_dir=workdir / "cache"))
-    store = open_store(workdir, args.store, args.embedder, creds)
     llm = make_llm(args.llm, workdir / "llm_cache", args.model) if need_llm else None
+    handoff = llm if llm is not None and llm.inner is None else None  # an agent answers, and can search
+    providers = (Providers.offline(Fixtures(args.offline)) if args.offline
+                 else build_providers(creds, project, cache_dir=workdir / "cache", handoff_llm=handoff))
+    store = open_store(workdir, args.store, args.embedder, creds)
     return Runtime(project=project, llm=llm, providers=providers, store=store, workdir=workdir,
                    today=date.fromisoformat(args.today) if args.today else date.today(),
                    draft_proof=getattr(args, "draft_proof", False),
@@ -233,6 +235,28 @@ def cmd_typeset(args: argparse.Namespace) -> int:
     return 0 if not problems else 1
 
 
+def cmd_autopilot(args: argparse.Namespace) -> int:
+    from .autopilot import Autopilot, AutopilotProfile
+    from .llm_free import make_llm
+    from .providers.fixtures import Fixtures
+
+    profile = AutopilotProfile.load(args.profile)
+    providers = Providers.offline(Fixtures(args.offline)) if args.offline else None
+    pilot = Autopilot(profile, Path(args.root), lambda folder: make_llm(args.llm, folder, args.model),
+                      Credentials.from_env(), date.fromisoformat(args.today) if args.today else date.today(),
+                      store=args.store, embedder=args.embedder, providers=providers)
+    result = pilot.run()
+    for line in result.get("log", []):
+        print(line)
+    for path in result.get("pending", []):
+        print(f"  → rispondi a: {path}")
+    for key in ("project", "pdf", "listing"):
+        if result.get(key):
+            print(f"{key}: {result[key]}")
+    print(f"stato: {result.get('status')} (fase: {result.get('stage')})")
+    return {"printed": 0, "proof": 0, "waiting": 3, "outline_ready": 4, "no_topic": 5}.get(result.get("status", ""), 2)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="kdpi", description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -252,6 +276,16 @@ def main(argv: list[str] | None = None) -> int:
         return sp
 
     sub.add_parser("providers", help="show available services").set_defaults(fn=cmd_providers)
+    ap = sub.add_parser("autopilot", help="choose, validate, write and typeset a book unattended")
+    ap.add_argument("profile", nargs="?", default="", help="autopilot profile YAML (seeds, author, gates)")
+    ap.add_argument("--root", default=".")
+    ap.add_argument("--store", default="chroma", choices=["chroma", "memory", "pinecone"])
+    ap.add_argument("--embedder", default="hashing")
+    ap.add_argument("--offline", default="")
+    ap.add_argument("--llm", default="auto", choices=["auto", "handoff", "gemini", "openrouter", "ollama", "claude"])
+    ap.add_argument("--model", default="")
+    ap.add_argument("--today", default="")
+    ap.set_defaults(fn=cmd_autopilot)
     ing = project_cmd("ingest", cmd_ingest, "fetch sources into the vector store")
     ing.add_argument("--refresh", action="store_true", help="fetch sources already in the store again")
     project_cmd("research", cmd_research, "score candidate niches")

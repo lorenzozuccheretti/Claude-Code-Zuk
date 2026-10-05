@@ -205,6 +205,48 @@ di risposte (handoff), `4` indice pronto per l'approvazione.
 Il libro non viene dichiarato stampabile se autore, editore o titolo sono
 segnaposto ("da definire").
 
+## Autopilota: dal tema al PDF senza passaggi manuali
+
+```bash
+kdpi autopilot intel_projects/autopilot.yaml --llm handoff   # o --llm gemini
+```
+
+| Fase | Cosa fa | Chi decide |
+|---|---|---|
+| 1. Raccolta | per ogni seme del profilo legge cosa digitano gli utenti nella ricerca **Libri** di Amazon.it (seme, seme + spazio, seme + ogni lettera) e su Google | codice |
+| 2. Proposta | un modello raggruppa le frasi in temi di libro; le keyword non digitate da nessuno vengono scartate | modello, filtrato dal codice |
+| 3. Controllo keyword | la keyword deve comparire nei suggerimenti Libri di Amazon.it e avere una coda lunga (`min_longtail`) | codice |
+| 4. Controllo concorrenza | catalogo IBS.it: titoli degli ultimi 2 anni per la keyword (`max_recent_titles`) | codice |
+| 5. Controllo fonti | ricerca web per dominio ufficiale + notizie recenti; le pagine vengono scaricate e classificate; servono `min_official_sources` pagine ufficiali che usano tutte le parole della keyword e `min_fresh_sources` pagine recenti | codice |
+| 6. Scelta | punteggio 0-10 = 40% domanda + 30% spazio sul mercato + 30% attualità, solo tra i temi che superano tutti i controlli; se nessuno passa, si ferma (`no_topic`) e spiega perché | codice |
+| 7. Progetto | scrive `intel_projects/auto/<slug>.yaml` con keyword e fonti (solo livello 1-2, scaricate) | codice |
+| 8. Indice | persona e indice dalle evidenze | modello |
+| 9. Scheda Amazon | titolo, sottotitolo, descrizione, 7 keyword nascoste, 2 categorie; regole KDP verificate in codice (`07_listing.md`) | modello, verificato dal codice |
+| 10. Libro | scrittura, fact-check con revisioni, impaginazione, guida copertina Canva | grafo esistente |
+
+Perché IBS e non Amazon per la concorrenza: dal cloud Amazon.it risponde 503
+alle pagine di ricerca, mentre l'autocompletamento Amazon (la domanda) resta
+raggiungibile. IBS vende gli stessi editori italiani, con anno, prezzo e
+valutazioni; i titoli solo-KDP non compaiono. Se salvi pagine Amazon in
+`research.amazon_pages_dir` o configuri Apify, l'analista le usa in più.
+
+**Ricerca web gratuita in hand-off.** Senza chiave Tavily, ogni ricerca
+diventa una richiesta `webresults-*` a cui risponde l'agente con il proprio
+strumento di ricerca (la skill `.claude/skills/kdp-autopilot` dice come). Gli
+URL non vengono creduti sulla parola: ogni pagina viene scaricata e
+classificata, e una pagina inesistente semplicemente non entra
+nell'archivio. Con `TAVILY_API_KEY` la ricerca è diretta e senza hand-off.
+
+**Automazione completa.** In hand-off l'autopilota si ferma a ogni domanda
+(uscita `3`); la skill `kdp-autopilot` fa rispondere Claude e rilanciare fino
+alla fine, e può girare come routine pianificata. Con `GEMINI_API_KEY`
+(gratis) il comando va dall'inizio alla fine da solo, ma per la ricerca web
+serve allora `TAVILY_API_KEY`.
+
+Uscita di `kdpi autopilot`: `0` libro pronto (anche come bozza se mancano
+autore o editore), `3` in attesa di risposte, `5` nessun tema supera i
+controlli, `2` libro bloccato.
+
 ## Copertina con Canva (gratis)
 
 Il dorso dipende dal numero di pagine, quindi la copertina si fa dopo l'interno

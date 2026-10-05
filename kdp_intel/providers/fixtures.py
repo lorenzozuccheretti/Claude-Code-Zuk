@@ -11,7 +11,9 @@ exactly what each agent consumes:
      "volumes":  {"<keyword>": {"search_volume", "competing_products"}},
      "pages":    {"<url>": "<html or text>"},
      "threads":  {"<subreddit>": [{"url", "title", "text", "comments", "created"}]},
-     "bsr":      {"<asin>": 12345}}
+     "bsr":      {"<asin>": 12345},
+     "suggest":  {"amazon": ["<phrase people type>", ...], "google": [...]},
+     "catalog":  {"<query>": {"total": 27, "books": [CatalogBook...]}}}
 """
 
 from __future__ import annotations
@@ -20,7 +22,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ..models import Competitor, KeywordMetric, Review, TrendPoint
+from ..models import CatalogBook, Competitor, KeywordMetric, Review, TrendPoint
 from .base import ProviderError, SearchResult
 
 
@@ -70,3 +72,20 @@ class Fixtures:
 
     def bsr(self, asin: str) -> int | None:
         return self._section("bsr").get(asin)
+
+    # autocomplete: the phrases of the pool that start with what was typed, as the engines do
+    def _complete(self, engine: str, prefix: str) -> list[str]:
+        low = prefix.lower()
+        return [s for s in self._section("suggest").get(engine, []) if s.lower().startswith(low)][:10]
+
+    def amazon(self, prefix: str) -> list[str]:
+        return self._complete("amazon", prefix)
+
+    def google(self, prefix: str) -> list[str]:
+        return self._complete("google", prefix)
+
+    def search_catalog(self, query: str) -> tuple[int | None, list[CatalogBook]]:
+        row = self._section("catalog").get(query)
+        if row is None:
+            return 0, []
+        return row.get("total"), [CatalogBook(**b) for b in row.get("books", [])]

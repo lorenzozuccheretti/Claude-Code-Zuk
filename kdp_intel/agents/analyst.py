@@ -100,11 +100,16 @@ class Analyst:
         """Fresh official and press pages for the niche, found by web search."""
         if self.p.web_search is None:
             return []
+        from ..llm_free import PendingLLM  # noqa: PLC0415
+
         specs: dict[str, SourceSpec] = {}
         for seed in seeds:
             for dom in domains:
+                query = f"{seed} site:{dom}" if dom else seed
                 try:
-                    results = self.p.web_search.search(f"{seed} site:{dom}", num=per_query)
+                    results = self.p.web_search.search(query, num=per_query)
+                except PendingLLM:
+                    raise  # a hand-off search is waiting: stop here, the next run resumes
                 except Exception as exc:  # noqa: BLE001 - a blocked search is a gap, not a crash
                     self.log.append(f"ricerca web non disponibile: {exc}")
                     return list(specs.values())

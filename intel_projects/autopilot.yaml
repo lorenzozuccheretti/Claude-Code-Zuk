@@ -1,0 +1,32 @@
+# Autopilot profile: what the agent may choose from and who signs the book.
+# Run:  kdpi autopilot intel_projects/autopilot.yaml --llm handoff   (or --llm gemini)
+name: autopilot
+author: ""          # fill in: an empty value prints a proof, not the final file
+publisher: ""       # your imprint, or your own name if you self-publish
+seeds:              # broad areas; the scout reads what Amazon.it users type after each
+  - successione
+  - testamento
+  - pensione
+  - 730
+  - partita iva
+  - regime forfettario
+  - isee
+  - assegno unico
+  - invalidità civile
+  - legge 104
+  - caregiver
+  - badante
+  - condominio
+  - affitto
+  - mutuo
+  - separazione
+  - bonus casa
+exclude: []         # topics already published, so they are not chosen again
+gates:
+  min_longtail: 3           # completions people type after the keyword on Amazon/Google
+  max_recent_titles: 12     # catalogue books of the last two years for the keyword
+  min_official_sources: 3   # official pages about the topic, found and fetched
+  min_fresh_sources: 1      # official or press pages of the last 18 months
+max_ideas: 6
+validate_top: 3
+chapters: 11

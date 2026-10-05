@@ -94,7 +94,10 @@ def build_graph(rt: Runtime):
     miner = ReviewMiner(rt.llm)
     architect = Architect(rt.llm, rt.store)
     writer = Writer(rt.llm, p.quality, p.facts_as_of)
-    checker = FactChecker(rt.llm, rt.store, p.quality, web=rt.providers.web_search, ingestor=rt.ingestor,
+    # A hand-off search would turn every failed claim into a question for the agent; the
+    # writer's revision is the cheaper fix, so the checker only cross-checks with a real API.
+    web = None if rt.providers.search_is_handoff else rt.providers.web_search
+    checker = FactChecker(rt.llm, rt.store, p.quality, web=web, ingestor=rt.ingestor,
                           verify_domains=p.research.verify_domains, today=rt.today)
 
     def ingest(state: BookState) -> BookState:
@@ -117,8 +120,9 @@ def build_graph(rt: Runtime):
         niches = p.research.niches
         if not niches:
             raise ValueError("research.niches is empty: name at least one niche and its seed keywords")
-        for seeds in niches.values():
-            analyst.discover_sources(seeds, p.research.verify_domains)
+        if p.research.discover_sources:
+            for seeds in niches.values():
+                analyst.discover_sources(seeds, p.research.verify_domains)
         report = analyst.research(niches)
         rt.save("01_niche_report.json", report)
         chosen = state.get("niche") or report.chosen
