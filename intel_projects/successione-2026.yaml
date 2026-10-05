@@ -123,6 +123,10 @@ sources:
     title: "Codice civile, art. 485"
     publisher: "Codice civile (testo da Brocardi.it)"
     kind: law
+  - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-i/capo-v/sezione-ii/art490.html"
+    title: "Codice civile, art. 490"
+    publisher: "Codice civile (testo da Brocardi.it)"
+    kind: law
   - url: "https://www.brocardi.it/codice-civile/libro-secondo/titolo-i/capo-vii/art519.html"
     title: "Codice civile, art. 519"
     publisher: "Codice civile (testo da Brocardi.it)"

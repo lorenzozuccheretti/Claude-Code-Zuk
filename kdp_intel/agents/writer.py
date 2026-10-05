@@ -30,7 +30,11 @@ evidenze, non scriverlo: descrivi il passaggio senza la cifra.
 fonte di cifre o regole.
 4. Contesto italiano: istituzioni, piattaforme e moduli reali (es. Agenzia delle Entrate, \
 INPS, SPID, F24) solo se compaiono nelle evidenze o sono di dominio comune.
-5. Vietato: frasi fatte da IA ("In un mondo in continua evoluzione", "È fondamentale \
+5. Nei callout caso_pratico le cifre dello scenario (patrimonio, età, saldi) sono di fantasia e \
+non si citano; ogni frase che applica una regola (aliquota, franchigia, scadenza, rate) la cita, \
+e ogni cifra calcolata si ottiene con un solo passaggio (somma, differenza, prodotto, quota o \
+percentuale) dalle cifre già scritte o da quelle della fonte, arrotondata all'euro.
+6. Vietato: frasi fatte da IA ("In un mondo in continua evoluzione", "È fondamentale \
 ricordare che", "In conclusione"), elenchi vuoti, promesse di risultati garantiti.
 
 Formato: una lista di blocchi.

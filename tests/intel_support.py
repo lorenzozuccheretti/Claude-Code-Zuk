@@ -127,12 +127,14 @@ def brain(wrong: dict[int, bool] | None = None, fabricate: bool = False):
             return chapter_draft(title, days)
         if schema is EntailmentBatch:
             results = []
-            blocks = re.findall(r'<claim id="([^"]+)">\n(.*?)\n</claim>\n<evidence_for id="[^"]+">\n(.*?)'
+            blocks = re.findall(r'<claim id="([^"]+)"( esempio="si")?>\n(.*?)\n</claim>\n<evidence_for id="[^"]+">\n(.*?)'
                                 r"\n</evidence_for>", prompt, re.S)
-            for cid, claim, ev in blocks:
+            for cid, example, claim, ev in blocks:
                 evidence = _evidence(ev)
                 quote, sid = "", ""
                 wanted = numbers(claim)
+                if example:  # judge the rule the step applies, not the scenario's own figures
+                    wanted = [n for n in wanted if n in canonical_numbers_in(" ".join(evidence.values()))]
                 for s, text in evidence.items():
                     for sentence in sentences(text.replace("\n", " ")):
                         if all(n in canonical_numbers_in(sentence) for n in wanted):

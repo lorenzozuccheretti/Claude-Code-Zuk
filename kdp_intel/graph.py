@@ -150,13 +150,17 @@ def build_graph(rt: Runtime):
         spec = outline.chapters[idx]
         rev = state.get("revision", 0)
         name = f"chapters/{spec.number:02d}"
-        if rev == 0 and rt.resume:
-            done = rt.load(f"{name}.check.json", FactCheckReport)
-            prior = rt.load(f"{name}.draft.json", ChapterDraft)
-            if done is not None and done.passed and prior is not None:
-                return {"draft": prior, "lint": [], "log": _log(state, f"writer: cap. {spec.number} già verificato")}
         evidence = retrieve(rt.store, spec.queries, k=6, max_age_days=p.quality.max_source_age_days,
                             today=rt.today)
+        if rev == 0 and rt.resume:
+            # Resume from the latest saved draft, never from the first one: a chapter that was
+            # revised and verified must not be rewritten from scratch if a later check flags it.
+            done = rt.load(f"{name}.check.json", FactCheckReport)
+            prior = rt.load(f"{name}.draft.json", ChapterDraft)
+            if prior is not None:
+                status = "già verificato" if done is not None and done.passed else "ripreso dall'ultima bozza"
+                return {"draft": prior, "lint": lint(prior, {h.chunk.source_id for h in evidence}, p.quality),
+                        "log": _log(state, f"writer: cap. {spec.number} {status}")}
         previous = state.get("draft") if rev else None
         report = state.get("reports", {}).get(spec.number) if rev else None
         draft = writer.write(spec, outline, state.get("persona"), evidence, previous=previous,

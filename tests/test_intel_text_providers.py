@@ -23,6 +23,8 @@ def test_italian_numbers_are_canonical():
     assert numbers("oltre 1,2 milioni di caregiver") == ["1200000"]
     assert "652000" in canonical_numbers_in("essi sono stati 652mila, in linea")
     assert "16.4" in canonical_numbers_in("il 16,4% delle imprese")
+    pdf = "la stabilisca entro 1 8 mesi; per le successioni aperte dal 1° gennaio 201 4"
+    assert {"18", "2014"} <= canonical_numbers_in(pdf)
 
 
 def test_prose_numbers_and_references_are_not_facts_to_match():
@@ -39,6 +41,9 @@ def test_signals_and_sentences():
     assert set(signals("Il 20% subito, ai sensi del D.Lgs. 139/2024, entro il 31 dicembre 2026")) == {
         "number", "percent", "law", "date"}
     assert signals("Il lettore deve capire cosa fare.") == []
+    assert signals("Hai tre mesi per l'inventario.") == ["number_word"]  # quantities in words are facts
+    assert signals("Se sei esonerato, firma qui.") == []  # "sei" as "you are"
+    assert "law" in signals("Lo prevedono gli artt. 484 e 519 c.c.")
     assert sentences("Lo dice l'art. 13 del decreto. Poi altro.") == ["Lo dice l'art. 13 del decreto.", "Poi altro."]
 
 

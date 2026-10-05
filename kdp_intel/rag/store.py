@@ -58,6 +58,16 @@ def _pool(k: int) -> int:
     return max(40, k * 6)
 
 
+def _passes(chunk: Chunk, max_authority, source_ids, floor) -> bool:
+    if max_authority is not None and chunk.authority > max_authority:
+        return False
+    if source_ids is not None and chunk.source_id not in source_ids:
+        return False
+    if floor is not None and chunk.authority > 1 and chunk.published and _ordinal(chunk.published) < floor:
+        return False
+    return True
+
+
 def _chunk(cid: str, text: str, meta: dict[str, Any]) -> Chunk:
     fields = {k: v for k, v in meta.items() if k in Chunk.model_fields}
     return Chunk(id=cid, text=text, **fields)
@@ -79,12 +89,7 @@ class MemoryStore:
         floor = (min_published - _EPOCH).days if min_published else None
         hits = []
         for chunk, vec in self._rows.values():
-            if max_authority is not None and chunk.authority > max_authority:
-                continue
-            if source_ids is not None and chunk.source_id not in source_ids:
-                continue
-            if (floor is not None and chunk.authority > 1 and chunk.published
-                    and _ordinal(chunk.published) < floor):
+            if not _passes(chunk, max_authority, source_ids, floor):
                 continue
             hits.append(Hit(chunk=chunk, score=sum(a * b for a, b in zip(q, vec))))
         hits.sort(key=lambda h: (-h.score, h.chunk.id))
@@ -111,7 +116,14 @@ def _where(max_authority, source_ids, min_published) -> dict[str, Any] | None:
 
 class ChromaStore:
     """Persistent local store. Embeddings are always computed by us and passed
-    in, so Chroma never downloads its own embedding model."""
+    in, so Chroma never downloads its own embedding model.
+
+    Search is exact (a matrix product over every stored vector) rather than
+    Chroma's approximate HNSW index: the approximate index can return a
+    slightly different candidate set from one process to the next, and then
+    the same chapter gets different evidence, a different prompt and a cache
+    miss. At book scale (thousands of chunks) exact search costs milliseconds.
+    """
 
     def __init__(self, path: str, embedder: Embedder, collection: str = "kdp_intel") -> None:
         import chromadb  # noqa: PLC0415
@@ -123,17 +135,23 @@ class ChromaStore:
             metadata={"hnsw:space": "cosine"},
             embedding_function=None,
         )
-        self._stats: BM25Stats | None = None
-        self._stats_count = -1
+        self._snapshot: tuple[int, list[Chunk], Any, BM25Stats] | None = None
 
-    def _bm25(self) -> BM25Stats:
-        if self._stats is None or self._stats_count != self.count():
+    def _load(self) -> tuple[list[Chunk], Any, BM25Stats]:
+        import numpy as np  # noqa: PLC0415 - a chromadb dependency
+
+        count = self.count()
+        if self._snapshot is None or self._snapshot[0] != count:
+            data = self._col.get(include=["documents", "metadatas", "embeddings"])
+            rows = sorted(zip(data["ids"], data["documents"], data["metadatas"], data["embeddings"]),
+                          key=lambda r: r[0])
+            chunks = [_chunk(cid, doc, meta) for cid, doc, meta, _ in rows]
+            matrix = np.array([emb for *_, emb in rows], dtype=np.float64).reshape(len(rows), -1)
             stats = BM25Stats()
-            data = self._col.get(include=["documents"])
-            for cid, doc in zip(data["ids"], data["documents"]):
-                stats.add(cid, doc)
-            self._stats, self._stats_count = stats, self.count()
-        return self._stats
+            for c in chunks:
+                stats.add(c.id, c.text)
+            self._snapshot = (count, chunks, matrix, stats)
+        return self._snapshot[1], self._snapshot[2], self._snapshot[3]
 
     def upsert(self, chunks: list[Chunk]) -> None:
         for i in range(0, len(chunks), 256):
@@ -146,20 +164,20 @@ class ChromaStore:
             )
 
     def query(self, text, k=8, *, max_authority=None, source_ids=None, min_published=None):
+        import numpy as np  # noqa: PLC0415
+
         if self.count() == 0:
             return []
-        res = self._col.query(
-            query_embeddings=self.embedder.embed([text]),
-            n_results=min(_pool(k), self.count()),
-            where=_where(max_authority, source_ids, min_published),
-            include=["documents", "metadatas", "distances"],
-        )
-        pool = [
-            Hit(chunk=_chunk(cid, doc, meta), score=1.0 - dist)
-            for cid, doc, meta, dist in zip(res["ids"][0], res["documents"][0],
-                                            res["metadatas"][0], res["distances"][0])
-        ]
-        return hybrid(text, pool, self._bm25(), k)
+        chunks, matrix, stats = self._load()
+        floor = (min_published - _EPOCH).days if min_published else None
+        keep = [i for i, c in enumerate(chunks) if _passes(c, max_authority, source_ids, floor)]
+        if not keep:
+            return []
+        q = np.array(self.embedder.embed([text])[0], dtype=np.float64)
+        scores = matrix[keep] @ q
+        order = sorted(range(len(keep)), key=lambda j: (-scores[j], chunks[keep[j]].id))[:_pool(k)]
+        pool = [Hit(chunk=chunks[keep[j]].model_copy(), score=float(scores[j])) for j in order]
+        return hybrid(text, pool, stats, k)
 
     def count(self) -> int:
         return self._col.count()

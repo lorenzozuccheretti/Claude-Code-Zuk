@@ -10,6 +10,9 @@ gates in order, cheapest and most certain first:
                     is not older than the quality bar allows;
 4. **numbers**    - every number in the claim occurs in the cited source's
                     text (pure string check: no model involved);
+   In a worked example ("caso_pratico") a figure may instead be computed
+                    from the scenario's figures and the source's (one arithmetic
+                    step each), so the example's sums are checked too;
 5. **entailment** - a model judges whether the evidence states the claim,
                     and must quote it; a quote that is not a verbatim
                     substring of the evidence is treated as no support.
@@ -22,6 +25,7 @@ proves it.
 
 from __future__ import annotations
 
+import re
 from datetime import date, timedelta
 
 from ..config import QualityBar
@@ -30,7 +34,7 @@ from ..models import (
     ChapterDraft, Claim, ClaimVerdict, EntailmentBatch, FactCheckReport, Hit, SourceSpec,
 )
 from ..rag import VectorStore, format_evidence
-from ..text import canonical_numbers_in, cites, law_refs, normalise_ws, numbers, sentences, signals
+from ..text import canonical_numbers_in, cites, counts, derivable, law_refs, normalise_ws, numbers, sentences, signals
 
 SYSTEM = """Sei un fact-checker editoriale. Per ogni affermazione ricevi le evidenze \
 delle fonti citate. Decidi se le evidenze AFFERMANO esplicitamente il contenuto:
@@ -39,7 +43,14 @@ delle fonti citate. Decidi se le evidenze AFFERMANO esplicitamente il contenuto:
 - not_enough_info: le evidenze non bastano.
 Per supported e contradicted copia in quote il passaggio decisivo PAROLA PER PAROLA dalle \
 evidenze; altrimenti quote è vuota. source_id è la fonte del passaggio. Non usare conoscenze \
-esterne alle evidenze."""
+esterne alle evidenze.
+Un'affermazione marcata esempio="si" è un passaggio di un caso pratico: le sue cifre ipotetiche e \
+i conti sono già stati verificati aritmeticamente. Giudica solo la regola che applica (aliquota, \
+franchigia, soglia, termine, condizione) e cita il passaggio che la stabilisce."""
+
+EXAMPLE = ' esempio="si"'
+# Words that turn a sentence of a worked example from scenario into rule.
+_RULE = re.compile(r"\b(?:entro|termin[ei]|scadenz\w*|rat[ae]|franchigi\w*|aliquot\w*|soglia|imposta)\b", re.I)
 
 FAILING = {"contradicted", "uncited", "number_mismatch", "weak_source"}
 
@@ -47,11 +58,24 @@ FAILING = {"contradicted", "uncited", "number_mismatch", "weak_source"}
 def extract_claims(chapter: int, draft: ChapterDraft) -> list[Claim]:
     claims: list[Claim] = []
 
-    def add(block_index: int, text: str) -> None:
+    def add(block_index: int, text: str, given: list[str] | None = None) -> None:
         sig = signals(text)
+        if (given is not None and not cites(text) and not {"percent", "law", "date"} & set(sig)
+                and not _RULE.search(text)):
+            # In a worked example ("caso_pratico") an uncited sentence that states the scenario -
+            # "resta vedova con due figli", "il conto vale 120.000 euro" - is the story, not a fact
+            # about the world. A deadline, a threshold or a rate is a rule, and so is a figure
+            # computed from the scenario by a product or a ratio: those stay claims.
+            nums = numbers(text)
+            if not any(derivable(n, given) and not derivable(n, given, products=False) for n in nums):
+                given += [n for n in nums if n not in given]
+                return
         if sig:
             claims.append(Claim(id=f"c{chapter}.{len(claims) + 1}", chapter=chapter,
-                                block_index=block_index, text=text, cited=cites(text), signals=sig))
+                                block_index=block_index, text=text, cited=cites(text), signals=sig,
+                                given=list(given or [])))
+        if given is not None:
+            given += [n for n in numbers(text) if n not in given]
 
     for i, block in enumerate(draft.blocks):
         if block.type == "heading":
@@ -60,9 +84,10 @@ def extract_claims(chapter: int, draft: ChapterDraft) -> list[Claim]:
             for row in block.rows:  # a row is one claim, read with its header
                 add(i, "; ".join(f"{h}: {c}" for h, c in zip(block.header, row)))
             continue
+        given = [] if block.type == "callout" and block.kind == "caso_pratico" else None
         for text in [block.text, *block.items]:
             for sentence in sentences(text):
-                add(i, sentence)
+                add(i, sentence, given)
     return claims
 
 
@@ -75,6 +100,7 @@ class FactChecker:
         self.verify_domains = verify_domains or []
         self.today = today or date.today()
         self.batch_size = batch_size
+        self.web_error = ""
 
     # ----------------------------------------------------------- deterministic gates
 
@@ -104,6 +130,16 @@ class FactChecker:
         source_text = " ".join(h.chunk.text for h in hits)
         present = canonical_numbers_in(source_text)
         missing = [n for n in numbers(claim.text) if n not in present]
+        if claim.given and missing:
+            # In a worked example a figure may be the arithmetic of the scenario and the rule:
+            # 4% of the 200.000 euro above the threshold is 8.000 euro. Each figure proved here
+            # can feed the next step of the same sentence.
+            # The operands: the scenario so far, the rule's figures, the counts the sentence writes
+            # in words ("un terzo", "due figli") and 1, for "the year after".
+            known = claim.given + [n for n in numbers(claim.text) if n in present] + counts(claim.text) + ["1"]
+            while proved := [n for n in missing if derivable(n, known)]:
+                missing = [n for n in missing if n not in proved]
+                known += proved
         for ref in law_refs(claim.text):
             ident = ref.split()[-1]
             if ident not in source_text and ident.split("/")[0] not in present:
@@ -120,7 +156,8 @@ class FactChecker:
         for start in range(0, len(pending), self.batch_size):
             batch = pending[start:start + self.batch_size]
             prompt = "\n\n".join(
-                f'<claim id="{c.id}">\n{c.text}\n</claim>\n<evidence_for id="{c.id}">\n'
+                f'<claim id="{c.id}"{EXAMPLE if c.given else ""}>\n{c.text}\n</claim>\n'
+                f'<evidence_for id="{c.id}">\n'
                 f"{format_evidence(hits[:4])}\n</evidence_for>"
                 for c, hits in batch
             )
@@ -154,7 +191,11 @@ class FactChecker:
             try:
                 found = self.web.search(f"{query} site:{dom}", num=2)
             except Exception as exc:  # noqa: BLE001 - the claim still fails; say why no help came
-                verdict.note = f"{verdict.note}; verifica web non disponibile ({exc})".lstrip("; ")
+                # The note goes into the revision prompt, so it must not carry volatile error text
+                # (it would change the prompt and defeat the answer cache); the detail is kept here.
+                self.web_error = str(exc)
+                self.web = None  # one failure is enough: do not retry for every claim
+                verdict.note = f"{verdict.note}; verifica web non disponibile".lstrip("; ")
                 return verdict
             specs += [SourceSpec(url=r.url, title=r.title) for r in found]
         if not specs:

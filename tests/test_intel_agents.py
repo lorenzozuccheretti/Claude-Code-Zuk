@@ -89,6 +89,10 @@ def test_chroma_store_round_trip(tmp_path, fixtures):
     hits = s.query("versamento entro 90 giorni F24", 3, source_ids=[ADE])
     assert hits and all(h.chunk.source_id == ADE for h in hits)
     assert s.query("decessi", 2, min_published=date(2026, 1, 1))[0].chunk.source_id == ISTAT
+    # A second process must see exactly the same ranking, or cached prompts stop matching.
+    again = ChromaStore(str(tmp_path / "chroma"), HashingEmbedder())
+    query = "imposta di successione eredi versamento"
+    assert [h.chunk.id for h in again.query(query, 5)] == [h.chunk.id for h in s.query(query, 5)]
 
 
 # ------------------------------------------------------------------ analyst
@@ -203,3 +207,55 @@ def test_web_cross_check_finds_the_source_to_cite(fixtures, tmp_path):
     v = report.verdicts[0]
     assert v.status == "uncited" and v.source_id == ADE and f"[[S:{ADE}]]" in v.note
     assert ADE_URL in fixtures.fetched and OLD_URL not in fixtures.fetched
+
+
+def test_story_details_in_a_worked_example_are_not_claims():
+    from kdp_intel.agents.fact_checker import extract_claims
+
+    draft = ChapterDraft.model_validate({"title": "t", "blocks": [
+        block("callout", f"Carla resta vedova con due figli. Le spetta un terzo [[S:{ADE}]]. Paga entro 90 giorni.",
+              title="Caso", kind="caso_pratico"),
+        block("paragraph", "Hai tre mesi per decidere."),
+    ]})
+    texts = [c.text for c in extract_claims(1, draft)]
+    assert texts == [f"Le spetta un terzo [[S:{ADE}]].", "Paga entro 90 giorni.", "Hai tre mesi per decidere."]
+
+
+def test_a_worked_example_is_checked_by_its_arithmetic(store):
+    """The scenario's figures are the story; what is computed from them must add up."""
+    from kdp_intel.agents.fact_checker import extract_claims
+
+    draft = ChapterDraft.model_validate({"title": "t", "blocks": [
+        block("callout", "Marco deve versare 50.000 euro in tutto. "
+              f"Subito versa il 20 per cento, cioè 10.000 euro [[S:{ADE}]]. "
+              f"Il resto, 40.000 euro, va in 12 rate trimestrali da 3.333 euro [[S:{ADE}]]. "
+              f"Un errore direbbe 12 rate da 4.000 euro [[S:{ADE}]]. Marco versa 10.000 euro. "
+              "La sorella paga 2.000 euro di imposta.",
+              title="Caso", kind="caso_pratico"),
+    ]})
+    claims = extract_claims(7, draft)
+    assert [c.text.split(" [[")[0] for c in claims] == [
+        "Subito versa il 20 per cento, cioè 10.000 euro",
+        "Il resto, 40.000 euro, va in 12 rate trimestrali da 3.333 euro",
+        "Un errore direbbe 12 rate da 4.000 euro",
+        "La sorella paga 2.000 euro di imposta."]  # a tax figure is a rule, not scenario
+    assert claims[1].given == ["50000", "20", "10000"]
+
+    verdicts = {v.claim.id: v for v in checker(store).check(7, draft).verdicts}
+    assert verdicts["c7.1"].status == "supported"  # 20% of 50.000
+    assert verdicts["c7.2"].status == "supported"  # 50.000 - 10.000, then a twelfth of it
+    assert verdicts["c7.3"].status == "number_mismatch" and "4000" in verdicts["c7.3"].note
+    assert verdicts["c7.4"].status == "uncited"
+
+
+def test_derivable_is_one_step_of_arithmetic():
+    from kdp_intel.text import counts, derivable
+
+    assert derivable("300000", ["1300000", "1000000"])
+    assert derivable("12000", ["4", "300000"])
+    assert derivable("12000", ["4", "300000"], products=False) is False
+    assert derivable("3333", ["40000", "12"])  # an instalment, to the euro
+    assert not derivable("12500", ["4", "300000"])
+    assert not derivable("200000", ["600000"])
+    assert counts("Al coniuge spetta un terzo, ai due figli il resto [[S:agenziaentra-8bbe89]].") == ["3", "2"]
+    assert counts("Lo dice l'art. 4 del decreto, al punto 3.") == ["3"]

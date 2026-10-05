@@ -234,6 +234,9 @@ class Claim(BaseModel):
     text: str
     cited: list[str]
     signals: list[str]  # number, percent, money, law, date
+    # In a worked example: the figures stated before this sentence (the hypothetical premises and
+    # earlier results), from which this sentence's own figures may be computed.
+    given: list[str] = []
 
 
 class EntailmentDraft(BaseModel):
