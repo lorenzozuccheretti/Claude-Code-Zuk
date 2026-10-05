@@ -186,10 +186,14 @@ class Ingestor:
         except Exception as exc:  # noqa: BLE001 - one bad source must not stop the run
             self.errors.append(f"{spec.url}: {exc}")
             return 0
-        if "pdf" in ctype or spec.url.lower().endswith(".pdf") or body[:5] == b"%PDF-":
-            title, text, published = spec.title, pdf_to_text(body), None
-        else:
-            title, text, published = html_to_text(article_only(spec.url, body.decode("utf-8", errors="replace")))
+        try:
+            if "pdf" in ctype or spec.url.lower().endswith(".pdf") or body[:5] == b"%PDF-":
+                title, text, published = spec.title, pdf_to_text(body), None
+            else:
+                title, text, published = html_to_text(article_only(spec.url, body.decode("utf-8", errors="replace")))
+        except Exception as exc:  # noqa: BLE001 - a truncated or broken file is one bad source, not a crash
+            self.errors.append(f"{spec.url}: unreadable ({type(exc).__name__}: {exc})")
+            return 0
         kind, tier = classify(spec.url)
         if spec.kind:
             kind = spec.kind

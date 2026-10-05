@@ -259,3 +259,13 @@ def test_derivable_is_one_step_of_arithmetic():
     assert not derivable("200000", ["600000"])
     assert counts("Al coniuge spetta un terzo, ai due figli il resto [[S:agenziaentra-8bbe89]].") == ["3", "2"]
     assert counts("Lo dice l'art. 4 del decreto, al punto 3.") == ["3"]
+
+
+def test_a_truncated_pdf_is_one_bad_source_not_a_crash(tmp_path):
+    class Truncated:
+        def fetch_bytes(self, url):
+            return b"%PDF-1.7\n1 0 obj << /Type /Catalog", "application/pdf"  # the download was cut off
+
+    ing = Ingestor(MemoryStore(HashingEmbedder()), tmp_path / "sources.json", Truncated(), today=TODAY)
+    assert ing.ingest_all([SourceSpec(url="https://www.inps.it/tutorial.pdf")]) == {"https://www.inps.it/tutorial.pdf": 0}
+    assert "unreadable" in ing.errors[0]
