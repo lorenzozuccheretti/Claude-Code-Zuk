@@ -36,7 +36,8 @@ ALPHABET = "abcdefghilmnopqrstuvz"  # the Italian alphabet: what people type aft
 
 PROPOSE_SYSTEM = """Sei un editor che sceglie i temi per manuali pratici italiani di fascia \
 premium (19,90-29,90 €) da pubblicare su Amazon KDP. Ricevi le frasi che le persone digitano \
-davvero nella ricerca libri di Amazon.it e su Google. Raggruppale in temi di libro.
+davvero su Amazon.it (reparto Libri e tutti i reparti) e su Google. Molte frasi di Amazon \
+riguardano prodotti che non sono libri (gadget, oggetti): ignorale. Raggruppa le altre in temi di libro.
 Un buon tema: un problema concreto, che costa soldi o tempo se affrontato male, regolato da \
 norme o procedure italiane verificabili su fonti ufficiali, possibilmente cambiato di recente.
 Scarta narrativa, libri scolastici, test e concorsi, temi medici di diagnosi o cura.
@@ -86,14 +87,26 @@ class Scout:
             self.log.append(f"autocompletamento Google «{prefix}»: {exc}")
             return []
 
+    def books(self, prefix: str) -> list[str]:
+        try:
+            return [_norm(s) for s in self.suggest.amazon_books(prefix)]
+        except Exception as exc:  # noqa: BLE001
+            self.log.append(f"autocompletamento Amazon Libri «{prefix}»: {exc}")
+            return []
+
     def harvest(self, seeds: list[str]) -> dict[str, dict[str, list[str]]]:
+        """Per seed: the Books department suggestions (few, but typed by book buyers), all of
+        Amazon.it (seed, seed + each letter, seed + "libro"/"guida"/"manuale") and Google."""
         out = {}
         for seed in seeds:
+            books = dict.fromkeys(b for p in (seed, f"{seed} ") for b in self.books(p))
             amazon: dict[str, None] = {}
-            for prefix in [seed, f"{seed} ", *(f"{seed} {c}" for c in ALPHABET)]:
-                amazon.update(dict.fromkeys(self.amazon(prefix)))
+            for prefix in [seed, f"{seed} ", *(f"{seed} {c}" for c in ALPHABET),
+                           f"{seed} libro", f"{seed} guida", f"{seed} manuale"]:
+                amazon.update(dict.fromkeys(a for a in self.amazon(prefix) if a not in books))
             google = dict.fromkeys(self.google(f"{seed} ") + self.google(seed))
-            out[seed] = {"amazon": list(amazon), "google": [g for g in google if g not in amazon]}
+            out[seed] = {"amazon_books": list(books), "amazon": list(amazon),
+                         "google": [g for g in google if g not in amazon and g not in books]}
         return out
 
     # ------------------------------------------------------------ propose
@@ -101,14 +114,15 @@ class Scout:
     def propose(self, harvest: dict[str, dict[str, list[str]]], exclude: list[str],
                 max_ideas: int = 6) -> list[NicheIdea]:
         listing = "\n".join(
-            f"## {seed}\nAmazon.it (libri): {'; '.join(h['amazon']) or '-'}\nGoogle: {'; '.join(h['google']) or '-'}"
+            f"## {seed}\nAmazon.it, reparto Libri: {'; '.join(h.get('amazon_books', [])) or '-'}\n"
+            f"Amazon.it, tutti i reparti: {'; '.join(h['amazon']) or '-'}\nGoogle: {'; '.join(h['google']) or '-'}"
             for seed, h in harvest.items())
         avoid = f"\n\nTemi già pubblicati, da non riproporre: {'; '.join(exclude)}" if exclude else ""
         ideas = self.llm.structured(
             system=PROPOSE_SYSTEM, schema=NicheIdeas, effort="medium",
             prompt=f"Proponi fino a {max_ideas} temi.{avoid}\n\nFrasi digitate dagli utenti:\n{listing}",
         ).ideas
-        typed_amazon = {p for h in harvest.values() for p in h["amazon"]}
+        typed_amazon = {p for h in harvest.values() for p in h["amazon"] + h.get("amazon_books", [])}
         typed = typed_amazon | {p for h in harvest.values() for p in h["google"]}
         kept = []
         for idea in ideas:
@@ -132,7 +146,7 @@ class Scout:
         words = kw.split()
         prefixes = [" ".join(words[:i]) for i in range(1, len(words) + 1)]
         prefixes = [q for w in prefixes for q in (w, f"{w} ")]
-        found = next((p for p in prefixes if kw in self.amazon(p)), "")
+        found = next((p for p in prefixes if kw in self.amazon(p) or kw in self.books(p)), "")
         tail = {s for p in (kw, f"{kw} ") for s in self.amazon(p) if s.startswith(kw) and s != kw}
         tail |= {s for s in self.google(f"{kw} ") if s.startswith(kw) and s != kw}
         check = KeywordCheck(keyword=kw, amazon_prefix=found, longtail=len(tail))
@@ -159,8 +173,16 @@ class Scout:
         for recent news, all fetched into the store by the analyst."""
         if self.analyst is None:
             return []
-        found = self.analyst.discover_sources([keyword], domains, per_query=3)
-        found += self.analyst.discover_sources([f"{keyword} novità {self.today.year}"], [""], per_query=5)
+        from ..llm_free import PendingLLM  # noqa: PLC0415
+
+        found, waiting = [], []
+        for seeds, doms, n in (([keyword], domains, 3), ([f"{keyword} novità {self.today.year}"], [""], 5)):
+            try:
+                found += self.analyst.discover_sources(seeds, doms, per_query=n)
+            except PendingLLM as pending:  # one round of questions for the whole topic
+                waiting.append(pending)
+        if waiting:
+            raise PendingLLM([t for w in waiting for t in w.task_ids], waiting[0].folder)
         return list({s.url: s for s in found}.values())
 
     def measure_sources(self, keyword: str, specs: list[SourceSpec]) -> tuple[list[str], list[str]]:

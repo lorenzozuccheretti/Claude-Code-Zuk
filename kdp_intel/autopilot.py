@@ -32,7 +32,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from .agents.scout import Gates
 
@@ -62,6 +62,11 @@ class AutopilotProfile(BaseModel):
     paper: str = "bw_white"
     engine: str = "typst"
     projects_dir: str = "intel_projects/auto"
+
+    @field_validator("seeds", "exclude", mode="before")
+    @classmethod
+    def _as_text(cls, value: list) -> list[str]:
+        return [str(v) for v in value or []]  # YAML reads a seed like 730 as a number
 
     @classmethod
     def load(cls, path: str | Path | None) -> "AutopilotProfile":
@@ -169,8 +174,10 @@ class Autopilot:
         try:
             harvest = scout.harvest(p.seeds)
             _save(self.rundir, "00_harvest.json", harvest)
+            books = sum(len(h["amazon_books"]) for h in harvest.values())
             typed = sum(len(h["amazon"]) for h in harvest.values())
-            self.log.append(f"scout: {typed} frasi digitate su Amazon.it per {len(p.seeds)} semi")
+            self.log.append(f"scout: {books} frasi dal reparto Libri e {typed} da tutto Amazon.it "
+                            f"per {len(p.seeds)} semi")
             ideas = scout.propose(harvest, p.exclude, p.max_ideas)
             _save(self.rundir, "01_ideas.json", ideas)
             self.log.append(f"scout: {len(ideas)} temi proposti: " + "; ".join(i.name for i in ideas))

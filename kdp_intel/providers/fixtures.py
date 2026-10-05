@@ -12,7 +12,7 @@ exactly what each agent consumes:
      "pages":    {"<url>": "<html or text>"},
      "threads":  {"<subreddit>": [{"url", "title", "text", "comments", "created"}]},
      "bsr":      {"<asin>": 12345},
-     "suggest":  {"amazon": ["<phrase people type>", ...], "google": [...]},
+     "suggest":  {"amazon": ["<phrase people type>", ...], "amazon_books": [...], "google": [...]},
      "catalog":  {"<query>": {"total": 27, "books": [CatalogBook...]}}}
 """
 
@@ -80,6 +80,9 @@ class Fixtures:
 
     def amazon(self, prefix: str) -> list[str]:
         return self._complete("amazon", prefix)
+
+    def amazon_books(self, prefix: str) -> list[str]:
+        return self._complete("amazon_books", prefix)
 
     def google(self, prefix: str) -> list[str]:
         return self._complete("google", prefix)

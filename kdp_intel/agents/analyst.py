@@ -103,18 +103,22 @@ class Analyst:
         from ..llm_free import PendingLLM  # noqa: PLC0415
 
         specs: dict[str, SourceSpec] = {}
+        waiting: list[PendingLLM] = []
         for seed in seeds:
             for dom in domains:
                 query = f"{seed} site:{dom}" if dom else seed
                 try:
                     results = self.p.web_search.search(query, num=per_query)
-                except PendingLLM:
-                    raise  # a hand-off search is waiting: stop here, the next run resumes
+                except PendingLLM as pending:
+                    waiting.append(pending)  # ask every search of this round at once
+                    continue
                 except Exception as exc:  # noqa: BLE001 - a blocked search is a gap, not a crash
                     self.log.append(f"ricerca web non disponibile: {exc}")
                     return list(specs.values())
                 for r in results:
                     specs.setdefault(r.url, SourceSpec(url=r.url, title=r.title))
+        if waiting:
+            raise PendingLLM([t for w in waiting for t in w.task_ids], waiting[0].folder)
         if self.ingestor is not None:
             self.ingestor.ingest_all(list(specs.values()))
         return list(specs.values())

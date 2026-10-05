@@ -137,5 +137,12 @@ def test_ibs_catalogue_parser():
     assert all(b.url.startswith("https://www.ibs.it/") for b in books)
 
 
+def test_profile_reads_numeric_seeds_as_text(tmp_path):
+    path = tmp_path / "p.yaml"
+    path.write_text("seeds: [730, pensione]\nexclude: [104]\n", encoding="utf-8")
+    profile = AutopilotProfile.load(path)
+    assert profile.seeds == ["730", "pensione"] and profile.exclude == ["104"]
+
+
 def test_slugify():
     assert slugify("Invalidità civile: la domanda") == "invalidita-civile-la-domanda"

@@ -136,6 +136,17 @@ class Suggestions:
             return [s["value"] for s in data.get("suggestions", []) if s.get("value")]  # type: ignore[union-attr]
         return self._cached(f"amazon|{prefix}", fetch)
 
+    def amazon_books(self, prefix: str) -> list[str]:
+        """The Books department only. Amazon honours the department only with ``plain-mid`` and
+        ``client-info``, and then returns few suggestions: few, but typed by book buyers."""
+        def fetch() -> list[str]:
+            data = check(self.client.get(self.AMAZON, params={
+                "limit": 11, "prefix": prefix, "suggestion-type": "KEYWORD", "page-type": "Search",
+                "alias": "stripbooks", "site-variant": "desktop", "version": 3, "mid": "APJ6JRA9NG5V4",
+                "plain-mid": 35691, "client-info": "amazon-search-ui", "lop": "it_IT"}), "amazon-suggest")
+            return [s["value"] for s in data.get("suggestions", []) if s.get("value")]  # type: ignore[union-attr]
+        return self._cached(f"amazon-books|{prefix}", fetch)
+
     def google(self, prefix: str) -> list[str]:
         def fetch() -> list[str]:
             data = check(self.client.get(self.GOOGLE, params={"client": "firefox", "hl": "it", "gl": "it",
