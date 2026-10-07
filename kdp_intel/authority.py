@@ -19,6 +19,8 @@ _OFFICIAL = {
     "camera.it", "senato.it", "parlamento.it", "governo.it", "lavoro.gov.it",
     "mef.gov.it", "notariato.it", "europa.eu", "agid.gov.it", "acn.gov.it",
     "garanteprivacy.it", "consob.it", "ivass.it", "salute.gov.it",
+    # courts publish forms, guides and rulings: giustizia.it covers every tribunal's site
+    "giustizia.it", "cortecostituzionale.it", "cortedicassazione.it",
 }
 _PRESS = {
     "ilsole24ore.com", "fiscooggi.it", "ipsoa.it", "pmi.it", "altroconsumo.it",
@@ -29,8 +31,9 @@ _PRESS = {
     "lentepubblica.it", "laleggepertutti.it", "puntosicuro.it",
 }
 # Regions, provinces, municipalities and the public health service publish under their own
-# domains, not .gov.it: regione.lazio.it, comune.milano.it, asufc.sanita.fvg.it.
-_PUBLIC_BODY = re.compile(r"(^|\.)(regione|provincia|comune)\.[a-z-]+\.it$|(^|\.)sanita\.[a-z-]+\.it$")
+# domains, not .gov.it: regione.lazio.it, comune.milano.it, asufc.sanita.fvg.it; so do some
+# courts outside giustizia.it: tribunale.bergamo.it.
+_PUBLIC_BODY = re.compile(r"(^|\.)(regione|provincia|comune|tribunale)\.[a-z-]+\.it$|(^|\.)sanita\.[a-z-]+\.it$")
 _COMMUNITY = {"reddit.com", "quora.com", "facebook.com", "forumfree.it"}
 _REVIEW = {"amazon.it", "amazon.com", "goodreads.com"}
 

@@ -57,6 +57,9 @@ def test_authority_tiers():
     assert classify("https://www.regionepiu.it/x") == ("other", 3)
     assert classify("https://www.ilsole24ore.com/x") == ("press", 2)
     assert classify("https://www.reddit.com/r/italy") == ("community", 3)
+    assert classify("https://tribunale-savona.giustizia.it/x.pdf") == ("official", 1)
+    assert classify("https://www.cortecostituzionale.it/x") == ("official", 1)
+    assert classify("https://www.tribunale.bergamo.it/docs/x.pdf") == ("official", 1)
     assert classify("https://blog.example.com/x") == ("other", 3)
 
 
