@@ -16,6 +16,7 @@ servizi a pagamento entrano in gioco solo se ne imposti le credenziali.
 | Domanda | autocompletamento Amazon.it e Google (senza chiave) | DataForSEO; Helium 10 (export CSV) |
 | Andamento | CSV esportato da trends.google.it | SerpAPI Trends |
 | Concorrenti, BSR, recensioni | pagine Amazon.it salvate dal tuo browser | SerpAPI, Bright Data, Apify |
+| Mercato Amazon.it | export CSV della ricerca da estensione del browser (DeepView) in `market_dir` | Bright Data, SerpAPI |
 | Voce dei lettori | domande dell'autocompletamento Google + forum trovati con la ricerca web (gratis) | app Reddit, se Reddit concede l'accesso |
 | Archivio vettoriale, embedding | ChromaDB locale, embedding hashing o multilingue locale | Pinecone |
 | Impaginazione, copertina | Typst / WeasyPrint; Canva (piano gratuito) con il modello generato da `kdpi cover-spec` | — |

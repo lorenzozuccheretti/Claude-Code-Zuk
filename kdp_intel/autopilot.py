@@ -35,6 +35,7 @@ import yaml
 from pydantic import BaseModel, field_validator
 
 from .agents.scout import Gates
+from .providers.deepview import AmazonExports
 from .providers.voices import forum_queries
 
 DEFAULT_SEEDS = [
@@ -63,6 +64,9 @@ class AutopilotProfile(BaseModel):
     paper: str = "bw_white"
     engine: str = "typst"
     projects_dir: str = "intel_projects/auto"
+    # Amazon.it search exports from a browser extension (DeepView and similar), one CSV per
+    # keyword: real competitors, prices and estimated sales instead of the IBS catalogue
+    market_dir: str = ""
 
     @field_validator("seeds", "exclude", mode="before")
     @classmethod
@@ -121,7 +125,8 @@ def project_data(profile: AutopilotProfile, decision, manifest: dict[str, dict],
                      "discover_sources": False,
                      "chapter_search": True,
                      "reddit_queries": keywords[:3],
-                     "forum_queries": forum_queries(decision.primary_keyword)},
+                     "forum_queries": forum_queries(decision.primary_keyword),
+                     "market_dir": profile.market_dir},
         "sources": sources,
         "index_terms": keywords[:12],
     }
@@ -173,7 +178,8 @@ class Autopilot:
         ingestor = Ingestor(store, self.rundir / "sources.json", providers.fetcher, providers.unblocker,
                             today=self.today)
         analyst = Analyst(providers, store, ingestor, today=self.today)
-        scout = Scout(llm, providers.suggest, providers.catalog, analyst, store, p.gates, self.today)
+        market = AmazonExports(self.root / p.market_dir, self.today) if p.market_dir else None
+        scout = Scout(llm, providers.suggest, providers.catalog, analyst, store, p.gates, self.today, market)
         try:
             harvest = scout.harvest(p.seeds)
             _save(self.rundir, "00_harvest.json", harvest)

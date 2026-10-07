@@ -22,6 +22,9 @@ seeds:              # broad areas; the scout reads what Amazon.it users type aft
   - separazione
   - bonus casa
 exclude: []         # topics already published, so they are not chosen again
+# Amazon.it search exports from the browser (DeepView: one CSV per keyword). When a
+# keyword has one, competition and market numbers come from Amazon instead of IBS.
+market_dir: intel_projects/market
 gates:
   min_longtail: 3           # completions people type after the keyword on Amazon/Google
   max_recent_titles: 12     # catalogue books of the last two years for the keyword

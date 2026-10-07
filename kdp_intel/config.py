@@ -45,6 +45,7 @@ class ResearchPlan(BaseModel):
     helium10_csv: str = ""  # optional Cerebro/Magnet export
     trends_dir: str = ""  # Google Trends CSV exports (free)
     amazon_pages_dir: str = ""  # Amazon.it pages saved from the browser (free)
+    market_dir: str = ""  # Amazon.it search exports (DeepView and similar CSV), one per keyword
     subreddits: list[str] = ["italy", "ItaliaPersonalFinance", "commercialisti"]
     reddit_queries: list[str] = []
     # the reader's words without Reddit: Google autocomplete questions and forum pages found by search

@@ -53,6 +53,7 @@ def build_providers(creds: Credentials, project: Project | None = None,
     from .brightdata import BrightData
     from .dataforseo import DataForSEO
     from .catalog import IbsCatalog
+    from .deepview import AmazonExports
     from .free import (
         CachedSearch, DuckDuckGoSearch, HandoffSearch, SavedAmazonPages, Suggestions, TavilySearch, TrendsCSV,
     )
@@ -91,6 +92,10 @@ def build_providers(creds: Credentials, project: Project | None = None,
     if research and research.amazon_pages_dir:
         saved = SavedAmazonPages(research.amazon_pages_dir)
         p.marketplace = p.bsr = p.reviews = saved
+    if research and research.market_dir and Path(research.market_dir).is_dir():
+        exports = AmazonExports(research.market_dir)
+        p.marketplace = p.marketplace or exports
+        p.bsr = p.bsr or exports
     if creds.serpapi_key and p.marketplace is None:
         p.marketplace = SerpAPI(creds.serpapi_key)
     if creds.brightdata_token and creds.brightdata_zone:
@@ -101,7 +106,8 @@ def build_providers(creds: Credentials, project: Project | None = None,
     if creds.apify_token and creds.apify_reviews_actor and p.reviews is None:
         p.reviews = Apify(creds.apify_token, creds.apify_reviews_actor)
     if p.marketplace is None:
-        p.gaps.append("nessuna pagina Amazon.it salvata in research.amazon_pages_dir: concorrenti non misurati")
+        p.gaps.append("nessun export Amazon.it (research.market_dir) né pagina salvata (research.amazon_pages_dir): "
+                      "concorrenti non misurati")
 
     # competition in the Italian book catalogue (free, public search pages)
     p.catalog = IbsCatalog(folder=cache / "catalog" if cache else None)

@@ -60,8 +60,10 @@ def _norm(text: str) -> str:
 
 class Scout:
     def __init__(self, llm: LLM, suggest: Any, catalog: Any = None, analyst: Any = None,
-                 store: Any = None, gates: Gates | None = None, today: date | None = None) -> None:
+                 store: Any = None, gates: Gates | None = None, today: date | None = None,
+                 market: Any = None) -> None:
         self.llm, self.suggest, self.catalog = llm, suggest, catalog
+        self.market = market  # Amazon.it search exports (AmazonExports), preferred to the catalogue
         self.analyst, self.store = analyst, store
         self.gates = gates or Gates()
         self.today = today or date.today()
@@ -158,6 +160,8 @@ class Scout:
         return check
 
     def competition(self, keyword: str) -> tuple[int | None, list[CatalogBook]]:
+        if self.market is not None and self.market.has(keyword):
+            return self.market.search_catalog(keyword)  # what Amazon.it itself sells
         if self.catalog is None:
             return None, []
         try:
@@ -227,9 +231,16 @@ class Scout:
             a.gates.append(Gate(name="competition", passed=True, reasons=["catalogo non raggiungibile: non misurata"]))
         else:
             newest = max((b.year for b in books if b.year), default=None)
-            a.gates.append(Gate(name="competition", passed=len(recent) <= g.max_recent_titles, reasons=[
-                f"{total} titoli in catalogo, {len(recent)} degli ultimi {g.recent_years} anni "
-                f"(massimo {g.max_recent_titles}); il più recente è del {newest or 'n.d.'}"]))
+            reasons = [f"{total} titoli in catalogo, {len(recent)} degli ultimi {g.recent_years} anni "
+                       f"(massimo {g.max_recent_titles}); il più recente è del {newest or 'n.d.'}"]
+            if self.market is not None and (m := self.market.summary(primary.keyword)) is not None:
+                a.market = m
+                reasons = [f"Amazon.it ({m.source}): " + reasons[0],
+                           f"vendite stimate {m.est_sales_month:g} copie/mese in tutto il tema, "
+                           f"prezzo mediano {m.median_price_eur} €, {m.median_pages} pagine, "
+                           f"miglior BSR {m.best_bsr}, {m.total_reviews} recensioni in tutto, "
+                           f"{m.self_published} autopubblicati"]
+            a.gates.append(Gate(name="competition", passed=len(recent) <= g.max_recent_titles, reasons=reasons))
         if not a.gates[-1].passed or not fetch_sources:
             a.score = self._score(a)
             return a

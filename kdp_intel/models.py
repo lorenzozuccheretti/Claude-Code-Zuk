@@ -307,6 +307,41 @@ class CatalogBook(BaseModel):
     url: str = ""
 
 
+class MarketBook(BaseModel):
+    """One Amazon.it search result from a browser-extension export (DeepView and similar)."""
+
+    asin: str
+    title: str
+    format: str = ""
+    price_eur: float | None = None
+    reviews: int | None = None
+    rating: float | None = None
+    bsr: int | None = None
+    est_sales_month: float | None = None
+    est_royalty_month: float | None = None
+    pages: int | None = None
+    published: str = ""  # ISO date
+    self_published: bool = False
+    url: str = ""
+
+
+class MarketSummary(BaseModel):
+    """What Amazon.it sells for a keyword, from an exported search page."""
+
+    keyword: str
+    books: int  # book results on the page (merchandise excluded)
+    on_topic: int  # books whose title is about the keyword
+    est_sales_month: float  # sum over the on-topic books, the extension's estimate
+    est_royalty_month: float
+    median_price_eur: float | None = None
+    median_pages: int | None = None
+    recent_titles: int = 0  # on-topic books published in the last two years
+    best_bsr: int | None = None
+    total_reviews: int = 0
+    self_published: int = 0
+    source: str = ""  # the exported file
+
+
 class KeywordCheck(BaseModel):
     keyword: str
     amazon_prefix: str = ""  # shortest prefix whose Amazon.it book suggestions contain the keyword
@@ -333,6 +368,7 @@ class TopicAssessment(BaseModel):
     source_urls: list[str] = []  # every page the web search found for it
     gates: list[Gate] = []
     score: float = 0.0
+    market: MarketSummary | None = None  # Amazon.it data, when an export for the keyword exists
 
     @property
     def passed(self) -> bool:
