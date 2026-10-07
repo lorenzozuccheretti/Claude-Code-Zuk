@@ -1,0 +1,159 @@
+{
+ "pages": {
+  "https://www.agenziaentrate.gov.it/portale/successione": "<html><head><title>Dichiarazione di successione - Agenzia delle Entrate</title></head><body>\n<nav>Home Cittadini Imprese</nav>\n<p>Ultimo aggiornamento: 14 febbraio 2025</p>\n<p>La dichiarazione di successione deve essere presentata dagli eredi, dai chiamati all'eredità e dai legatari entro 12 mesi dalla data di apertura della successione, che coincide generalmente con la data del decesso.</p>\n<p>Per le successioni aperte dal 1° gennaio 2025 l'imposta è liquidata dal contribuente: il versamento avviene entro 90 giorni dal termine di presentazione della dichiarazione, con modello F24.</p>\n<p>È possibile versare almeno il 20 per cento dell'imposta entro il termine e il saldo in 8 rate trimestrali, che diventano 12 rate se l'importo dovuto è superiore a 20.000 euro.</p>\n<p>La dichiarazione si presenta online con SPID, CIE o CNS dall'area riservata del sito.</p>\n<footer>Agenzia delle Entrate - Partita IVA</footer></body></html>",
+  "https://www.istat.it/indicatori-2025": "<html><head><title>Indicatori demografici - Anno 2025</title>\n<meta property=\"article:published_time\" content=\"2026-03-31\"></head><body>\n<p>Nel 2025 i decessi sono stati 652mila, in linea con il dato del 2024 quando se ne registrarono 653mila. In rapporto al numero di residenti si hanno 11,1 decessi ogni mille abitanti.</p>\n<p>Le nascite sono 355mila, in calo rispetto all'anno precedente; il numero medio di figli per donna scende a 1,14.</p>\n</body></html>",
+  "https://www.money.it/sblocco-conto": "<html><head><title>Sblocco del conto corrente senza successione</title>\n<meta property=\"article:published_time\" content=\"2026-05-10\"></head><body>\n<p>Se gli eredi sono il coniuge e i parenti in linea retta e l'eredità non supera 100.000 euro senza immobili, la banca può sbloccare il conto con una dichiarazione sostitutiva firmata da tutti gli eredi.</p>\n<p>Servono il certificato di morte e la dichiarazione sostitutiva dell'atto di notorietà, che si chiede in Comune.</p>\n</body></html>",
+  "https://www.money.it/vecchio": "<html><head><title>Vecchio articolo</title>\n<meta property=\"article:published_time\" content=\"2019-01-10\"></head><body>\n<p>Nel 2019 l'imposta di successione si pagava con il modello F23 entro 60 giorni dalla liquidazione dell'ufficio.</p></body></html>"
+ },
+ "search": {
+  "dichiarazione di successione site:agenziaentrate.gov.it": [
+   {
+    "title": "Dichiarazione di successione",
+    "url": "https://www.agenziaentrate.gov.it/portale/successione",
+    "snippet": "entro 12 mesi"
+   }
+  ]
+ },
+ "trends": {
+  "dichiarazione di successione": [
+   {
+    "date": "2025-01",
+    "value": 40
+   },
+   {
+    "date": "2025-02",
+    "value": 42
+   },
+   {
+    "date": "2025-03",
+    "value": 41
+   },
+   {
+    "date": "2025-04",
+    "value": 45
+   },
+   {
+    "date": "2025-05",
+    "value": 44
+   },
+   {
+    "date": "2025-06",
+    "value": 47
+   },
+   {
+    "date": "2025-07",
+    "value": 46
+   },
+   {
+    "date": "2025-08",
+    "value": 50
+   },
+   {
+    "date": "2025-09",
+    "value": 55
+   },
+   {
+    "date": "2025-10",
+    "value": 58
+   },
+   {
+    "date": "2025-11",
+    "value": 60
+   },
+   {
+    "date": "2025-12",
+    "value": 63
+   }
+  ]
+ },
+ "books": {
+  "dichiarazione di successione": [
+   {
+    "asin": "B0TEST0001",
+    "title": "Successioni e donazioni",
+    "rating": 3.6,
+    "reviews": 41,
+    "price_eur": 24.9
+   },
+   {
+    "asin": "B0TEST0002",
+    "title": "Guida alla successione",
+    "rating": 3.9,
+    "reviews": 18,
+    "price_eur": 14.9
+   },
+   {
+    "asin": "B0TEST0003",
+    "title": "Eredità facile",
+    "rating": 4.1,
+    "reviews": 7,
+    "price_eur": 12.0
+   }
+  ],
+  "imposta di successione": [
+   {
+    "asin": "B0TEST0001",
+    "title": "Successioni e donazioni",
+    "rating": 3.6,
+    "reviews": 41,
+    "price_eur": 24.9
+   }
+  ]
+ },
+ "bsr": {
+  "B0TEST0001": 15400,
+  "B0TEST0002": 48200,
+  "B0TEST0003": 210000
+ },
+ "volumes": {
+  "dichiarazione di successione": {
+   "search_volume": 2900,
+   "competing_products": 300
+  },
+  "imposta di successione": {
+   "search_volume": 1300,
+   "competing_products": 210
+  }
+ },
+ "reviews": {
+  "B0TEST0001": [
+   {
+    "rating": 2,
+    "title": "Non aggiornato",
+    "text": "Parla ancora delle vecchie regole, nulla sulla riforma del 2025 e sull'autoliquidazione.",
+    "date": "2025-06-01"
+   },
+   {
+    "rating": 3,
+    "title": "Troppo teorico",
+    "text": "Tanta teoria giuridica ma nessun esempio pratico di compilazione.",
+    "date": "2025-07-01"
+   },
+   {
+    "rating": 1,
+    "title": "Inutile",
+    "text": "Non spiega come sbloccare il conto corrente del defunto.",
+    "date": "2025-08-01"
+   },
+   {
+    "rating": 5,
+    "title": "Ottimo",
+    "text": "Mi è piaciuto molto.",
+    "date": "2025-08-02"
+   }
+  ]
+ },
+ "threads": {
+  "ItaliaPersonalFinance": [
+   {
+    "url": "https://www.reddit.com/r/ItaliaPersonalFinance/comments/abc/successione_papa/",
+    "title": "Successione papà, conto bloccato: che faccio?",
+    "text": "La banca ha bloccato il conto e non so da dove partire, il CAF mi chiede 600 euro.",
+    "comments": [
+     "Se non ci sono immobili e siete figli puoi chiedere lo sblocco con autocertificazione."
+    ],
+    "created": "2026-02-11"
+   }
+  ]
+ }
+}

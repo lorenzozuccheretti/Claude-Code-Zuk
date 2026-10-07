@@ -19,13 +19,26 @@ dependencies = [
 [project.optional-dependencies]
 upload = ["playwright>=1.40"]
 llm = ["anthropic>=0.40"]
+# KDP-Intelligence-Engine (kdp_intel): agents, RAG and typesetting for non-fiction.
+intel = [
+    "langgraph>=1.0",
+    "chromadb>=1.0",
+    "typst>=0.13",
+    "weasyprint>=62",
+    "httpx>=0.27",
+    "pydantic>=2.7",
+]
+claude = ["anthropic>=1.0"]  # optional paid backend; the free ones need nothing extra
+pinecone = ["pinecone>=5.0"]
+embeddings = ["sentence-transformers>=3.0"]
 dev = ["pytest>=7.4"]
 
 [project.scripts]
 kdp = "kdp_factory.cli:main"
+kdpi = "kdp_intel.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["kdp_factory*"]
+include = ["kdp_factory*", "kdp_intel*"]
 
 [tool.setuptools.package-data]
 "kdp_factory" = [
@@ -35,6 +48,7 @@ include = ["kdp_factory*"]
     "assets/fonts/*.ttf",
     "assets/fonts/OFL.txt",
 ]
+"kdp_intel" = ["typeset/templates/*.typ"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

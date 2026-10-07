@@ -256,3 +256,31 @@ efficiently.
 
 No income claims. Publishing outcomes depend on your niche, your quality and
 your market. Verify print specs against KDP's current documentation.
+
+## KDP-Intelligence-Engine (non-fiction, Italian market)
+
+`kdp_intel/` is a second engine in this repo for researched, premium-priced
+Italian non-fiction: a LangGraph pipeline of four agents (Analyst, Review
+Miner, Writer, Fact-Checker), a local ChromaDB RAG store of official and
+press sources, and a Typst / WeasyPrint typesetter that reuses this repo's
+KDP spec card. A chapter whose numbers cannot be proved from a cited source
+blocks the book.
+
+It runs at zero cost by default: models by hand-off to a Claude Code session
+or on Gemini's free tier, demand from Amazon.it/Google autocomplete, search
+via Tavily's free tier, competitors from pages you save, covers in Canva's
+free plan from a generated size guide. Paid services (Claude API, SerpAPI,
+Apify, Bright Data, DataForSEO, Pinecone) are optional plug-ins.
+
+```bash
+pip install -e '.[intel,dev]'
+kdpi autopilot intel_projects/autopilot.yaml --llm handoff   # topic → validation → book
+kdpi run intel_projects/successione-2026.yaml                 # a project you wrote yourself
+```
+
+The autopilot picks the topic from what Amazon.it users type in the book
+search, validates the keyword (Amazon autocomplete), the competition (IBS.it
+catalogue) and the official sources (web search, fetched pages), then writes,
+fact-checks and typesets the book and drafts the KDP listing.
+
+Full design, credentials and limits: [docs/intel-architecture.md](docs/intel-architecture.md).

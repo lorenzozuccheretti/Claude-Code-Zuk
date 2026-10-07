@@ -1,0 +1,383 @@
+"""The shapes every agent reads and writes.
+
+Models that a language model fills in (``*Draft``, ``*Labels``, ``Outline``)
+have no defaults on purpose: structured outputs require every property, and a
+field the model may silently skip is a field nobody checks.
+"""
+
+from __future__ import annotations
+
+from datetime import date
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
+# --------------------------------------------------------------------- sources
+
+SourceKind = Literal["law", "official", "press", "community", "review", "other"]
+
+
+class SourceSpec(BaseModel):
+    """One document a project wants in its vector store."""
+
+    url: str
+    title: str = ""
+    publisher: str = ""
+    kind: SourceKind | None = None  # inferred from the domain when omitted
+    published: date | None = None
+
+
+class SourceDoc(BaseModel):
+    """A fetched document, before chunking."""
+
+    id: str
+    url: str
+    title: str
+    publisher: str
+    kind: SourceKind
+    authority: int = Field(ge=1, le=3)  # 1 official, 2 professional press, 3 community
+    published: date | None = None
+    retrieved: date
+    text: str
+
+
+class Chunk(BaseModel):
+    id: str
+    source_id: str
+    ordinal: int
+    text: str
+    url: str
+    title: str
+    publisher: str
+    kind: SourceKind
+    authority: int
+    published: str = ""  # ISO date or ""; vector stores want flat scalars
+    retrieved: str = ""
+
+    def metadata(self) -> dict[str, str | int]:
+        return self.model_dump(exclude={"id", "text"})
+
+
+class Hit(BaseModel):
+    chunk: Chunk
+    score: float  # vector similarity
+    lexical: float = 0.0  # BM25 against the whole archive; 0 means no query term occurs
+
+
+# --------------------------------------------------------------------- market
+
+
+class TrendPoint(BaseModel):
+    date: str
+    value: int
+
+
+class KeywordMetric(BaseModel):
+    keyword: str
+    search_volume: int | None = None
+    competing_products: int | None = None
+    suggestions: int | None = None  # long-tail autocomplete completions (free proxy)
+    on_amazon: bool | None = None  # Amazon.it autocomplete knows the phrase
+    source: str = ""
+
+
+class Competitor(BaseModel):
+    asin: str = ""
+    title: str
+    rating: float | None = None
+    reviews: int | None = None
+    price_eur: float | None = None
+    bsr: int | None = None
+    published: str = ""
+    url: str = ""
+
+
+class Review(BaseModel):
+    asin: str = ""
+    rating: int
+    title: str = ""
+    text: str
+    date: str = ""
+
+
+class NicheCandidate(BaseModel):
+    name: str
+    seed_keywords: list[str]
+    trend: list[TrendPoint] = []
+    keywords: list[KeywordMetric] = []
+    competitors: list[Competitor] = []
+    scores: dict[str, float] = {}
+    total: float = 0.0
+    notes: list[str] = []
+
+
+class NicheReport(BaseModel):
+    candidates: list[NicheCandidate]
+    chosen: str = ""
+
+
+# --------------------------------------------------------------------- review mining
+
+
+class Theme(BaseModel):
+    id: str
+    label: str
+    description: str
+
+
+class ReviewLabel(BaseModel):
+    review_index: int
+    theme_ids: list[str]
+    quote: str  # must be a verbatim substring of the review
+
+
+class ReviewThemesDraft(BaseModel):
+    themes: list[Theme]
+    labels: list[ReviewLabel]
+    missing_content: list[str]
+    opportunity_statements: list[str]
+
+
+class ThemeCount(BaseModel):
+    theme: Theme
+    count: int
+    share: float
+    quotes: list[str]
+
+
+class GapReport(BaseModel):
+    reviews_considered: int
+    themes: list[ThemeCount]
+    missing_content: list[str]
+    opportunity_statements: list[str]
+    rejected_quotes: int = 0
+
+
+# --------------------------------------------------------------------- persona & outline
+
+
+class PersonaDraft(BaseModel):
+    name: str
+    demographics: str
+    competence_level: str
+    vocabulary: list[str]
+    frustrations: list[str]
+    tried_and_failed: list[str]
+    desired_outcome: str
+
+
+class ChapterSpec(BaseModel):
+    number: int
+    part: str
+    title: str
+    goal: str
+    beats: list[str]
+    queries: list[str]
+    target_words: int
+
+
+class Outline(BaseModel):
+    title: str
+    subtitle: str
+    value_proposition: str
+    parts: list[str]
+    chapters: list[ChapterSpec]
+
+
+# --------------------------------------------------------------------- book content
+
+BlockType = Literal[
+    "heading", "paragraph", "bullets", "numbered", "table", "callout", "checklist"
+]
+CalloutKind = Literal["attenzione", "caso_pratico", "consiglio", "dato_chiave", "none"]
+
+
+class Block(BaseModel):
+    """One unit of chapter content.
+
+    Inline text may carry ``**bold**``, ``*italic*`` and citation markers
+    ``[[S:<source_id>]]``. A flat shape with every field present is easier for
+    a model to fill reliably than a union of block types.
+    """
+
+    type: BlockType
+    text: str  # heading/paragraph text, or the callout body
+    title: str  # callout title or table caption; "" when unused
+    kind: CalloutKind  # "none" unless type == "callout"
+    items: list[str]  # bullets / numbered / checklist
+    header: list[str]  # table header
+    rows: list[list[str]]  # table body
+
+
+class ChapterDraft(BaseModel):
+    title: str
+    blocks: list[Block]
+
+
+class Chapter(BaseModel):
+    spec: ChapterSpec
+    draft: ChapterDraft
+    revision: int = 0
+
+
+# --------------------------------------------------------------------- fact checking
+
+ClaimStatus = Literal[
+    "supported", "contradicted", "unsupported", "uncited", "number_mismatch", "weak_source"
+]
+
+
+class Claim(BaseModel):
+    id: str
+    chapter: int
+    block_index: int
+    text: str
+    cited: list[str]
+    signals: list[str]  # number, percent, money, law, date
+    # In a worked example: the figures stated before this sentence (the hypothetical premises and
+    # earlier results), from which this sentence's own figures may be computed.
+    given: list[str] = []
+
+
+class EntailmentDraft(BaseModel):
+    claim_id: str
+    verdict: Literal["supported", "contradicted", "not_enough_info"]
+    source_id: str
+    quote: str  # verbatim from the evidence, or "" when not supported
+    note: str
+
+
+class EntailmentBatch(BaseModel):
+    results: list[EntailmentDraft]
+
+
+class ClaimVerdict(BaseModel):
+    claim: Claim
+    status: ClaimStatus
+    source_id: str = ""
+    quote: str = ""
+    note: str = ""
+
+
+class FactCheckReport(BaseModel):
+    chapter: int
+    verdicts: list[ClaimVerdict]
+    passed: bool
+    counts: dict[str, int]
+
+    def failures(self) -> list[ClaimVerdict]:
+        return [v for v in self.verdicts if v.status != "supported"]
+
+
+# --------------------------------------------------------------------- autopilot
+
+
+class WebHit(BaseModel):
+    title: str
+    url: str
+    snippet: str
+    published: str  # ISO date when the page shows one, else ""
+
+
+class WebResults(BaseModel):
+    """A web search answered by whoever holds a search tool (hand-off)."""
+
+    results: list[WebHit]
+
+
+class NicheIdea(BaseModel):
+    name: str
+    reader: str  # who buys it, in one sentence
+    problem: str  # the concrete problem the book solves
+    why_now: str  # what changed recently (a law, a deadline, a new procedure)
+    keywords: list[str]  # copied from the autocomplete suggestions given
+
+
+class NicheIdeas(BaseModel):
+    ideas: list[NicheIdea]
+
+
+class CatalogBook(BaseModel):
+    title: str
+    author: str = ""
+    publisher: str = ""
+    year: int | None = None
+    price_eur: float | None = None
+    ratings: int | None = None
+    url: str = ""
+
+
+class MarketBook(BaseModel):
+    """One Amazon.it search result from a browser-extension export (DeepView and similar)."""
+
+    asin: str
+    title: str
+    format: str = ""
+    price_eur: float | None = None
+    reviews: int | None = None
+    rating: float | None = None
+    bsr: int | None = None
+    est_sales_month: float | None = None
+    est_royalty_month: float | None = None
+    pages: int | None = None
+    published: str = ""  # ISO date
+    self_published: bool = False
+    url: str = ""
+
+
+class MarketSummary(BaseModel):
+    """What Amazon.it sells for a keyword, from an exported search page."""
+
+    keyword: str
+    books: int  # book results on the page (merchandise excluded)
+    on_topic: int  # books whose title is about the keyword
+    est_sales_month: float  # sum over the on-topic books, the extension's estimate
+    est_royalty_month: float
+    median_price_eur: float | None = None
+    median_pages: int | None = None
+    recent_titles: int = 0  # on-topic books published in the last two years
+    best_bsr: int | None = None
+    total_reviews: int = 0
+    self_published: int = 0
+    source: str = ""  # the exported file
+
+
+class KeywordCheck(BaseModel):
+    keyword: str
+    amazon_prefix: str = ""  # shortest prefix whose Amazon.it book suggestions contain the keyword
+    longtail: int = 0  # distinct autocomplete completions that extend it
+    catalog_total: int | None = None  # books found for it in the Italian catalogue
+    recent_titles: int | None = None  # of which published in the last two years
+    passed: bool = False
+    notes: list[str] = []
+
+
+class Gate(BaseModel):
+    name: str
+    passed: bool
+    reasons: list[str]
+
+
+class TopicAssessment(BaseModel):
+    idea: NicheIdea
+    keywords: list[KeywordCheck]
+    primary_keyword: str = ""
+    official_sources: list[str] = []  # source ids of tier-1 pages about the topic
+    fresh_sources: list[str] = []  # tier 1-2 pages published in the last 18 months
+    competitors: list[CatalogBook] = []
+    source_urls: list[str] = []  # every page the web search found for it
+    gates: list[Gate] = []
+    score: float = 0.0
+    market: MarketSummary | None = None  # Amazon.it data, when an export for the keyword exists
+
+    @property
+    def passed(self) -> bool:
+        return bool(self.gates) and all(g.passed for g in self.gates)
+
+
+class ListingDraft(BaseModel):
+    title: str
+    subtitle: str
+    description: str  # Amazon product description, plain text with blank lines between paragraphs
+    backend_keywords: list[str]  # the seven KDP keyword boxes
+    categories: list[str]  # two BISAC-style browse paths, most specific last
