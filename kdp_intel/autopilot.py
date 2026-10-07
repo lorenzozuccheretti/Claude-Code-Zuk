@@ -35,6 +35,7 @@ import yaml
 from pydantic import BaseModel, field_validator
 
 from .agents.scout import Gates
+from .providers.voices import forum_queries
 
 DEFAULT_SEEDS = [
     "successione", "testamento", "pensione", "730", "partita iva", "regime forfettario", "isee",
@@ -119,7 +120,8 @@ def project_data(profile: AutopilotProfile, decision, manifest: dict[str, dict],
                      # retrieval, not new web queries
                      "discover_sources": False,
                      "chapter_search": True,
-                     "reddit_queries": keywords[:3]},
+                     "reddit_queries": keywords[:3],
+                     "forum_queries": forum_queries(decision.primary_keyword)},
         "sources": sources,
         "index_terms": keywords[:12],
     }

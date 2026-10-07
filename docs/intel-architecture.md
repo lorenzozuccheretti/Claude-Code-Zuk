@@ -16,7 +16,7 @@ servizi a pagamento entrano in gioco solo se ne imposti le credenziali.
 | Domanda | autocompletamento Amazon.it e Google (senza chiave) | DataForSEO; Helium 10 (export CSV) |
 | Andamento | CSV esportato da trends.google.it | SerpAPI Trends |
 | Concorrenti, BSR, recensioni | pagine Amazon.it salvate dal tuo browser | SerpAPI, Bright Data, Apify |
-| Forum | app Reddit "script" (gratuita) | — |
+| Voce dei lettori | domande dell'autocompletamento Google + forum trovati con la ricerca web (gratis) | app Reddit, se Reddit concede l'accesso |
 | Archivio vettoriale, embedding | ChromaDB locale, embedding hashing o multilingue locale | Pinecone |
 | Impaginazione, copertina | Typst / WeasyPrint; Canva (piano gratuito) con il modello generato da `kdpi cover-spec` | — |
 
@@ -114,7 +114,7 @@ Gratuiti (`providers/free.py`, scelti per primi):
 | `research.trends_dir` | Google Trends, CSV esportato | Andamento a 12 mesi (Italia), una colonna per termine |
 | `research.amazon_pages_dir` | Pagine Amazon.it salvate (Ctrl+S) | Risultati di ricerca (titolo, voto, recensioni, prezzo), BSR dalle schede prodotto, recensioni dalle pagine filtrate per 1-3 stelle |
 | `research.review_csv` | CSV di recensioni | Recensioni copiate o esportate a mano |
-| `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET` | App Reddit "script" (gratis) | Thread dei subreddit italiani. Dal cloud Reddit rifiuta l'accesso anonimo |
+| `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET` | App Reddit "script" (facoltativa) | Thread dei subreddit italiani. Dal cloud Reddit rifiuta l'accesso anonimo e l'API non è più concessa a richiesta: senza, la voce dei lettori viene da `research.reader_questions` (domande Google) e `research.forum_queries` (forum trovati con la ricerca) |
 
 Ricerche web e autocompletamento sono salvati in `cache/`: una run ripetuta
 non consuma quota.

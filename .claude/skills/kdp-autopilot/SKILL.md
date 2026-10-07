@@ -29,7 +29,7 @@ answer to get past a gate.
 
 ## How to answer each request (by file prefix)
 
-- **`webresults-*`** - run your WebSearch tool with the query. For `site:dominio`, use
+- **`webresults-*`** - run your WebSearch tool with the query. Queries ending in «forum», «esperienze» or «consiglio» look for readers' threads: include open forums and Q&A pages (the code keeps only non-official, non-shop pages). For `site:dominio`, use
   `allowed_domains` with that domain and drop the `site:` part from the query. Copy only
   pages the tool returned: exact URL, title, a snippet, `published` as ISO date if shown
   (else ""). Never invent or "fix" a URL; an empty `results` list is a valid answer.

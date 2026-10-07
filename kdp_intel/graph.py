@@ -30,6 +30,7 @@ from .models import (
     ChapterDraft, FactCheckReport, GapReport, NicheReport, Outline, PersonaDraft,
 )
 from .providers import Providers
+from .providers.voices import forum_specs, reader_questions
 from .rag import retrieve
 from .rag.ingest import Ingestor
 from .rag.store import VectorStore
@@ -111,6 +112,11 @@ def build_graph(rt: Runtime):
                             threads += rt.ingestor.ingest_thread(t) > 0
                     except Exception as exc:  # noqa: BLE001 - forums are optional evidence
                         rt.ingestor.errors.append(f"reddit r/{sub} «{q}»: {exc}")
+        if p.research.forum_queries and rt.providers.web_search is not None:
+            # Without Reddit, open forums found by search carry the readers' words (tier 3:
+            # language and worries for the persona, never a figure for the fact-checker).
+            for spec in forum_specs(rt.providers.web_search, p.research.forum_queries, p.research.forum_results):
+                threads += rt.ingestor.ingest_url(spec) > 0
         rt.save("ingest_errors.json", rt.ingestor.errors)
         ok = sum(1 for n in counts.values() if n)
         return {"log": _log(state, f"ingest: {ok}/{len(counts)} fonti, {threads} thread, "
@@ -138,12 +144,20 @@ def build_graph(rt: Runtime):
                                                  f"{len(gaps.themes)} temi")}
 
     def architect_node(state: BookState) -> BookState:
+        questions_file = rt.workdir / "03_reader_questions.json"
+        if rt.resume and questions_file.exists():
+            questions = json.loads(questions_file.read_text(encoding="utf-8"))
+        elif p.research.reader_questions and rt.providers.suggest is not None:
+            questions = reader_questions(rt.providers.suggest, state["seeds"])
+        else:
+            questions = []
+        rt.save("03_reader_questions.json", questions)
         persona = rt.load("03_persona.json", PersonaDraft) if rt.resume else None
-        persona = persona or architect.persona(state["niche"], state["seeds"], state.get("gaps"))
+        persona = persona or architect.persona(state["niche"], state["seeds"], state.get("gaps"), questions)
         rt.save("03_persona.json", persona)
         outline = p.outline or (rt.load("04_outline.json", Outline) if rt.resume else None)
         outline = outline or architect.outline(state["niche"], state["seeds"], persona, state.get("gaps"),
-                                               rt.chapters_hint)
+                                               rt.chapters_hint, questions)
         rt.save("04_outline.json", outline)
         return {"persona": persona, "outline": outline, "chapter": 0, "revision": 0,
                 "drafts": {}, "reports": {}, "blocked": [],

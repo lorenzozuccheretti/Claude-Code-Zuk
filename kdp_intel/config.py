@@ -47,6 +47,10 @@ class ResearchPlan(BaseModel):
     amazon_pages_dir: str = ""  # Amazon.it pages saved from the browser (free)
     subreddits: list[str] = ["italy", "ItaliaPersonalFinance", "commercialisti"]
     reddit_queries: list[str] = []
+    # the reader's words without Reddit: Google autocomplete questions and forum pages found by search
+    reader_questions: bool = True
+    forum_queries: list[str] = []
+    forum_results: int = 5
     discover_sources: bool = True  # search the web for more official pages before writing
     chapter_search: bool = False  # before each chapter, search the web with its own queries
     verify_domains: list[str] = [

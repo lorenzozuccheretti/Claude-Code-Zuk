@@ -13,9 +13,11 @@ from ..models import GapReport, Outline, PersonaDraft
 from ..rag import VectorStore, format_evidence, retrieve
 
 PERSONA_SYSTEM = """Sei un ricercatore di mercato editoriale per il mercato italiano. \
-Costruisci la buyer persona SOLO da ciò che è scritto nelle evidenze (thread di forum, \
-recensioni, articoli). Il campo vocabulary contiene parole ed espressioni copiate dalle \
-evidenze, non parafrasi. Se un aspetto non emerge dalle evidenze, scrivi "non emerso"."""
+Costruisci la buyer persona SOLO da ciò che è scritto nelle evidenze (domande digitate su \
+Google, thread di forum, recensioni, articoli). Le domande digitate su Google sono parole dei \
+lettori: rivelano dubbi, paure e situazioni (chi chiede «per mia madre» è un figlio caregiver). \
+Il campo vocabulary contiene parole ed espressioni copiate dalle evidenze, non parafrasi. Se un \
+aspetto non emerge dalle evidenze, scrivi "non emerso"."""
 
 OUTLINE_SYSTEM = """Sei l'architetto editoriale di un manuale non-fiction italiano di fascia \
 premium (19,90-29,90 €). Struttura obbligatoria, in quest'ordine:
@@ -58,12 +60,20 @@ def validate_outline(outline: Outline) -> None:
         raise OutlineError("chapters must follow the order of the parts")
 
 
+def _bullets(lines: list[str] | None) -> str:
+    return "\n".join(f"- {line}" for line in lines) if lines else "(nessuna)"
+
+
 class Architect:
     def __init__(self, llm: LLM, store: VectorStore) -> None:
         self.llm, self.store = llm, store
 
-    def persona(self, niche: str, seeds: list[str], gaps: GapReport | None) -> PersonaDraft:
-        hits = [h for h in retrieve(self.store, seeds, k=10) if h.chunk.authority == 3]
+    def persona(self, niche: str, seeds: list[str], gaps: GapReport | None,
+                questions: list[str] | None = None) -> PersonaDraft:
+        # Official pages outrank forums on every query, so ask for many hits and keep the tier 3
+        # ones: readers' threads first, then the other unranked pages.
+        pool = [h for h in retrieve(self.store, seeds, k=40) if h.chunk.authority == 3]
+        hits = sorted(pool, key=lambda h: h.chunk.kind != "community")[:12]
         gap_text = ""
         if gaps:
             gap_text = "\n".join(
@@ -73,20 +83,23 @@ class Architect:
         return self.llm.structured(
             system=PERSONA_SYSTEM,
             prompt=(f"Nicchia: {niche}\n\nLacune dalle recensioni negative:\n{gap_text or '(nessuna)'}"
+                    f"\n\nDomande digitate su Google:\n{_bullets(questions)}"
                     f"\n\nEvidenze dalle community:\n{format_evidence(hits) or '(nessuna)'}"),
             schema=PersonaDraft,
             effort="medium",
         )
 
     def outline(self, niche: str, seeds: list[str], persona: PersonaDraft,
-                gaps: GapReport | None, chapters: int = 12) -> Outline:
+                gaps: GapReport | None, chapters: int = 12, questions: list[str] | None = None) -> Outline:
         hits = retrieve(self.store, seeds, k=8, max_authority=2)
         brief = (
             f"Nicchia: {niche}\nKeyword principali: {', '.join(seeds)}\n"
             f"Capitoli totali (inclusi introduzione e conclusione): circa {chapters}\n\n"
             f"Persona:\n{persona.model_dump_json(indent=2)}\n\n"
             f"Lacune dei concorrenti:\n{gaps.model_dump_json(indent=2) if gaps else '(nessuna)'}\n\n"
-            f"Fonti disponibili:\n{format_evidence(hits)}"
+            + (f"Domande dei lettori (digitate su Google: ogni domanda frequente merita una risposta "
+               f"nel libro):\n{_bullets(questions)}\n\n" if questions else "")
+            + f"Fonti disponibili:\n{format_evidence(hits)}"
         )
         last_error = ""
         for _ in range(2):

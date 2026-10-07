@@ -120,7 +120,8 @@ def build_providers(creds: Credentials, project: Project | None = None,
         except ProviderError as exc:
             p.gaps.append(f"reddit non disponibile: {exc}")
     else:
-        p.gaps.append("nessuna app Reddit (gratuita): niente thread dai forum")
+        p.gaps.append("nessuna app Reddit: la voce dei lettori viene dalle domande Google e dai forum "
+                      "trovati con la ricerca (research.reader_questions, research.forum_queries)")
     return p
 
 
