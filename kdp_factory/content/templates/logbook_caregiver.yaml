@@ -1,0 +1,350 @@
+# Logbook pack: the family caregiver's diary (Italian).
+#
+# A care diary is two books in one: the record of the person you look after
+# (medicines, symptoms, vital signs, visits) and the record of your own work
+# (hours of care, leave used, expenses). The second half is what the diaries on
+# Amazon.it leave out, and it is the half that turns into rights: the hours of
+# care decide the caregiver profile in the bill before Parliament, and the
+# receipts decide the tax relief.
+#
+# Every rule printed on a reference page was checked against the official source
+# named in its notes on 12 October 2026. When a rule changes, change the page and
+# the date together.
+language: italian
+title: "Il Diario del Caregiver Familiare"
+subtitle: "Registro giornaliero di farmaci, sintomi e parametri vitali, con le ore di assistenza, i permessi e le spese da conservare. {days} giorni"
+
+front:
+  belongs_to:
+    heading: "Questo diario appartiene a"
+    fields: ["Il mio nome", "La persona che assisto", "Iniziato il", "Telefono"]
+  how_to_use:
+    heading: "Come usare questo diario"
+    intro: "{days} pagine giornaliere, un registro delle ore ogni settimana e un riepilogo ogni quattro settimane. Non serve compilare tutto: serve compilare sempre le stesse cose."
+    bullets:
+      - "Compila prima la scheda della persona assistita, la terapia in corso e i contatti utili: sono le pagine da mostrare a un medico nuovo o al pronto soccorso."
+      - "Ogni giorno segna farmaci dati, parametri, pasti e sintomi. Bastano cinque minuti, meglio alla stessa ora."
+      - "Annota anche le tue ore di assistenza: a fine settimana le sommi nel registro settimanale."
+      - "Porta il diario alle visite. Le domande per il medico, scritte quando ti vengono in mente, non si perdono più."
+      - "Conserva ricevute e fatture e segnale nel registro delle spese: servono per la dichiarazione dei redditi."
+      - "L'ultima riga di ogni giornata è per te. Anche chi cura ha bisogno di essere ascoltato."
+  copyright_lines:
+    - "Copyright © {year} {holder}"
+    - "Tutti i diritti riservati."
+    - "Questo diario è uno strumento per annotare. Non sostituisce il parere del medico, del farmacista o dei servizi sanitari. In caso di emergenza chiama il 112."
+    - "Le informazioni sulle tutele sono aggiornate al 12 ottobre 2026: prima di presentare una domanda verificale sul sito dell'ente indicato."
+    - "Pubblicato da {imprint}."
+    - "Prima edizione."
+
+reference:
+  - eyebrow: "Da sapere"
+    heading: "Le tue tutele in breve"
+    paragraphs:
+      - "Permessi mensili. Se la persona che assisti ha una disabilità grave riconosciuta, il coniuge, la parte dell'unione civile, il convivente di fatto, i parenti e gli affini possono avere tre giorni di permesso retribuito al mese, anche frazionabili in ore. Il limite è complessivo per la persona assistita, ma il diritto può essere riconosciuto a più familiari, che lo usano in alternativa."
+      - "Congedo straordinario. Il lavoratore dipendente che convive con un familiare con disabilità grave può chiedere un periodo di assenza retribuita fino a un massimo di due anni nell'arco della vita lavorativa, con un limite complessivo per ogni persona assistita."
+      - "Lavoro agile. I datori di lavoro che stipulano accordi di lavoro agile devono riconoscere priorità alle richieste dei lavoratori caregiver."
+      - "Detrazione per l'assistenza. Le spese per gli addetti all'assistenza di una persona non autosufficiente sono detraibili al 19%, su una spesa massima di 2.100 euro, se il reddito complessivo non supera 40.000 euro. Servono la certificazione medica della non autosufficienza e pagamenti tracciabili."
+      - "Contributi della badante. I contributi versati per gli addetti all'assistenza personale o familiare sono deducibili dal reddito, per la parte a carico del datore di lavoro, fino a 1.549,37 euro. La deduzione non spetta se la spesa è sostenuta per un familiare fiscalmente a carico; la detrazione per l'assistenza, invece, spetta anche per i familiari non a carico."
+    notes:
+      - "Fonti: INPS, schede «Permessi legge 104 per assistere familiari disabili in situazione di gravità» e «Indennità per congedi straordinari»; D.Lgs. 30 giugno 2022, n. 105, art. 4 (Gazzetta Ufficiale); Agenzia delle Entrate, «La detrazione per gli addetti all'assistenza a persone non autosufficienti» e guida alla dichiarazione 2026. Consultate il 12 ottobre 2026."
+  - eyebrow: "Da sapere"
+    heading: "Perché contare le ore di assistenza"
+    paragraphs:
+      - "Le ore che dedichi alla cura non sono un dettaglio. Il disegno di legge sul caregiver familiare all'esame della Camera dei deputati nell'ottobre 2026 distingue quattro profili in base al carico assistenziale settimanale: il caregiver prevalente, con almeno 91 ore e convivenza con una persona non autosufficiente; il caregiver convivente, tra 30 e 91 ore; il caregiver non convivente, con almeno 30 ore; il caregiver con un carico tra 10 e 30 ore."
+      - "Il testo prevede anche che nel progetto di vita e nel piano assistenziale individualizzato (PAI) siano indicati il caregiver e il suo carico assistenziale."
+      - "Un disegno di legge può ancora cambiare e non è ancora una legge. Ma un registro delle ore tenuto con regolarità è utile già oggi: rende credibile ciò che dichiari ai servizi, al medico e al datore di lavoro, e ti aiuta a non sottovalutare il tuo lavoro."
+      - "Ogni giorno annota le ore nella riga in fondo alla pagina; a fine settimana riportale nel registro settimanale e fai il totale."
+    notes:
+      - "Fonte: Quotidiano Sanità, «Caregiver. Il Ddl all'esame dell'Aula della Camera», 2 ottobre 2026; Camera dei deputati, Atto Camera 2789. Situazione al 12 ottobre 2026."
+  - eyebrow: "Da sapere"
+    heading: "Spese e documenti da conservare"
+    paragraphs:
+      - "Paga la badante e gli addetti all'assistenza con bonifico, carta o altri sistemi tracciabili: dal 2020 è la condizione per chiedere la detrazione."
+      - "Conserva le ricevute firmate da chi presta l'assistenza, con i dati di chi paga e, se la spesa è per un familiare, anche quelli della persona assistita."
+      - "Per le spese sanitarie e gli ausili del familiare conta se è fiscalmente a carico: in quel caso la detrazione può usarla chi sostiene la spesa. Intesta i documenti alla persona giusta prima di pagare."
+      - "Usa il registro delle spese in fondo al diario: a primavera, quando prepari la dichiarazione dei redditi, avrai tutto in un posto solo."
+    notes:
+      - "Fonte: Agenzia delle Entrate, «Altre detrazioni e deduzioni» e «Le spese sanitarie e i mezzi di ausilio», dichiarazione 2026. Consultate il 12 ottobre 2026."
+  - eyebrow: "Prima di tutto"
+    heading: "In caso di emergenza"
+    paragraphs:
+      - "Il numero unico per le emergenze è il 112."
+      - "Tieni questo diario vicino ai documenti della persona che assisti: la scheda personale, la terapia in corso e i contatti utili all'inizio del diario sono le informazioni che servono a chi interviene."
+      - "Annota sempre ora e durata di un episodio, che cosa lo ha preceduto e che cosa hai fatto: aiuta il medico più di ogni ricordo."
+      - "Questo diario non dà indicazioni mediche. Per qualsiasi dubbio su farmaci, dosi o sintomi rivolgiti al medico curante o al farmacista."
+    notes: []
+
+profile:
+  - eyebrow: "Scheda"
+    heading: "La persona che assisto"
+    elements:
+      - {type: fields, items: ["Nome e cognome", "Data di nascita", "Codice fiscale", "Tessera sanitaria", "Medico di base", "Telefono del medico", "Gruppo sanguigno", "Lingua o dialetto"], columns: 2}
+      - {type: lines, label: "Diagnosi principali", count: 3}
+      - {type: lines, label: "Allergie e intolleranze", count: 2}
+      - {type: checks, title: "Ausili in uso", items: ["Deambulatore", "Carrozzina", "Letto articolato", "Materasso antidecubito", "Apparecchio acustico", "Occhiali", "Protesi dentaria", "Ausili per incontinenza", "Sollevatore"], columns: 3}
+      - {type: lines, label: "Abitudini e preferenze da conoscere", count: fill}
+  - eyebrow: "Scheda"
+    heading: "Verbali e riconoscimenti"
+    elements:
+      - {type: note, text: "Riporta qui ogni verbale della commissione medica: tipo di riconoscimento, data, esito e, se il verbale è rivedibile, la data di revisione."}
+      - {type: table, title: "Riconoscimenti", columns: [{label: "Riconoscimento", width: 3}, {label: "Data del verbale", width: 1.4}, {label: "Esito", width: 2}, {label: "Rivedibile il", width: 1.4}], rows: 7}
+      - {type: checks, title: "Che cosa è stato riconosciuto", items: ["Invalidità civile", "Disabilità grave", "Indennità di accompagnamento", "Non autosufficienza", "Prestazione Universale", "Contrassegno disabili"], columns: 2}
+      - {type: lines, label: "Pratiche in corso e scadenze", count: fill}
+  - eyebrow: "Scheda"
+    heading: "Terapia in corso"
+    elements:
+      - {type: note, text: "Scrivi la terapia come l'ha prescritta il medico. Aggiornala a ogni cambio e annota la variazione nel registro in fondo al diario."}
+      - {type: table, title: "Farmaci e orari", columns: [{label: "Farmaco", width: 2.6}, {label: "Dose", width: 1.2}, {label: "Mattina", width: 1}, {label: "Pranzo", width: 1}, {label: "Sera", width: 1}, {label: "Notte", width: 1}, {label: "Dal / al", width: 1.4}], rows: fill}
+  - eyebrow: "Scheda"
+    heading: "Contatti utili"
+    elements:
+      - {type: note, text: "Medico di base, specialisti, farmacia, assistente sociale, patronato, badante, familiari che danno il cambio: una riga per ciascuno."}
+      - {type: table, title: "Contatti", columns: [{label: "Ruolo", width: 1.8}, {label: "Nome", width: 2.2}, {label: "Telefono", width: 1.8}, {label: "Orari e note", width: 2.4}], rows: fill}
+  - eyebrow: "Scheda"
+    heading: "Il mio profilo da caregiver"
+    elements:
+      - {type: fields, items: ["Rapporto di parentela", "Viviamo insieme dal", "Assisto dal", "Ore settimanali di cura (stima)", "Datore di lavoro", "Ufficio del personale"], columns: 2}
+      - {type: checks, title: "Che cosa ho già chiesto", items: ["Permessi mensili", "Congedo straordinario", "Lavoro agile", "Sede più vicina", "Detrazione per l'assistenza", "Badante in regola", "Inserimento nel PAI", "Scheda regionale caregiver", "Delega identità digitale INPS"], columns: 3}
+      - {type: lines, label: "Promemoria e prossimi passi", count: fill}
+  - eyebrow: "Scheda"
+    heading: "Chi dà il cambio"
+    elements:
+      - {type: note, text: "La rete che ti sostiene: chi può coprire un turno, in quali giorni e a che ore. Avere un nome per ogni fascia oraria rende possibile una pausa."}
+      - {type: table, title: "Turni e disponibilità", columns: [{label: "Persona", width: 2}, {label: "Giorni", width: 1.6}, {label: "Mattina", width: 1}, {label: "Pomeriggio", width: 1.2}, {label: "Sera", width: 1}, {label: "Notte", width: 1}, {label: "Telefono", width: 1.6}], rows: 8}
+      - {type: lines, label: "Servizi di sollievo e centri diurni da contattare", count: fill}
+
+cycle:
+  daily:
+    eyebrow: "Giorno {n}"
+    heading: "Diario della giornata"
+    elements:
+      - {type: fields, items: ["Data", "Giorno della settimana"], columns: 2}
+      - {type: table, title: "Farmaci", columns: [{label: "Ora", width: 0.9}, {label: "Farmaco", width: 2.6}, {label: "Dose", width: 1.1}, {label: "Dato", width: 0.8}, {label: "Note", width: 2.4}], rows: 6}
+      - {type: table, title: "Parametri", columns: [{label: "Ora", width: 0.9}, {label: "Pressione", width: 1.3}, {label: "Battiti", width: 1.1}, {label: "Temperatura", width: 1.3}, {label: "Glicemia", width: 1.2}, {label: "Saturazione", width: 1.3}], rows: 3}
+      - {type: scale, title: "Come sta oggi", items: ["Dolore", "Umore", "Energia"], min: 0, max: 10}
+      - {type: checks, title: "La giornata", items: ["Colazione", "Pranzo", "Cena", "Ha bevuto a sufficienza", "Intestino regolare", "Igiene personale", "Movimento o passeggiata", "Riposo pomeridiano", "Notte tranquilla"], columns: 3}
+      - {type: lines, label: "Sintomi, episodi, cadute", count: 3}
+      - {type: prompt, label: "Per te, oggi"}
+      - {type: fields, items: ["Le mie ore di assistenza oggi", "Chi mi ha dato il cambio"], columns: 2}
+      - {type: lines, label: "Note e domande per il medico", count: fill}
+  weekly:
+    every: 7
+    eyebrow: "Settimana {n}"
+    heading: "Registro delle ore di assistenza"
+    elements:
+      - {type: fields, items: ["Dal", "Al"], columns: 2}
+      - {type: table, title: "Ore di assistenza della settimana", columns: [{label: "Giorno", width: 1.4}, {label: "Ore di giorno", width: 1.2}, {label: "Ore di notte", width: 1.2}, {label: "Chi ha aiutato", width: 2.2}, {label: "Attività principali", width: 2.8}], rows: 7}
+      - {type: fields, items: ["Totale ore della settimana", "Giorni di permesso usati", "Ore di permesso usate", "Giorni di congedo usati"], columns: 2}
+      - {type: checks, title: "Questa settimana", items: ["Visite o esami", "Cambio di terapia", "Ricette da rinnovare", "Spese da registrare", "Pratiche da seguire", "Un momento per me"], columns: 3}
+      - {type: prompt, label: "Uno sguardo alla settimana"}
+      - {type: lines, label: "Che cosa è cambiato, che cosa segnalare", count: fill}
+  monthly:
+    every_weeks: 4
+    eyebrow: "Riepilogo {n}"
+    heading: "Le quattro settimane in sintesi"
+    elements:
+      - {type: fields, items: ["Periodo dal", "al", "Ore di assistenza nel periodo", "Giorni di permesso usati"], columns: 2}
+      - {type: table, title: "Visite ed esami del periodo", columns: [{label: "Data", width: 1}, {label: "Visita o esame", width: 2.6}, {label: "Esito e indicazioni", width: 3.4}], rows: 5}
+      - {type: table, title: "Spese del periodo", columns: [{label: "Data", width: 1}, {label: "Descrizione", width: 2.8}, {label: "Importo", width: 1.2}, {label: "Pagato con", width: 1.4}, {label: "Ricevuta", width: 1}], rows: 5}
+      - {type: prompt, label: "Il periodo in una frase"}
+      - {type: lines, label: "Domande per il prossimo controllo", count: fill}
+
+extras:
+  - count: 4
+    eyebrow: "Registro"
+    heading: "Visite ed esami"
+    elements:
+      - {type: table, title: "Visite, esami e ricoveri", columns: [{label: "Data", width: 1}, {label: "Medico o struttura", width: 2}, {label: "Motivo", width: 1.8}, {label: "Esito e indicazioni", width: 2.6}, {label: "Prossimo controllo", width: 1.4}], rows: fill}
+  - count: 2
+    eyebrow: "Registro"
+    heading: "Variazioni di terapia"
+    elements:
+      - {type: table, title: "Ogni cambio, con data e motivo", columns: [{label: "Data", width: 1}, {label: "Farmaco", width: 2.2}, {label: "Modifica", width: 2.2}, {label: "Deciso da", width: 1.6}, {label: "Motivo", width: 2}], rows: fill}
+  - count: 4
+    eyebrow: "Registro"
+    heading: "Spese per la dichiarazione dei redditi"
+    elements:
+      - {type: note, text: "Badante, assistenza, visite, farmaci, ausili, trasporti: una riga per ogni spesa, con il modo di pagamento e il documento che la prova."}
+      - {type: table, title: "Spese sostenute", columns: [{label: "Data", width: 1}, {label: "Descrizione", width: 2.6}, {label: "Importo", width: 1.1}, {label: "Pagamento", width: 1.4}, {label: "Intestata a", width: 1.6}, {label: "Doc.", width: 0.8}], rows: fill}
+  - count: 1
+    eyebrow: "Registro"
+    heading: "Permessi e congedo dell'anno"
+    elements:
+      - {type: note, text: "I permessi mensili sono tre giorni al mese, anche frazionabili in ore; il congedo straordinario ha un limite complessivo di due anni nella vita lavorativa. Tieni il conto qui, mese per mese."}
+      - {type: table, title: "Anno", columns: [{label: "Mese", width: 1.4}, {label: "Giorni di permesso", width: 1.4}, {label: "Ore di permesso", width: 1.3}, {label: "Giorni di congedo", width: 1.4}, {label: "Note", width: 2.8}], rows: 12}
+      - {type: lines, label: "Domande presentate e risposte dell'INPS", count: fill}
+  - count: 2
+    eyebrow: "Pagine libere"
+    heading: "Note"
+    elements:
+      - {type: lines, label: "", count: fill}
+
+daily_prompts:
+  - "Che cosa ti ha fatto sorridere oggi, anche solo per un attimo?"
+  - "Una cosa che hai fatto bene oggi e che nessuno ha visto."
+  - "Quanto hai dormito stanotte? Che cosa ti aiuterebbe a riposare meglio?"
+  - "Chi potresti chiamare questa settimana solo per fare due chiacchiere?"
+  - "Scrivi una parola che descrive come ti senti in questo momento."
+  - "Hai mangiato seduto, con calma, almeno una volta oggi?"
+  - "Che cosa puoi lasciare a domani senza che succeda niente di grave?"
+  - "Un ricordo di lui o di lei che vuoi conservare."
+  - "Di che cosa hai avuto paura oggi? Scriverlo la rende più piccola."
+  - "Quale piccolo gesto ti ha fatto sentire aiutato?"
+  - "Hai bevuto abbastanza acqua anche tu, oggi?"
+  - "Che cosa diresti a un amico che vive la tua stessa giornata?"
+  - "Dieci minuti solo per te: come li useresti?"
+  - "Che cosa ti ha fatto arrabbiare? Va bene anche questo."
+  - "Una domanda che vorresti fare al medico e che rimandi da tempo."
+  - "Che cosa è andato meglio di quanto temevi?"
+  - "Quale canzone ti mette di buon umore? Ascoltala domani."
+  - "Hai preso un po' d'aria aperta oggi? Dove potresti andare domani?"
+  - "Che cosa ti manca della tua vita di prima? Scriverlo non è un tradimento."
+  - "Chi ti ha chiesto come stai, davvero?"
+  - "Una cosa che hai imparato su di te in questi mesi."
+  - "Che cosa ti dà la forza di ricominciare ogni mattina?"
+  - "Quale aiuto potresti chiedere, se non avessi paura di disturbare?"
+  - "Oggi hai detto almeno un no a qualcosa di cui non avevi bisogno?"
+  - "Un luogo della casa dove riesci a stare tranquillo: quale?"
+  - "Che cosa ti ha sorpreso oggi nella persona che assisti?"
+  - "Quanto ti senti stanco da uno a dieci? Che numero era ieri?"
+  - "Una cosa bella vista dalla finestra o lungo la strada."
+  - "Che cosa vorresti che gli altri capissero del tuo lavoro di cura?"
+  - "Hai riso oggi? Con chi o per che cosa?"
+  - "Che cosa puoi semplificare nella routine di domani?"
+  - "Un pensiero gentile da rivolgere a te stesso stasera."
+  - "Quale pratica o telefonata ti pesa di più? Scrivi il primo passo."
+  - "Che cosa ti ha fatto sentire utile oggi, oltre all'assistenza?"
+  - "Di chi ti fidi abbastanza da lasciargli il cambio per un pomeriggio?"
+  - "Un piatto che ti piace cucinare o mangiare: quando l'ultima volta?"
+  - "Che cosa ti ha tolto il fiato oggi, nel bene o nel male?"
+  - "Cosa faresti in un giorno libero, se arrivasse domani?"
+  - "Una frase detta oggi che vuoi ricordare."
+  - "Quale parte del corpo ti fa più male a fine giornata? Ascoltala."
+  - "Che cosa hai rimandato per te stesso, e fino a quando?"
+  - "Che cosa ti fa sentire meno solo quando è sera?"
+  - "Hai fatto oggi qualcosa che ti piace, anche di piccolo?"
+  - "Un traguardo raggiunto insieme, anche minimo."
+  - "Che cosa ti preoccupa per la settimana che viene? E che cosa no?"
+  - "Il momento più tranquillo della giornata: a che ora è stato?"
+  - "Cosa ti ha detto il tuo corpo oggi che non hai ascoltato?"
+  - "Una persona del tuo passato che ti farebbe bene risentire."
+  - "Che cosa hai fatto oggi che un anno fa non sapevi fare?"
+  - "Hai trovato il tempo per una doccia senza fretta?"
+  - "Che cosa ti fa sentire rispettato da chi assisti?"
+  - "Quale servizio o associazione potresti contattare per informarti?"
+  - "Un libro, un film o una serie che vorresti riprendere."
+  - "Che cosa ti è sembrato più difficile oggi, e perché?"
+  - "Che cosa ti ha dato sollievo, anche solo per un'ora?"
+  - "Una cosa che apprezzi della persona che assisti, oggi."
+  - "Se oggi fosse un colore, quale sarebbe?"
+  - "Cosa hai fatto per tenere viva un'amicizia questa settimana?"
+  - "Ti sei concesso una pausa senza sentirti in colpa?"
+  - "Quale pensiero ti gira in testa da stamattina? Lascialo qui."
+  - "Che cosa ti ha insegnato oggi la pazienza?"
+  - "Un momento in cui ti sei sentito vicino a chi assisti."
+  - "Che cosa potresti delegare, anche solo una volta?"
+  - "Quale abitudine ti fa bene e vorresti non perdere?"
+  - "Cosa ti piacerebbe che qualcuno facesse per te stasera?"
+  - "Una notizia, una telefonata o un messaggio che ti ha fatto piacere."
+  - "Hai camminato un po' anche tu, oggi?"
+  - "Che cosa hai capito oggi su come comunicare con chi assisti?"
+  - "Un'idea per rendere la casa più comoda o più sicura."
+  - "Che cosa ti fa sentire competente in questo ruolo?"
+  - "Quando hai pianto l'ultima volta? Che cosa ti ha aiutato dopo?"
+  - "Quale parte della giornata vorresti cambiare, se potessi?"
+  - "Un ringraziamento che non hai ancora detto a qualcuno."
+  - "Che cosa ti fa ridere anche nei giorni pesanti?"
+  - "Hai mangiato frutta o verdura oggi?"
+  - "Che cosa sai fare adesso che ti rende orgoglioso?"
+  - "Una cosa da chiedere ai servizi sociali al prossimo incontro."
+  - "Che cosa ti ha rallentato oggi? Era davvero urgente?"
+  - "Un desiderio per te, da realizzare entro un mese."
+  - "Di quale aiuto ricevuto sei più grato in questo periodo?"
+  - "Che cosa ti dice la tua stanchezza, se provi ad ascoltarla?"
+  - "Quale piccola regola potresti darti per proteggere il tuo sonno?"
+  - "Un momento di oggi che vorresti fotografare."
+  - "Che cosa ti fa sentire ancora te stesso, oltre al ruolo di cura?"
+  - "Hai parlato con qualcuno che vive la tua stessa esperienza?"
+  - "Che cosa ti ha mostrato oggi la persona che assisti di sé?"
+  - "Quale preoccupazione puoi affidare a qualcun altro domani?"
+  - "Un profumo o un sapore che ti riporta a un bel periodo."
+  - "Che cosa hai fatto oggi per il tuo corpo, oltre a resistere?"
+  - "Che cosa hai detto oggi con gentilezza, nonostante tutto?"
+  - "Quale progetto personale potresti riprendere a piccoli passi?"
+  - "Cosa ti ha rassicurato oggi?"
+  - "Un gesto di cura che hai ricevuto, non dato."
+  - "Che cosa vorresti ricordare di questa giornata tra un anno?"
+  - "Quanto tempo hai passato al telefono per pratiche e appuntamenti?"
+  - "Che cosa potresti preparare stasera per alleggerire domattina?"
+  - "Chi ti fa sentire capito senza bisogno di spiegare?"
+  - "Una cosa che non è andata come volevi. Che cosa ne impari?"
+  - "Hai respirato profondamente almeno tre volte oggi? Fallo adesso."
+  - "Che cosa ti fa sentire in pace con le scelte che hai fatto?"
+  - "Un complimento che ti hanno fatto e che fatichi a credere."
+  - "Quale attività vi riesce ancora bene fare insieme?"
+  - "Che cosa ti ha dato energia oggi, invece di togliertela?"
+  - "Un pensiero sul futuro che ti dà speranza."
+  - "Che cosa hai notato oggi che il medico dovrebbe sapere?"
+  - "Che cosa ti serve per sentirti più organizzato questa settimana?"
+  - "Quale parola vorresti sentirti dire, oggi?"
+  - "Un momento in cui hai scelto la calma invece della fretta."
+  - "Che cosa faresti con un'ora in più ogni giorno?"
+  - "Hai sentito oggi la mancanza di qualcosa? Di che cosa?"
+  - "Che cosa vorresti dire alla persona che eri all'inizio di questo percorso?"
+  - "Una piccola vittoria di oggi, da segnare in grande."
+  - "Che cosa ti fa venire voglia di uscire di casa?"
+  - "Chi potresti invitare a casa per un caffè, anche breve?"
+  - "Che cosa hai lasciato andare oggi?"
+  - "Quale suono della giornata ti ha dato fastidio, e quale conforto?"
+  - "Che cosa potresti chiedere al datore di lavoro per conciliare meglio?"
+  - "Una cosa che ti piace del tuo modo di prenderti cura."
+  - "Quali limiti hai rispettato oggi, e quali no?"
+  - "Che cosa ti ha fatto sentire meno in colpa?"
+  - "Un'immagine che ti calma: descrivila in poche parole."
+  - "Che cosa ti hanno insegnato gli altri caregiver che conosci?"
+  - "Quale pensiero vuoi portare con te nel sonno stanotte?"
+  - "Che cosa è cambiato in meglio rispetto a un mese fa?"
+  - "Un nome a cui affidare un'emergenza, se domani servisse."
+  - "Che cosa ti fa sentire a casa, anche nei giorni difficili?"
+  - "Che cosa ti sei promesso di fare per te questa settimana?"
+  - "Quale fatica di oggi nessuno ha notato? Notala tu."
+  - "Che cosa ti ha detto oggi il silenzio?"
+  - "Una cosa che ti rende diverso, e migliore, rispetto a prima."
+
+weekly_prompts:
+  - "Che cosa ha funzionato questa settimana e vale la pena ripetere?"
+  - "Quale momento della settimana è stato il più pesante, e che cosa lo ha reso tale?"
+  - "Chi ti ha aiutato questa settimana? Hai avuto modo di dirgli grazie?"
+  - "Le ore di assistenza sono aumentate o diminuite? Perché?"
+  - "Quale cambiamento hai notato nella persona che assisti?"
+  - "Quante ore hai avuto solo per te? Bastano?"
+  - "Quale pratica o domanda hai portato avanti, e qual è il prossimo passo?"
+  - "Che cosa vorresti chiedere ai servizi o al medico la prossima settimana?"
+  - "Qual è stata la notte peggiore, e che cosa l'ha resa difficile?"
+  - "Che cosa hai imparato questa settimana sul tuo modo di reggere la fatica?"
+  - "C'è un turno che potresti affidare a qualcun altro la settimana prossima?"
+  - "Quale piccolo piacere ti sei concesso, e quale ti sei negato?"
+  - "Il tuo lavoro e la cura: dove si sono scontrati, e come hai risolto?"
+  - "Che cosa ti ha fatto sentire sostenuto, e da chi?"
+  - "Se la settimana fosse un titolo di giornale, quale sarebbe?"
+  - "Quali spese sono arrivate? Le hai già registrate con le ricevute?"
+  - "Che cosa ti serve davvero per la prossima settimana?"
+  - "Un momento di questa settimana da ricordare con affetto."
+  - "Quale segnale del tuo corpo o del tuo umore non vuoi ignorare?"
+  - "Che cosa lasci indietro, con serenità, prima di ricominciare?"
+  - "Hai avuto almeno una conversazione che non riguardasse la cura?"
+  - "Quale aiuto hai rifiutato, e perché?"
+
+monthly_prompts:
+  - "Che cosa è cambiato in queste quattro settimane, per lei o per lui e per te?"
+  - "Il tuo carico di cura è sostenibile così? Che cosa dovrebbe cambiare?"
+  - "Quale risultato di questo periodo ti rende più orgoglioso?"
+  - "Quale aiuto, servizio o permesso vale la pena chiedere adesso?"
+  - "Che cosa vorresti che fosse diverso nelle prossime quattro settimane?"
+  - "Che cosa ti ha insegnato questo periodo sulla tua resistenza e sui tuoi limiti?"
+  - "Quale persona vorresti coinvolgere di più nella cura, e come glielo chiederai?"
+
+closing_lines:
+  - "Hai tenuto traccia di giorni, ore, farmaci e domande. Questo diario ora racconta una storia di cura che altrimenti nessuno vedrebbe."
+  - "Portalo con te alle visite, conservalo con i documenti e, quando è pieno, cominciane un altro."
+  - "E ricordati di chi cura: anche tu."

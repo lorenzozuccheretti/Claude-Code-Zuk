@@ -1,0 +1,95 @@
+# Premium care diary for Italian family caregivers, by Dario Neri.
+#
+# The incumbent is a daily logbook that tracks only the person being cared for.
+# This one keeps that record and adds the caregiver's own: hours of care each
+# week, leave used, expenses with their receipts, the verbali that open the
+# rights, and a line a day for the person who does the caring. Evidence below
+# comes from the Amazon.it search export and the trend scan of 12 October 2026.
+niche: "Diario del caregiver familiare"
+book_type: logbook
+
+audience: "familiari che assistono a casa un genitore, un coniuge o un figlio non autosufficiente, spesso mentre lavorano"
+audience_short: "caregiver familiari"
+title: "Il Diario del Caregiver Familiare"
+subtitle: "Registro giornaliero di farmaci, sintomi e parametri vitali, con le ore di assistenza, i permessi e le spese da conservare"
+promise: "Tutto ciò che serve ricordare della cura, e di chi cura, in cinque minuti al giorno."
+
+keywords_seed:
+  - "diario del caregiver"
+  - "caregiver familiare"
+  - "registro farmaci anziani"
+  - "diario parametri vitali pressione glicemia"
+  - "quaderno assistenza anziani"
+  - "agenda per chi assiste un familiare"
+  - "diario per badante"
+
+signals:
+  demand_volume:
+    score: 6.5
+    evidence: "Amazon.it suggerisce «caregiver familiare» nel reparto Libri con 10 varianti; Google completa 18 domande dei lettori («come fare domanda», «a chi spetta», «quanto prende»)"
+    source: "Scansione autocomplete Amazon.it e Google, 2026-10-12"
+  proven_sales:
+    score: 8.0
+    evidence: "«Diario del Caregiver – Farmaci e Sintomi» (ASIN B0HK24XVK2, paperback, 12,19 €, 115 pagine, uscito il 2026-09-01) è al BSR 317 con circa 831 copie/mese stimate; altri diari del caregiver tra BSR 184.000 e 1.440.000"
+    source: "Export DeepView della ricerca «caregiver familiare» su Amazon.it, 2026-10-12"
+  competition_gap:
+    score: 6.5
+    evidence: "La descrizione dell'incumbent copre solo la persona assistita (farmaci, sintomi, parametri, appuntamenti, emergenze); nessuna sezione per le ore del caregiver, i permessi, le spese detraibili o i verbali. Zero recensioni: nessuna lamentela da citare"
+    source: "Scheda prodotto Amazon.it dell'incumbent, screenshot del 2026-10-12"
+  differentiation:
+    score: 8.0
+    evidence: "Unico diario con registro settimanale delle ore di assistenza (i profili del ddl caregiver si basano sulle ore settimanali), registro annuale di permessi e congedo, registro delle spese per la dichiarazione, schede verbali e terapia, e una domanda al giorno per il caregiver; regole verificate su INPS e Agenzia delle Entrate"
+    source: "Confronto con i 31 titoli pertinenti dell'export DeepView, 2026-10-12"
+  review_moat:
+    score: 1.5
+    evidence: "Le 31 schede pertinenti sommano 38 recensioni; l'incumbent non ne ha"
+    source: "Export DeepView, 2026-10-12"
+  price_headroom:
+    score: 6.0
+    evidence: "Prezzo mediano dei titoli pertinenti 14,99 €; diari tra 9,90 e 18,29 €; l'incumbent è a 12,19 €"
+    source: "Export DeepView, 2026-10-12"
+  format_fit:
+    score: 9.0
+    evidence: "Una pagina al giorno per farmaci e parametri è il gesto quotidiano di chi assiste; il formato grande lascia spazio per scrivere a mano"
+  longevity:
+    score: 8.0
+    evidence: "4 milioni 400mila caregiver di familiari coabitanti (ISTAT, luglio 2026); il bisogno si rinnova ogni anno"
+    source: "ISTAT, Aiuti dati e ricevuti, 2026"
+  seasonality:
+    score: 1.5
+    evidence: "Acquisto legato all'inizio dell'assistenza, non a una stagione"
+  trademark_risk:
+    score: 1.5
+    evidence: "«Diario del caregiver» è descrittivo e usato da almeno sei titoli diversi su Amazon.it; nessun marchio trovato con la ricerca web. Da confermare su TMview prima della pubblicazione"
+    source: "Ricerca web ed export DeepView, 2026-10-12 (TMview non raggiungibile da questo ambiente)"
+
+competitor:
+  title: "Diario del Caregiver – Farmaci e Sintomi: Quaderno Giornaliero per Farmaci, Sintomi, Parametri Vitali, Appuntamenti e Note per Chi Assiste un Familiare"
+  asin: "B0HK24XVK2"
+  price: 12.19
+  reviews: 0
+  rating: 0
+  page_count: 115
+  gaps:
+    - "Tracks only the person cared for: no record of the caregiver's hours, leave or expenses"
+    - "No pages for the verbali and recognitions that unlock leave and tax relief"
+
+trademark:
+  checked: true
+  source: "Ricerca web (nessun deposito trovato); TMview da ricontrollare prima della pubblicazione"
+  checked_on: "2026-10-12"
+  hits: []
+
+constraints:
+  trim_size: "8.5x11"
+  paper: "bw_white"
+  target_pages: 160
+  price: 14.99
+
+options:
+  pack: caregiver
+
+notes: |
+  Companion to the non-fiction guide «Caregiver familiare» (same author, in proof):
+  the diary's reference pages summarise the rules the guide explains, with the
+  same official sources and the same date.

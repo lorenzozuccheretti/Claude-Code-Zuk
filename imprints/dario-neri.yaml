@@ -1,0 +1,21 @@
+# Engine config for the books published under the name Dario Neri.
+#
+#   kdp build niches/diario-caregiver-familiare.yaml --config imprints/dario-neri.yaml
+#
+# Everything not set here keeps the defaults of engine.yaml.
+brand:
+  imprint: "Dario Neri"
+  author: "Dario Neri"
+  copyright_holder: "Dario Neri"
+  copyright_year: 2026
+  language: "italian"
+  default_trim: "8.5x11"
+  default_paper: "bw_white"
+  also_by: []
+  back_matter_note: "Hai trovato un errore o una regola cambiata? Segnalalo: lo correggeremo nella prossima ristampa."
+  fonts:
+    body: serif
+    display: sans
+    accent: sans
+  palette_key: ""
+  motif: ""
