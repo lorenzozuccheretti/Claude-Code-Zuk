@@ -29,6 +29,8 @@ _PRESS = {
     "agendadigitale.eu", "informazionefiscale.it", "fiscoetasse.com", "ansa.it",
     "lavoripubblici.it", "orizzontescuola.it", "quotidianopiu.it", "studiocataldi.it",
     "lentepubblica.it", "laleggepertutti.it", "puntosicuro.it",
+    # health and welfare press: the bills and rules on care, disability and the elderly
+    "quotidianosanita.it", "vita.it", "superando.it",
 }
 # Regions, provinces, municipalities and the public health service publish under their own
 # domains, not .gov.it: regione.lazio.it, comune.milano.it, asufc.sanita.fvg.it; so do some
