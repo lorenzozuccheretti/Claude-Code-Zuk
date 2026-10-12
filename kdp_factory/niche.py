@@ -136,6 +136,39 @@ class TrademarkCheck:
 
 
 @dataclass(frozen=True)
+class NicheCopy:
+    """Sales copy a press has written by hand, used verbatim.
+
+    The engine writes the back cover and the description from the niche
+    evidence, but a press that has settled on its own words should not have to
+    fight the generator for them — least of all in a language whose default
+    sentences were written for another market. Every field is optional; an
+    empty one leaves the generated copy in place. Station 4 still holds the
+    result to KDP's limits.
+    """
+
+    hook: str = ""
+    body: str = ""
+    benefits: list[str] = field(default_factory=list)
+    closing: str = ""
+    description_paragraphs: list[str] = field(default_factory=list)
+
+    @property
+    def is_empty(self) -> bool:
+        return not (self.hook or self.body or self.benefits or self.closing
+                    or self.description_paragraphs)
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "hook": self.hook,
+            "body": self.body,
+            "benefits": list(self.benefits),
+            "closing": self.closing,
+            "description_paragraphs": list(self.description_paragraphs),
+        }
+
+
+@dataclass(frozen=True)
 class Niche:
     """One niche, ready to be poured through the six stations."""
 
@@ -158,6 +191,7 @@ class Niche:
     trademark: TrademarkCheck = field(default_factory=TrademarkCheck)
     constraints: dict[str, Any] = field(default_factory=dict)
     options: dict[str, Any] = field(default_factory=dict)
+    copy: NicheCopy = field(default_factory=NicheCopy)
     notes: str = ""
     source_path: Path | None = None
 
@@ -195,7 +229,7 @@ class Niche:
         return score_niche(self)
 
     def as_dict(self) -> dict[str, Any]:
-        return {
+        data = {
             "niche": self.niche,
             "slug": self.slug,
             "book_type": self.book_type,
@@ -220,6 +254,11 @@ class Niche:
             "notes": self.notes,
             "source_path": str(self.source_path) if self.source_path else None,
         }
+        # Only written when set, so a niche without hand-written copy records
+        # exactly what it always did.
+        if not self.copy.is_empty:
+            data["copy"] = self.copy.as_dict()
+        return data
 
 
 @dataclass(frozen=True)
@@ -321,6 +360,32 @@ def _parse_signals(raw: Any, niche_name: str) -> dict[str, Signal]:
     return signals
 
 
+def _parse_copy(raw: Any, niche_name: str) -> NicheCopy:
+    if raw is None:
+        return NicheCopy()
+    if not isinstance(raw, dict):
+        raise ConfigError(f"{niche_name}: 'copy' must be a mapping")
+    known = {"hook", "body", "benefits", "closing", "description_paragraphs"}
+    unknown = set(raw) - known
+    if unknown:
+        raise ConfigError(
+            f"{niche_name}: unknown key(s) in 'copy': {', '.join(sorted(unknown))}; "
+            f"known keys: {', '.join(sorted(known))}"
+        )
+    for key in ("benefits", "description_paragraphs"):
+        if raw.get(key) is not None and not isinstance(raw[key], list):
+            raise ConfigError(f"{niche_name}: copy.{key} must be a list of strings")
+    return NicheCopy(
+        hook=str(raw.get("hook") or "").strip(),
+        body=str(raw.get("body") or "").strip(),
+        benefits=[str(b).strip() for b in (raw.get("benefits") or []) if str(b).strip()],
+        closing=str(raw.get("closing") or "").strip(),
+        description_paragraphs=[
+            str(p).strip() for p in (raw.get("description_paragraphs") or []) if str(p).strip()
+        ],
+    )
+
+
 def niche_from_dict(data: dict[str, Any], source_path: Path | None = None) -> Niche:
     if not isinstance(data, dict):
         raise ConfigError("a niche file must contain a YAML mapping")
@@ -354,6 +419,7 @@ def niche_from_dict(data: dict[str, Any], source_path: Path | None = None) -> Ni
         ),
         constraints=dict(data.get("constraints") or {}),
         options=dict(data.get("options") or {}),
+        copy=_parse_copy(data.get("copy"), name or "<unnamed>"),
         notes=str(data.get("notes", "") or ""),
         source_path=source_path,
     )

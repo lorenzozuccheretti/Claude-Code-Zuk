@@ -1,0 +1,21 @@
+# A pack whose profile page cannot fit any trim: the renderer must refuse it.
+language: english
+title: "Overflow Log"
+subtitle: "{days} days"
+reference: []
+profile:
+  - eyebrow: "Profile"
+    heading: "Far too many rows"
+    elements:
+      - {type: table, title: "Rows", columns: [{label: "Name", width: 2}, {label: "Phone", width: 1}], rows: 80}
+cycle:
+  daily:
+    eyebrow: "Day {n}"
+    heading: "Today"
+    elements:
+      - {type: prompt, label: "Today"}
+      - {type: lines, label: "Notes", count: fill}
+daily_prompts: ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
+  "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen",
+  "Nineteen", "Twenty", "Twenty one", "Twenty two", "Twenty three", "Twenty four"]
+closing_lines: ["The end."]

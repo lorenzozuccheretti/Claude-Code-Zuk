@@ -1,0 +1,280 @@
+# Logbook pack: a care log for family caregivers (English).
+#
+# The default pack, and the worked example of the schema. A logbook pack holds
+# every word of the book — front matter, reference pages, forms, prompts and
+# closing — so the book is entirely in the pack's language. Copy this file to
+# logbook_<name>.yaml and set `options.pack: <name>` in a niche to build from it.
+#
+# Schema, in page order:
+#   front          belongs_to {heading, fields}, how_to_use {heading, intro,
+#                  bullets}, copyright_lines (placeholders {year} {holder}
+#                  {imprint} {website} {author}; a line using {website} is
+#                  dropped when the imprint has none)
+#   reference      text pages: {eyebrow, heading, paragraphs, notes}
+#   profile        one-off form pages: {eyebrow, heading, elements}
+#   cycle.daily    repeated once per day; exactly one `prompt` element
+#   cycle.weekly   after every `every` daily pages; exactly one `prompt`
+#   cycle.monthly  after every `every_weeks` weekly pages; exactly one `prompt`
+#   extras         form pages after the cycle, each repeated `count` times
+#   closing_lines  the last page
+# Elements: fields, table, scale, checks, lines, prompt, text, note. `rows: fill`
+# and `count: fill` take the space left and are only allowed on the last
+# element. Titles, intros and eyebrows may use {days} {weeks} {months}; cycle
+# eyebrows also take {n}.
+language: english
+title: "The Family Caregiver's Daily Log"
+subtitle: "{days} Days of Medicines, Symptoms and Vital Signs, with a Weekly Care-Hours Review"
+
+front:
+  belongs_to:
+    heading: "This care log belongs to"
+    fields: ["My name", "The person I care for", "Started on", "Phone"]
+  how_to_use:
+    heading: "How to use this care log"
+    intro: "{days} daily pages, a review of the week after every seventh day, and a summary every four weeks. You do not need to fill in everything: fill in the same things every day."
+    bullets:
+      - "Start with the profile pages at the front: they are the ones to show a new doctor or an emergency team."
+      - "Each day, note the medicines given, the readings taken, meals and anything unusual. Five minutes, ideally at the same time."
+      - "Write down your own hours of care too, and add them up on the weekly page."
+      - "Take the log to appointments. A question written down when it occurs to you does not get lost."
+      - "The last box of every day is for you. The person doing the caring deserves a line of their own."
+  copyright_lines:
+    - "Copyright © {year} {holder}"
+    - "All rights reserved."
+    - "This log is a place to write things down. It does not replace the advice of a doctor, nurse or pharmacist. In an emergency, call your local emergency number."
+    - "Published by {imprint}."
+    - "{website}"
+    - "First edition."
+
+reference:
+  - eyebrow: "Before you start"
+    heading: "What to write down, and why"
+    paragraphs:
+      - "A doctor sees the person you care for for ten minutes. You see them every day. What you write down turns that difference into something a professional can use: when a symptom started, how often it comes back, what came before it."
+      - "Write times, not impressions. 'Confused at 4pm, better by 6pm' says more than 'a bad afternoon'. Note a new medicine on the day it starts, and any change you see in the days after."
+      - "Readings are only useful when they are comparable. Take blood pressure, temperature or blood sugar at the same time of day, in the same position, with the same device, and write the time next to the number."
+      - "Keep the log where the medicines are. A log that lives in a drawer gets filled in from memory, and memory is exactly what this book is here to replace."
+    notes:
+      - "General information, not medical advice. Ask the doctor or pharmacist which readings matter for the person you care for."
+  - eyebrow: "Before you start"
+    heading: "Looking after the person who cares"
+    paragraphs:
+      - "Caring is work, and it is easy to stop counting it. The weekly page asks for your hours of care so that the number exists: for you, for the rest of the family, and for anyone deciding what help you should get."
+      - "Plan breaks before you need them. Write on the care team page who could cover a morning, an evening or a night, and ask before you are exhausted rather than after."
+      - "Your own appointments matter as much as theirs. If you have stopped seeing your own doctor, put it on next week's page."
+      - "If you ever feel you cannot go on, say so to someone today: a friend, your doctor, or a carers' support line in your country."
+    notes:
+      - "In an emergency, call your local emergency number: 911 in the United States and Canada, 999 in the United Kingdom, 112 across the European Union."
+
+profile:
+  - eyebrow: "Profile"
+    heading: "The person I care for"
+    elements:
+      - {type: fields, items: ["Full name", "Date of birth", "Doctor", "Doctor's phone", "Pharmacy", "Blood type", "Health ID number", "Language spoken"], columns: 2}
+      - {type: lines, label: "Main diagnoses", count: 3}
+      - {type: lines, label: "Allergies and intolerances", count: 2}
+      - {type: checks, title: "Aids in use", items: ["Walking frame", "Wheelchair", "Hearing aid", "Glasses", "Dentures", "Continence aids"], columns: 3}
+      - {type: lines, label: "Habits and preferences worth knowing", count: fill}
+  - eyebrow: "Profile"
+    heading: "Current medicines"
+    elements:
+      - {type: note, text: "Write each medicine as the doctor prescribed it. Update this page at every change, and record the change in the log at the back."}
+      - {type: table, title: "Medicines and times", columns: [{label: "Medicine", width: 2.6}, {label: "Dose", width: 1.2}, {label: "Morning", width: 1}, {label: "Midday", width: 1}, {label: "Evening", width: 1}, {label: "Night", width: 1}], rows: fill}
+  - eyebrow: "Profile"
+    heading: "The care team"
+    elements:
+      - {type: note, text: "Doctor, specialists, pharmacy, social worker, paid carers, family who can cover a shift: one line each."}
+      - {type: table, title: "Contacts", columns: [{label: "Role", width: 1.6}, {label: "Name", width: 2}, {label: "Phone", width: 1.7}, {label: "Hours and notes", width: 2.2}], rows: fill}
+
+cycle:
+  daily:
+    eyebrow: "Day {n}"
+    heading: "Today's log"
+    elements:
+      - {type: fields, items: ["Date", "Day of the week"], columns: 2}
+      - {type: table, title: "Medicines given", columns: [{label: "Time", width: 0.9}, {label: "Medicine", width: 2.6}, {label: "Dose", width: 1.1}, {label: "Given", width: 0.8}], rows: 4}
+      - {type: fields, items: ["Blood pressure", "Pulse", "Temperature", "Blood sugar"], columns: 2}
+      - {type: scale, title: "How they are today", items: ["Pain", "Mood"], min: 0, max: 10}
+      - {type: checks, title: "The day", items: ["Breakfast", "Lunch", "Dinner", "Enough to drink", "A walk or exercise", "A quiet night"], columns: 3}
+      - {type: prompt, label: "For you, today"}
+      - {type: lines, label: "Symptoms, events, questions for the doctor", count: fill}
+  weekly:
+    every: 7
+    eyebrow: "Week {n}"
+    heading: "The week in review"
+    elements:
+      - {type: fields, items: ["From", "To"], columns: 2}
+      - {type: table, title: "Hours of care this week", columns: [{label: "Day", width: 1.2}, {label: "Hours", width: 1}, {label: "Who helped", width: 2}, {label: "Main tasks", width: 2.4}], rows: 7}
+      - {type: fields, items: ["Total hours this week", "Hours covered by others"], columns: 2}
+      - {type: checks, title: "This week", items: ["Appointments", "Medicine changes", "Prescriptions to renew", "Bills to file", "Time for me"], columns: 2}
+      - {type: prompt, label: "Looking back"}
+      - {type: lines, label: "What changed, what to mention", count: fill}
+  monthly:
+    every_weeks: 4
+    eyebrow: "Summary {n}"
+    heading: "Four weeks at a glance"
+    elements:
+      - {type: fields, items: ["From", "To", "Hours of care", "Days of respite"], columns: 2}
+      - {type: table, title: "Appointments and tests", columns: [{label: "Date", width: 1}, {label: "With", width: 2}, {label: "Outcome", width: 3.2}], rows: 5}
+      - {type: prompt, label: "The month in a sentence"}
+      - {type: lines, label: "For the next check-up", count: fill}
+
+extras:
+  - count: 2
+    eyebrow: "Records"
+    heading: "Appointments and tests"
+    elements:
+      - {type: table, title: "Visits, tests and hospital stays", columns: [{label: "Date", width: 1}, {label: "Doctor or place", width: 2}, {label: "Reason", width: 1.6}, {label: "Outcome", width: 2.4}], rows: fill}
+  - count: 1
+    eyebrow: "Records"
+    heading: "Medicine changes"
+    elements:
+      - {type: table, title: "Every change, with its date and reason", columns: [{label: "Date", width: 1}, {label: "Medicine", width: 2}, {label: "Change", width: 2}, {label: "Decided by", width: 1.6}], rows: fill}
+  - count: 2
+    eyebrow: "Records"
+    heading: "Care expenses"
+    elements:
+      - {type: note, text: "Paid help, visits, medicines, equipment, travel: one line for each expense, with how it was paid and where the receipt is."}
+      - {type: table, title: "Expenses", columns: [{label: "Date", width: 1}, {label: "What for", width: 2.6}, {label: "Amount", width: 1.1}, {label: "Paid by", width: 1.3}, {label: "Receipt", width: 1}], rows: fill}
+  - count: 1
+    eyebrow: "Records"
+    heading: "Questions for the doctor"
+    elements:
+      - {type: lines, label: "Write them down as they come, and tick them off when answered", count: fill}
+
+daily_prompts:
+  - "What made you smile today, even for a moment?"
+  - "Name one thing you did well today that nobody saw."
+  - "How many hours did you sleep last night, and what would help tonight?"
+  - "Who could you call this week just to talk about something else?"
+  - "One word for how you feel right now."
+  - "Did you eat sitting down, slowly, at least once today?"
+  - "What can wait until tomorrow without anything going wrong?"
+  - "A memory of them that you want to keep."
+  - "What frightened you today? Writing it down makes it smaller."
+  - "Which small kindness from someone else helped today?"
+  - "Have you had enough water yourself today?"
+  - "What would you tell a friend living exactly your day?"
+  - "Ten minutes only for you: how would you spend them?"
+  - "What made you angry today? That is allowed too."
+  - "A question for the doctor you keep putting off."
+  - "What went better than you feared?"
+  - "Which song puts you in a good mood? Play it tomorrow."
+  - "Did you get outside today? Where could you go tomorrow?"
+  - "What is one task someone else could take off your list?"
+  - "Describe a moment today when you felt close to them."
+  - "What did your body ask you for today?"
+  - "Which part of the routine is getting easier?"
+  - "Something you are proud of from this week so far."
+  - "What would make tomorrow morning calmer?"
+  - "Who has not asked how you are lately, and could?"
+  - "Write down a sound, a smell or a taste from today."
+  - "What did they say today that you want to remember?"
+  - "Which worry can you hand to a professional instead of carrying it?"
+  - "When did you last laugh properly? What was it about?"
+  - "What would a perfect free afternoon look like?"
+  - "Name three things in this room you are grateful for."
+  - "What did you learn about caring that no one told you?"
+  - "Is there a decision you are avoiding? Write its first step."
+  - "How did you rest today, if at all?"
+  - "Something you used to love doing that you could try again."
+  - "Which hour of the day is hardest, and why?"
+  - "Who in your life makes you feel lighter?"
+  - "What would you like them to know about you?"
+  - "A habit of theirs that still makes you smile."
+  - "What are you carrying today that is not yours to carry?"
+  - "If today had a title, what would it be?"
+  - "Which help did you refuse lately, and would you accept it now?"
+  - "What did you notice about the weather, the light or the season?"
+  - "One thing to say no to this week."
+  - "How patient were you with yourself today?"
+  - "Write a short message you will never send."
+  - "What does a good day look like now, compared with a year ago?"
+  - "Which conversation went well today?"
+  - "Something you are looking forward to, however small."
+  - "What would you change about the house to make caring easier?"
+  - "How are your shoulders, neck and back feeling tonight?"
+  - "A book, film or programme that would take your mind off things."
+  - "Who outside the family understands what you are doing?"
+  - "What did you do today purely for pleasure?"
+  - "A worry from last month that turned out fine."
+  - "What does your support network look like on paper?"
+  - "Which piece of advice actually helped?"
+  - "What would you like more of next week?"
+  - "Something kind you could do for yourself before bed."
+  - "What made today different from yesterday?"
+  - "Which small win deserves to be written down?"
+  - "Who do you miss seeing, and how could you meet?"
+  - "What is your body telling you about how tired you are?"
+  - "A place that makes you feel calm. When could you go?"
+  - "What surprised you today?"
+  - "What do you need to hear right now? Write it to yourself."
+  - "Which of today's tasks mattered most?"
+  - "How much of today was spent waiting, and for what?"
+  - "One thing about them that has not changed."
+  - "What are you better at now than when you started?"
+  - "Which boundary did you keep today?"
+  - "What would help you sleep better this week?"
+  - "Describe the best five minutes of today."
+  - "Who could you thank this week, and for what?"
+  - "What did you eat today that you actually enjoyed?"
+  - "A fear about the future, and one thing you can control."
+  - "When did you feel most like yourself today?"
+  - "What did you let go of today?"
+  - "Which appointment or call can you prepare for tonight?"
+  - "A compliment you received recently. Do you believe it?"
+  - "What helps when you feel overwhelmed?"
+  - "Which part of your own life would you like back first?"
+  - "Write down a phone number you should have to hand."
+  - "What is something you have stopped noticing about yourself?"
+  - "How did the two of you spend time together today?"
+  - "A moment of quiet you noticed today."
+  - "What would you like to ask the rest of the family for?"
+  - "Something new you tried this week."
+  - "Which feeling came up most often today?"
+  - "What kept you going this afternoon?"
+  - "If you had an extra hour tomorrow, what would it be for?"
+  - "A routine that is working. Why does it work?"
+  - "What are you most tired of explaining?"
+  - "Something beautiful you saw on the way somewhere."
+  - "What do you want to remember about this period of your life?"
+  - "Which of your needs went unmet today?"
+  - "Who could you ask for advice who has done this before?"
+  - "What made you feel useful today, beyond the tasks?"
+  - "Something you would like to celebrate this month."
+  - "How do you want to feel at the end of this week?"
+  - "What did you do today that took courage?"
+  - "A favourite meal you could cook or order this week."
+  - "What part of the evening do you like best?"
+  - "One sentence of encouragement for tomorrow's you."
+  - "What did they enjoy today?"
+
+weekly_prompts:
+  - "What was the hardest moment of the week, and who helped?"
+  - "Which change in their health is worth mentioning at the next visit?"
+  - "How many hours did you give this week, and how do you feel about that number?"
+  - "What did you do for yourself this week? Plan one thing for the next."
+  - "Which task could someone else take over next week?"
+  - "What went well this week that you want to repeat?"
+  - "Is there a pattern in the bad days? What came before them?"
+  - "Which appointment, form or call is still waiting for you?"
+  - "Who did you talk to this week who was not a patient or a professional?"
+  - "Rate your own energy this week from 0 to 10, and explain the number."
+  - "What did you learn this week about the person you care for?"
+  - "Which worry from Monday was gone by Sunday?"
+  - "What would make next week ten percent lighter?"
+  - "Which piece of equipment or help would change the most?"
+  - "Write one thing to tell the family about this week."
+  - "How did you sleep this week, overall?"
+
+monthly_prompts:
+  - "Looking at four weeks of pages, what has changed most?"
+  - "Which question should go to the doctor at the next check-up?"
+  - "What help did you ask for this month, and what did you get?"
+  - "How has your own life changed this month? Name one thing to protect."
+  - "What would you tell yourself on day one, now that you are here?"
+  - "Which part of the care plan is no longer working?"
+
+closing_lines:
+  - "That is the last page of this care log."
+  - "Keep it with the other papers: a doctor, a social worker or a relative taking over may need what you wrote here. And when you start the next one, begin again with the profile pages."

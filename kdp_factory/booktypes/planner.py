@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..config import EngineConfig
+from ..content.locale import text
 from ..content.packs import load_pack, select_diverse
 from ..content.rng import StageRandom
 from ..errors import ConfigError
@@ -138,7 +139,8 @@ class PlannerBookType(BookType):
             )
 
         pages.extend(self._back_matter(config, pack))
-        pages = self._pad_to(pages, max(target_pages, int(KDP_SPEC["page_count"]["min"])))
+        pages = self._pad_to(pages, max(target_pages, int(KDP_SPEC["page_count"]["min"])),
+                             text(self._strings(config), "interior.notes"))
         pages = self._pad_to_even(pages)
 
         return InteriorPlan(
@@ -177,6 +179,7 @@ class PlannerBookType(BookType):
         self, config: EngineConfig, titles: TitleProposal, pack, weeks: int
     ) -> list[PageSpec]:
         brand = config.brand
+        table = self._strings(config)
         return [
             PageSpec(
                 "title_page",
@@ -193,13 +196,8 @@ class PlannerBookType(BookType):
                 "copyright_page",
                 kind="front_matter",
                 data={
-                    "lines": [
-                        f"Copyright © {brand.copyright_year} {brand.copyright_holder}",
-                        "All rights reserved.",
-                        "Undated by design: start in any week of any year.",
-                        f"Published by {brand.imprint}." + (f" {brand.website}" if brand.website else ""),
-                        "First edition.",
-                    ]
+                    "lines": self._copyright_lines(
+                        brand, table, text(table, "matter.planner.notice"))
                 },
                 show_page_number=False,
             ),
@@ -207,8 +205,8 @@ class PlannerBookType(BookType):
                 "belongs_to_page",
                 kind="front_matter",
                 data={
-                    "heading": "This planner belongs to",
-                    "fields": ["Name", "Started in", "Contact"],
+                    "heading": text(table, "matter.planner.belongs_to"),
+                    "fields": list(table["matter"]["planner"]["fields"]),
                 },
                 show_page_number=False,
             ),
@@ -216,8 +214,8 @@ class PlannerBookType(BookType):
                 "how_to_use_page",
                 kind="front_matter",
                 data={
-                    "heading": "How to use this planner",
-                    "intro": f"{weeks} undated weeks: a plan page and a review page for each.",
+                    "heading": text(table, "matter.planner.how_to_use"),
+                    "intro": text(table, "matter.planner.intro", weeks=weeks),
                     "bullets": list(pack.get("how_to_use") or []),
                 },
                 show_page_number=False,

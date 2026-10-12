@@ -11,6 +11,7 @@ import math
 from typing import Any
 
 from ..config import EngineConfig
+from ..content.locale import text
 from ..content.packs import load_pack, tokens
 from ..content.text import normalize
 from ..content.rng import StageRandom
@@ -82,6 +83,7 @@ class WordSearchBookType(BookType):
         size = int(opts["grid_size"])
         per_puzzle = int(opts["words_per_puzzle"])
 
+        part_label = self._strings(config)["matter"]["puzzle"]["part_label"]
         titles = self.named(niche, rng)
         pages: list[PageSpec] = self._front_matter(config, titles, puzzle_count, size)
         content_units: list[ContentUnit] = []
@@ -91,7 +93,7 @@ class WordSearchBookType(BookType):
             words = self._words_for(theme, occurrence, uses, per_puzzle, size, rng)
             puzzle = generate_puzzle(
                 number=index + 1,
-                theme=self._theme_label(theme, occurrence, uses),
+                theme=self._theme_label(theme, occurrence, uses, part_label),
                 words=words,
                 size=size,
                 rng=rng,
@@ -125,7 +127,8 @@ class WordSearchBookType(BookType):
                 PageSpec(
                     "section_divider",
                     kind="divider",
-                    data={"section": "Solutions", "index": 1},
+                    data={"section": text(self._strings(config), "matter.puzzle.solutions"),
+                          "index": 1},
                     show_page_number=False,
                 )
             )
@@ -151,7 +154,8 @@ class WordSearchBookType(BookType):
                 )
 
         pages.extend(self._back_matter(config))
-        pages = self._pad_to(pages, max(target_pages, int(KDP_SPEC["page_count"]["min"])))
+        pages = self._pad_to(pages, max(target_pages, int(KDP_SPEC["page_count"]["min"])),
+                             text(self._strings(config), "interior.notes"))
         pages = self._pad_to_even(pages)
 
         return InteriorPlan(
@@ -169,7 +173,7 @@ class WordSearchBookType(BookType):
                 "difficulty": opts["difficulty"],
                 "solutions": with_solutions,
                 "themes": [
-                    self._theme_label(theme, occurrence, uses)
+                    self._theme_label(theme, occurrence, uses, part_label)
                     for theme, occurrence, uses in schedule
                 ],
                 "puzzles": [p.as_dict() for p in puzzles],
@@ -275,13 +279,18 @@ class WordSearchBookType(BookType):
         shuffled = rng.stream(f"words/{theme['name']}").shuffled(available)
         return shuffled[occurrence * per_slice : (occurrence + 1) * per_slice]
 
-    def _theme_label(self, theme: dict[str, Any], occurrence: int, uses: int) -> str:
-        return theme["name"] if uses == 1 else f"{theme['name']} (Part {occurrence + 1})"
+    def _theme_label(self, theme: dict[str, Any], occurrence: int, uses: int,
+                     pattern: str = "{theme} (Part {n})") -> str:
+        """A theme's name, numbered when it comes round again (locale pattern)."""
+        return theme["name"] if uses == 1 else pattern.format(
+            theme=theme["name"], n=occurrence + 1)
 
     def _front_matter(
         self, config: EngineConfig, titles: TitleProposal, puzzle_count: int, size: int
     ) -> list[PageSpec]:
         brand = config.brand
+        table = self._strings(config)
+        matter = table["matter"]["puzzle"]
         return [
             PageSpec(
                 "title_page",
@@ -298,34 +307,25 @@ class WordSearchBookType(BookType):
                 "copyright_page",
                 kind="front_matter",
                 data={
-                    "lines": [
-                        f"Copyright © {brand.copyright_year} {brand.copyright_holder}",
-                        "All rights reserved.",
-                        "Puzzles and solutions generated and verified by the publisher.",
-                        f"Published by {brand.imprint}." + (f" {brand.website}" if brand.website else ""),
-                        "First edition.",
-                    ]
+                    "lines": self._copyright_lines(
+                        brand, table, text(table, "matter.puzzle.notice"))
                 },
                 show_page_number=False,
             ),
             PageSpec(
                 "belongs_to_page",
                 kind="front_matter",
-                data={"heading": "This book belongs to", "fields": ["Name", "Started on"]},
+                data={"heading": text(table, "matter.puzzle.belongs_to"),
+                      "fields": list(matter["fields"])},
                 show_page_number=False,
             ),
             PageSpec(
                 "how_to_use_page",
                 kind="front_matter",
                 data={
-                    "heading": "How to use this book",
-                    "intro": f"{puzzle_count} puzzles on {size}x{size} grids, with every answer in the back.",
-                    "bullets": [
-                        "Words run across, down and diagonally — and some run backwards.",
-                        "Every word in the list is in the grid. If you cannot find one, it is there.",
-                        "Solutions start after the last puzzle, in puzzle order.",
-                        "One puzzle per sitting is plenty. The book is not going anywhere.",
-                    ],
+                    "heading": text(table, "matter.puzzle.how_to_use"),
+                    "intro": text(table, "matter.puzzle.intro", count=puzzle_count, size=size),
+                    "bullets": list(matter["bullets"]),
                 },
                 show_page_number=False,
             ),
@@ -338,10 +338,7 @@ class WordSearchBookType(BookType):
                 "closing_page",
                 kind="back_matter",
                 data={
-                    "lines": [
-                        "That is every puzzle in this book.",
-                        "Every grid was checked by machine: each listed word appears, and every solution was re-derived from the grid itself.",
-                    ],
+                    "lines": list(self._strings(config)["matter"]["puzzle"]["closing"]),
                     "imprint": brand.imprint,
                     "also_by": list(brand.also_by),
                     "note": brand.back_matter_note,

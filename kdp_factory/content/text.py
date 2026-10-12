@@ -11,7 +11,11 @@ from __future__ import annotations
 
 import re
 
-WORD_RE = re.compile(r"[a-z0-9']+")
+# Letters and digits in any script, plus the apostrophe inside "week's". On
+# ASCII text this is exactly [a-z0-9']+ (what the engine always used), so no
+# English comparison moves; on Italian it keeps "più" and "darà" whole instead
+# of cutting them to "pi" and "dar" and dropping "è" altogether.
+WORD_RE = re.compile(r"(?:[^\W_]|')+")
 
 
 def normalize(text: str) -> str:

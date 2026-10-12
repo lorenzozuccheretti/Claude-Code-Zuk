@@ -23,6 +23,7 @@ def plan_for(book_type: str, config, target_pages: int = 120, options=None,
                 "journal": "Gratitude journal for new mothers",
                 "planner": "Undated weekly planner for freelancers",
                 "puzzle": "Large print word search for seniors",
+                "logbook": "Daily care log for family caregivers",
             }[book_type],
             "book_type": book_type,
             "audience": "readers who bought the last one",
@@ -37,15 +38,15 @@ def plan_for(book_type: str, config, target_pages: int = 120, options=None,
 
 
 class TestRegistry:
-    def test_three_types_are_registered(self):
-        assert {b.key for b in available()} == {"journal", "planner", "puzzle"}
+    def test_four_types_are_registered(self):
+        assert {b.key for b in available()} == {"journal", "planner", "puzzle", "logbook"}
 
     def test_unknown_type_names_the_alternatives(self):
         with pytest.raises(ConfigError, match="registered types"):
             get_book_type("colouring")
 
 
-@pytest.mark.parametrize("book_type", ["journal", "planner", "puzzle"])
+@pytest.mark.parametrize("book_type", ["journal", "planner", "puzzle", "logbook"])
 class TestEveryBookType:
     def test_page_count_lands_on_the_target(self, book_type, config):
         _, plan = plan_for(book_type, config, target_pages=120)

@@ -25,6 +25,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfgen import canvas as pdfcanvas
 
 from ..config import EngineConfig
+from ..content.locale import lookup, strings
 from ..content.rng import StageRandom
 from ..spec.kdp import INCH, CoverGeometry
 from . import artwork
@@ -51,15 +52,20 @@ from .layout import (
 from .typography import font
 
 
-def short_subtitle(subtitle: str, max_words: int = 7) -> str:
+ENGLISH_SEPARATORS = (" — ", " – ", ": ", " for ", ", ")
+
+
+def short_subtitle(subtitle: str, max_words: int = 7,
+                   separators: tuple[str, ...] | list[str] = ENGLISH_SEPARATORS) -> str:
     """The cover's version of the subtitle.
 
     "A 109-Prompt Guided Journal for women running on empty" is written for a
     product page. At 160 pixels tall it is a smudge, so the cover takes the
-    first clause and the listing keeps the whole thing.
+    first clause and the listing keeps the whole thing. Where a clause ends is
+    a matter of language (" for " / " per "), so the locale supplies the cuts.
     """
     text = " ".join(subtitle.split())
-    for separator in (" — ", " – ", ": ", " for ", ", "):
+    for separator in separators:
         if separator in text:
             head = text.split(separator)[0].strip()
             if len(head.split()) >= 3:
@@ -143,7 +149,9 @@ class CoverRenderer:
         self.art_style = art_style or artwork.choose_style(words, rng)
         self.composition = composition or self._choose_composition(words, rng)
         self.badge = (badge or "").strip()
-        self.cover_subtitle = short_subtitle(subtitle)
+        self.cover_subtitle = short_subtitle(
+            subtitle, separators=lookup(strings(self.brand.language),
+                                        "cover.subtitle_separators"))
         self.seed = seed
         # Every text extent drawn, so the renderer can be held to its own frames.
         self.text_extents: list[tuple[float, float]] = []

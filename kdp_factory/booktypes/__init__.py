@@ -13,6 +13,7 @@ from .base import (
     register,
 )
 from .journal import JournalBookType
+from .logbook import LogbookBookType
 from .planner import PlannerBookType
 from .puzzle import WordSearchBookType
 
@@ -23,6 +24,7 @@ __all__ = [
     "PageSpec",
     "TitleProposal",
     "JournalBookType",
+    "LogbookBookType",
     "PlannerBookType",
     "WordSearchBookType",
     "available",

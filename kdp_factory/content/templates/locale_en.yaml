@@ -1,0 +1,177 @@
+# English string table: every buyer-visible word that is not content.
+#
+# These are exactly the strings the renderers, the copy and the listing used to
+# hard-wire, so an English build is byte-identical to the one before locales
+# existed. Change a line here and every English book changes with it.
+#
+# Placeholders are str.format fields; each key's comment-free neighbours show
+# which ones it receives.
+
+language: english
+# What station 4 writes into listing.json's `language` field. Kept as the
+# lowercase value English listings have always carried.
+kdp_language: english
+decimal: "."
+
+trim:
+  cover: "{w}” x {h}”"           # back-cover body sentence
+  listing: "{w} x {h} inches"    # "what's inside" line in the description
+
+interior:
+  how_to_use_eyebrow: "How to use this book"
+  date: "Date"
+  part: "Part {n}"
+  notes: "Notes"
+  also_from: "Also from this press"
+  puzzle: "Puzzle {n}"
+  solution: "Puzzle {n} — {theme}"
+  week_of_total: "Week {week} of {of}"
+  week_of: "Week of"
+  week_focus: "This week's focus"
+  week_review: "Week {week} — habits & review"
+  day_initials: ["M", "T", "W", "T", "F", "S", "S"]
+  # Logbook eyebrows, used when the pack does not set its own.
+  day: "Day {n}"
+  week: "Week {n}"
+  month: "Month {n}"
+  reference: "Reference"
+  record: "Record"
+  page_of: "{n} of {count}"
+
+matter:
+  copyright: "Copyright © {year} {holder}"
+  rights: "All rights reserved."
+  published_by: "Published by {imprint}."
+  first_edition: "First edition."
+  journal:
+    notice: "No part of this book may be reproduced in any form without written permission from the publisher, except brief quotations in a review."
+    belongs_to: "This journal belongs to"
+    fields: ["Name", "Started on", "Finished on"]
+    how_to_use: "How to use this journal"
+    intro: "{count} prompts, one per page, in whatever order suits you."
+  planner:
+    notice: "Undated by design: start in any week of any year."
+    belongs_to: "This planner belongs to"
+    fields: ["Name", "Started in", "Contact"]
+    how_to_use: "How to use this planner"
+    intro: "{weeks} undated weeks: a plan page and a review page for each."
+  puzzle:
+    notice: "Puzzles and solutions generated and verified by the publisher."
+    belongs_to: "This book belongs to"
+    fields: ["Name", "Started on"]
+    how_to_use: "How to use this book"
+    intro: "{count} puzzles on {size}x{size} grids, with every answer in the back."
+    bullets:
+      - "Words run across, down and diagonally — and some run backwards."
+      - "Every word in the list is in the grid. If you cannot find one, it is there."
+      - "Solutions start after the last puzzle, in puzzle order."
+      - "One puzzle per sitting is plenty. The book is not going anywhere."
+    solutions: "Solutions"
+    part_label: "{theme} (Part {n})"
+    closing:
+      - "That is every puzzle in this book."
+      - "Every grid was checked by machine: each listed word appears, and every solution was re-derived from the grid itself."
+  # Fallbacks for a logbook pack that leaves its front matter out.
+  logbook:
+    belongs_to: "This logbook belongs to"
+    fields: ["Name", "Started on"]
+    how_to_use: "How to use this logbook"
+    intro: "{days} days, one page each, with a weekly review after every seventh."
+
+cover:
+  badge:
+    journal: "{count} prompts"
+    planner: "{weeks} undated weeks"
+    puzzle: "{count} puzzles{answers}"
+    puzzle_answers: " + answers"
+    logbook: "{days} days"
+    pages: "{pages} pages"
+  # Where the cover cuts a long subtitle down to its first clause.
+  subtitle_separators: [" — ", " – ", ": ", " for ", ", "]
+
+copy:
+  audience_default: "anyone who has been looking for this book"
+  body: "{title} is built for {audience}. {unit}, {pages} pages, {trim}."
+  closing: "From {imprint}."
+  hook:
+    journal: "A prompt a day, and nothing else to decide."
+    planner: "A week that knows what it is for."
+    puzzle: "Large-print puzzles, and every answer in the back."
+    logbook: "Everything the next appointment will ask, already written down."
+    default: "A book that does one thing well."
+  unit:
+    journal: "{prompt_count} guided prompts"
+    planner: "{weeks} undated weeks"
+    puzzle: "{puzzle_count} puzzles with full solutions"
+    logbook: "{days} days of log pages"
+    default: "{units} entries"
+  benefits:
+    journal:
+      - "One prompt per page — no blank-page paralysis"
+      - "Room to write, not just room to tick"
+      - "Undated, so a missed day costs you nothing"
+      - "Matte cover and a spine that lies open on a table"
+    planner:
+      - "A focus line before the to-do list, so the week has a point"
+      - "A habit tracker on every review page"
+      - "Undated: start in any week of any year"
+      - "Two pages per week — plan on one, review on the other"
+    puzzle:
+      - "Large print grids that do not need a magnifier"
+      - "Every answer in the back, in puzzle order"
+      - "Machine-verified: every listed word really is in its grid"
+      - "One puzzle per page, with room to rest your hand"
+    logbook:
+      - "One page a day: medicines, symptoms and vital signs in one place"
+      - "A weekly review that turns scattered days into a pattern"
+      - "Undated, so you can start on any day of the year"
+      - "Contacts, appointments and expenses kept in the same book"
+  # A complaint about the incumbent becomes a claim only when a rule matches.
+  # [needle, claim]: the first needle found in the gap (lowercased) wins.
+  gap_rules:
+    - ["bleed", "Single-sided layout and generous margins"]
+    - ["thin", "Printed on heavier stock than the usual budget copy"]
+    - ["small print", "Large, readable type throughout"]
+    - ["too small", "Large, readable type throughout"]
+    - ["repetit", "No repeated prompts — every page is different"]
+    - ["repeat", "No repeated prompts — every page is different"]
+    - ["blank", "Every page earns its place: no filler"]
+    - ["filler", "Every page earns its place: no filler"]
+    - ["binding", "Bound to open flat and stay open"]
+    - ["no room", "More writing space per page"]
+    - ["cramped", "More writing space per page"]
+    - ["date", "Undated, so you can start whenever you like"]
+    - ["pamphlet", "A full journal, not a thin gift-shop notebook"]
+    - ["shallow", "Prompts that ask for more than a one-word answer"]
+    - ["bland", "Prompts that ask for more than a one-word answer"]
+
+listing:
+  whats_inside: "What's inside"
+  why_this_one: "Why this one"
+  inside_common:
+    - "{pages} pages, {trim}"
+    - "Front matter, page numbers and a closing page — nothing missing"
+  inside:
+    journal:
+      - "{prompt_count} guided prompts, one per page"
+      - "{lines_per_page} ruled lines on every prompt page"
+      - "{dividers} sections to break the book into stages"
+    planner:
+      - "{weeks} undated weekly spreads"
+      - "A {habits_per_week}-habit tracker on every review page"
+    planner_months: "{months} monthly overview pages"
+    planner_no_months: "Weekly focus line on every plan page"
+    puzzle:
+      - "{puzzle_count} word search puzzles"
+      - "{grid_size} x {grid_size} large-print grids"
+      - "Complete solutions section, in puzzle order"
+    logbook:
+      - "{days} daily log pages, each with its own prompt"
+      - "{weeks} weekly review pages"
+    logbook_months: "{months} monthly summary pages"
+    logbook_reference: "{reference} reference page(s) before the log starts"
+    logbook_records: "{records} record page(s): {headings}"
+  # Words a keyword phrase may not end on, and words dropped from the audience.
+  dangling: ["with", "for", "and", "or", "who", "that", "in", "on", "at", "under", "from", "to", "of", "facing", "living", "aged", "over", "about"]
+  articles: ["a", "an", "the"]
+  audience_fallback: "adults"

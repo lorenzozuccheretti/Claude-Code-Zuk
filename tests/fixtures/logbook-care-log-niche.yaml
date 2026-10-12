@@ -1,0 +1,42 @@
+# An English logbook niche for the end-to-end test and `kdp build` check. It
+# builds from the default example pack (no `options.pack`). The evidence is a
+# fixture, not research: do not publish from it.
+niche: "Daily care log for family caregivers"
+book_type: logbook
+
+audience: "adult children caring for an elderly parent at home, usually while working"
+audience_short: "family caregivers"
+promise: "Everything the next appointment will ask, already written down in five minutes a day."
+
+keywords_seed:
+  - "caregiver daily log"
+  - "medication log book for elderly"
+  - "care diary for family caregivers"
+  - "symptom and vital signs tracker"
+
+signals:
+  demand_volume: {score: 7.0, evidence: "fixture: 2,400 searches/mo for caregiver log book", source: "test fixture"}
+  proven_sales: {score: 7.0, evidence: "fixture: top 3 caregiver logs at BSR 9k-40k", source: "test fixture"}
+  competition_gap: {score: 7.0, evidence: "fixture: incumbents track the patient only"}
+  differentiation: {score: 7.5, evidence: "fixture: weekly care-hours review and a line a day for the carer"}
+  review_moat: {score: 4.0, evidence: "fixture: 300/120/80 reviews"}
+  price_headroom: {score: 6.5, evidence: "fixture: incumbents at 7.99-12.99"}
+  format_fit: {score: 9.0, evidence: "fixture: a page a day suits a daily routine"}
+  longevity: {score: 8.0, evidence: "fixture: evergreen need"}
+  seasonality: {score: 2.0, evidence: "fixture: no season"}
+  trademark_risk: {score: 1.0, evidence: "fixture: descriptive title"}
+
+competitor:
+  title: "Caregiver Log Book"
+  price: 8.99
+  reviews: 300
+  gaps:
+    - "pages are too small to write on"
+    - "no room for the carer's own hours"
+
+trademark: {checked: true, source: "test fixture", checked_on: "2026-10-12", hits: []}
+
+constraints:
+  trim_size: "8.5x11"
+  paper: "bw_white"
+  target_pages: 120

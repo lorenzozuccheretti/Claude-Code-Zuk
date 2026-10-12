@@ -15,10 +15,11 @@ from typing import Any, Iterable, Sequence
 import yaml
 
 from ..errors import ConfigError
-from .text import similarity, token_set, token_similarity
+from .text import token_set, token_similarity
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
-_WORD = re.compile(r"[a-z0-9]+")
+# Letters and digits in any script; identical to [a-z0-9]+ on ASCII text.
+_WORD = re.compile(r"[^\W_]+")
 
 
 @lru_cache(maxsize=None)

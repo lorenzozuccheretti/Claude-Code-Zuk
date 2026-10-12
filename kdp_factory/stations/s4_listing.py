@@ -17,6 +17,7 @@ from typing import Any
 
 from ..booktypes.base import InteriorPlan
 from ..content.copy import description as build_description
+from ..content.locale import lookup, strings
 from ..content.packs import load_pack, tokens
 from ..errors import SpecViolation
 from ..niche import Niche
@@ -58,7 +59,8 @@ class ListingStation(Station):
             "subtitle": subtitle,
             "author": self.config.brand.author,
             "imprint": self.config.brand.imprint,
-            "language": self.config.brand.language,
+            # The value KDP's language dropdown is set to, from the locale table.
+            "language": strings(self.config.brand.language)["kdp_language"],
             "description_html": description,
             "keywords": keywords,
             "categories": categories,
@@ -135,8 +137,9 @@ class ListingStation(Station):
         title_words = tokens(title, subtitle)
 
         pack = load_pack("categories")
-        modifiers = list(pack["keyword_modifiers"].get(plan.book_type, []))
-        modifiers += list(pack["keyword_modifiers"].get("generic", []))
+        table = self._for_language(pack["keyword_modifiers"])
+        modifiers = list(table.get(plan.book_type, []))
+        modifiers += list(table.get("generic", []))
         audience_short = self._audience_short(niche)
 
         candidates: list[str] = []
@@ -166,26 +169,37 @@ class ListingStation(Station):
             )
         return chosen
 
-    # Words a phrase cannot end on: cutting here leaves "gift for women with".
-    DANGLING = frozenset({
-        "with", "for", "and", "or", "who", "that", "in", "on", "at", "under",
-        "from", "to", "of", "facing", "living", "aged", "over", "about",
-    })
+    def _for_language(self, section: dict[str, Any]) -> dict[str, Any]:
+        """A categories.yaml section, with the brand language's own entries on top.
+
+        ``by_language.<language>`` replaces the entries it names and leaves
+        the rest alone, so an English build reads exactly what it always did
+        and an Italian one gets Amazon.it paths and Italian modifiers.
+        """
+        merged = {k: v for k, v in section.items() if k != "by_language"}
+        override = (section.get("by_language") or {}).get(self.config.brand.language)
+        if override:
+            merged.update(override)
+        return merged
 
     def _audience_short(self, niche: Niche) -> str:
         """A few words of the audience, cut where a phrase can actually end.
 
         Keyword slots are built as "gift for {this}", so a truncation that lands
-        mid-thought spends a slot on nonsense.
+        mid-thought spends a slot on nonsense. Which words dangle ("with",
+        "per") and which are articles is the locale's call.
         """
+        table = strings(self.config.brand.language)
+        dangling = {w.lower() for w in lookup(table, "listing.dangling")}
+        articles = {w.lower() for w in lookup(table, "listing.articles")}
         words = [
             w for w in niche.audience_phrase.split()
-            if w.lower() not in {"a", "an", "the"}
+            if w.lower() not in articles
         ]
         if not words:
-            return "adults"
+            return str(lookup(table, "listing.audience_fallback"))
         chosen = words[:4] if len(words) <= 4 else words[:3]
-        while len(chosen) > 1 and chosen[-1].lower().strip(",") in self.DANGLING:
+        while len(chosen) > 1 and chosen[-1].lower().strip(",") in dangling:
             chosen.pop()
         return " ".join(chosen).lower().strip(",")
 
@@ -194,7 +208,7 @@ class ListingStation(Station):
         self, plan: InteriorPlan, niche: Niche, limits: dict[str, int]
     ) -> list[str]:
         pack = load_pack("categories")
-        config = pack["book_types"].get(plan.book_type)
+        config = self._for_language(pack["book_types"]).get(plan.book_type)
         if not config:
             raise SpecViolation(
                 f"no categories defined for book type {plan.book_type!r}; add them to "

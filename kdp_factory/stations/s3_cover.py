@@ -12,6 +12,7 @@ from typing import Any
 
 from ..booktypes.base import InteriorPlan
 from ..content.copy import back_cover_copy
+from ..content.locale import lookup, strings
 from ..naming import artifact_name
 from ..niche import Niche
 from ..render.cover import CoverRenderer
@@ -22,17 +23,23 @@ from ..spec.kdp import cover_geometry
 from .base import Station
 
 
-def badge_for(plan) -> str:
-    """The flash a shopper reads before the subtitle: what this book gives them."""
+def badge_for(plan, language: str = "english") -> str:
+    """The flash a shopper reads before the subtitle: what this book gives them.
+
+    Worded by the locale table, so an Italian logbook says "90 GIORNI".
+    """
+    badge = lookup(strings(language), "cover.badge")
     meta = plan.metadata
     if plan.book_type == "journal" and meta.get("prompt_count"):
-        return f"{meta['prompt_count']} prompts"
+        return badge["journal"].format(count=meta["prompt_count"])
     if plan.book_type == "planner" and meta.get("weeks"):
-        return f"{meta['weeks']} undated weeks"
+        return badge["planner"].format(weeks=meta["weeks"])
     if plan.book_type == "puzzle" and meta.get("puzzle_count"):
-        solutions = " + answers" if meta.get("solutions") else ""
-        return f"{meta['puzzle_count']} puzzles{solutions}"
-    return f"{plan.page_count} pages"
+        solutions = badge["puzzle_answers"] if meta.get("solutions") else ""
+        return badge["puzzle"].format(count=meta["puzzle_count"], answers=solutions)
+    if plan.book_type == "logbook" and meta.get("days"):
+        return badge["logbook"].format(days=meta["days"])
+    return badge["pages"].format(pages=plan.page_count)
 
 
 class CoverStation(Station):
@@ -60,7 +67,7 @@ class CoverStation(Station):
             palette=palette, motif=motif, seed=ctx.seed,
             art_style=(niche.options or {}).get("art_style"),
             composition=(niche.options or {}).get("composition"),
-            badge=badge_for(plan),
+            badge=badge_for(plan, self.config.brand.language),
             words=identity_words(niche, plan),
         )
         cover_path = ctx.station_dir(3) / artifact_name(ctx.slug, "cover_wrap", "pdf")

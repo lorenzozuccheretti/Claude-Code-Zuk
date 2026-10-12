@@ -11,6 +11,7 @@ import math
 from typing import Any
 
 from ..config import EngineConfig
+from ..content.locale import text
 from ..content.packs import load_pack, pool_from_banks, select_banks, select_diverse
 from ..content.rng import StageRandom
 from ..errors import ConfigError
@@ -140,7 +141,8 @@ class JournalBookType(BookType):
             )
 
         pages.extend(self._back_matter(niche, config, pack))
-        pages = self._pad_to(pages, max(target_pages, int(KDP_SPEC["page_count"]["min"])))
+        pages = self._pad_to(pages, max(target_pages, int(KDP_SPEC["page_count"]["min"])),
+                             text(self._strings(config), "interior.notes"))
         pages = self._pad_to_even(pages)
 
         return InteriorPlan(
@@ -198,6 +200,7 @@ class JournalBookType(BookType):
         self, niche: Niche, config: EngineConfig, titles: TitleProposal, pack, prompt_count: int
     ) -> list[PageSpec]:
         brand = config.brand
+        table = self._strings(config)
         return [
             PageSpec(
                 "title_page",
@@ -214,15 +217,8 @@ class JournalBookType(BookType):
                 "copyright_page",
                 kind="front_matter",
                 data={
-                    "lines": [
-                        f"Copyright © {brand.copyright_year} {brand.copyright_holder}",
-                        "All rights reserved.",
-                        "No part of this book may be reproduced in any form without "
-                        "written permission from the publisher, except brief quotations "
-                        "in a review.",
-                        f"Published by {brand.imprint}." + (f" {brand.website}" if brand.website else ""),
-                        "First edition.",
-                    ]
+                    "lines": self._copyright_lines(
+                        brand, table, text(table, "matter.journal.notice"))
                 },
                 show_page_number=False,
             ),
@@ -230,8 +226,8 @@ class JournalBookType(BookType):
                 "belongs_to_page",
                 kind="front_matter",
                 data={
-                    "heading": "This journal belongs to",
-                    "fields": ["Name", "Started on", "Finished on"],
+                    "heading": text(table, "matter.journal.belongs_to"),
+                    "fields": list(table["matter"]["journal"]["fields"]),
                 },
                 show_page_number=False,
             ),
@@ -239,8 +235,8 @@ class JournalBookType(BookType):
                 "how_to_use_page",
                 kind="front_matter",
                 data={
-                    "heading": "How to use this journal",
-                    "intro": f"{prompt_count} prompts, one per page, in whatever order suits you.",
+                    "heading": text(table, "matter.journal.how_to_use"),
+                    "intro": text(table, "matter.journal.intro", count=prompt_count),
                     "bullets": list(pack.get("how_to_use") or []),
                 },
                 show_page_number=False,

@@ -18,6 +18,7 @@ from typing import Any
 
 import yaml
 
+from .content.locale import normalize_language
 from .errors import ConfigError
 
 DEFAULT_OUTPUT_ROOT = Path("output")
@@ -80,6 +81,10 @@ class Brand:
         object.__setattr__(
             self, "copyright_holder", self.copyright_holder or self.author
         )
+        # One spelling per language, so "en", "English" and "english" select
+        # the same locale table and a typo stops here instead of printing an
+        # English book for an Italian imprint.
+        object.__setattr__(self, "language", normalize_language(self.language))
 
 
 @dataclass(frozen=True)

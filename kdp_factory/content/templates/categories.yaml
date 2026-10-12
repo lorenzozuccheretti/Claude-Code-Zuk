@@ -51,6 +51,34 @@ book_types:
         category: "Books > Children's Books > Activities, Crafts & Games > Puzzle Books"
       - tags: [christmas, holiday, festive, gift]
         category: "Books > Humor & Entertainment > Puzzles & Games > Crosswords"
+  logbook:
+    defaults:
+      - "Books > Health, Fitness & Dieting > Aging > Caregiving"
+      - "Books > Health, Fitness & Dieting > Personal Health"
+      - "Books > Self-Help > Journal Writing"
+    tagged:
+      - tags: [dementia, alzheimer, alzheimers, memory]
+        category: "Books > Health, Fitness & Dieting > Diseases & Physical Ailments > Alzheimer's Disease"
+      - tags: [diabetes, diabetic, glucose, insulin]
+        category: "Books > Health, Fitness & Dieting > Diseases & Physical Ailments > Diabetes"
+      - tags: [parent, parents, elderly, senior, seniors, aging]
+        category: "Books > Parenting & Relationships > Family Relationships > Aging Parents"
+  # Per-language replacements: an entry here replaces the book type's entry
+  # above for an imprint in that language (Amazon.it paths for Italian).
+  by_language:
+    italian:
+      logbook:
+        defaults:
+          - "Libri > Famiglia, salute e benessere > Salute > Assistenza agli anziani"
+          - "Libri > Famiglia, salute e benessere > Salute > Salute personale"
+          - "Libri > Famiglia, salute e benessere > Sviluppo personale > Scrittura di diari"
+        tagged:
+          - tags: [demenza, alzheimer, memoria]
+            category: "Libri > Famiglia, salute e benessere > Malattie e disturbi > Malattia di Alzheimer"
+          - tags: [disabilita, disabile, disabili, invalidita, handicap]
+            category: "Libri > Famiglia, salute e benessere > Salute > Disabilità"
+          - tags: [genitore, genitori, anziani, anziano]
+            category: "Libri > Famiglia, salute e benessere > Relazioni familiari > Genitori anziani"
 
 # Keyword modifiers used to build the seven slots. A slot is only spent on a
 # phrase that adds words the title and subtitle do not already carry.
@@ -79,8 +107,32 @@ keyword_modifiers:
     - "activity book large print"
     - "word find puzzle book"
     - "gift puzzle book adults"
+  logbook:
+    - "caregiver log book"
+    - "medication tracker notebook"
+    - "symptom tracker journal"
+    - "blood pressure log book"
+    - "care diary for {audience_short}"
+    - "health log for elderly parents"
+    - "home care record book"
   generic:
     - "gift for {audience_short}"
     - "birthday gift idea"
     - "christmas stocking stuffer"
     - "paperback notebook gift"
+  # Per-language replacements, as for book_types above.
+  by_language:
+    italian:
+      logbook:
+        - "diario del caregiver"
+        - "registro farmaci giornaliero"
+        - "diario sintomi e parametri vitali"
+        - "quaderno pressione e glicemia"
+        - "agenda per {audience_short}"
+        - "registro assistenza anziani"
+        - "diario per chi assiste un familiare"
+      generic:
+        - "regalo per {audience_short}"
+        - "quaderno da compilare"
+        - "agenda senza date"
+        - "idea regalo utile"

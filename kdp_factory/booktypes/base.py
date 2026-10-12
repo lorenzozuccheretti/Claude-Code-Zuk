@@ -17,7 +17,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any, Callable, Iterable, Sequence
 
-from ..config import EngineConfig
+from ..config import Brand, EngineConfig
+from ..content.locale import strings, text
 from ..content.rng import StageRandom
 from ..content.text import normalize
 from ..errors import ConfigError
@@ -226,19 +227,46 @@ class BookType:
             pages.append(PageSpec("blank_page", kind="filler", show_page_number=False))
         return pages
 
-    def _pad_to(self, pages: list[PageSpec], target: int) -> list[PageSpec]:
+    def _pad_to(
+        self, pages: list[PageSpec], target: int, heading: str = "Notes"
+    ) -> list[PageSpec]:
         """Bring a plan up to a minimum page count with notes pages.
 
         Notes pages are filler and count against the padding ratio in the
         substance gate — which is the point: padding you cannot hide.
+        ``heading`` is the locale's word for "Notes".
         """
         target = even_up(target)
         while len(pages) < target:
             pages.insert(
                 len(pages) - len(self.back_matter_templates),
-                PageSpec("notes_page", kind="filler", data={"heading": "Notes"}),
+                PageSpec("notes_page", kind="filler", data={"heading": heading}),
             )
         return pages
+
+    @staticmethod
+    def _strings(config: EngineConfig) -> dict[str, Any]:
+        """The locale table for this build's imprint language."""
+        return strings(config.brand.language)
+
+    @staticmethod
+    def _copyright_lines(brand: Brand, table: dict[str, Any], notice: str) -> list[str]:
+        """The copyright page every shipped type prints, in the imprint's language.
+
+        Five lines, always in this order: the notice, the reservation, what is
+        specific to the format, who published it, the edition.
+        """
+        published = text(table, "matter.published_by", imprint=brand.imprint)
+        if brand.website:
+            published += f" {brand.website}"
+        return [
+            text(table, "matter.copyright", year=brand.copyright_year,
+                 holder=brand.copyright_holder),
+            text(table, "matter.rights"),
+            notice,
+            published,
+            text(table, "matter.first_edition"),
+        ]
 
 
 TITLE_STOPWORDS = frozenset({

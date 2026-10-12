@@ -1,0 +1,165 @@
+# Tabella italiana: ogni parola che l'acquirente legge e che non è contenuto.
+#
+# Same keys as locale_en.yaml. The content packs (prompts, focus lines, word
+# lists) are not translated here — a book type that wants a fully Italian book
+# draws its content from an Italian pack (the logbook does: see
+# logbook_<pack>.yaml's `language`).
+
+language: italian
+kdp_language: Italian
+decimal: ","
+
+trim:
+  cover: "{w_cm} x {h_cm} cm"
+  listing: "formato {w_cm} x {h_cm} cm"
+
+interior:
+  how_to_use_eyebrow: "Come usare questo libro"
+  date: "Data"
+  part: "Parte {n}"
+  notes: "Note"
+  also_from: "Dallo stesso editore"
+  puzzle: "Puzzle {n}"
+  solution: "Puzzle {n} — {theme}"
+  week_of_total: "Settimana {week} di {of}"
+  week_of: "Settimana del"
+  week_focus: "Il punto della settimana"
+  week_review: "Settimana {week} — abitudini e bilancio"
+  day_initials: ["L", "M", "M", "G", "V", "S", "D"]
+  day: "Giorno {n}"
+  week: "Settimana {n}"
+  month: "Mese {n}"
+  reference: "Da sapere"
+  record: "Registro"
+  page_of: "{n} di {count}"
+
+matter:
+  copyright: "Copyright © {year} {holder}"
+  rights: "Tutti i diritti riservati."
+  published_by: "Pubblicato da {imprint}."
+  first_edition: "Prima edizione."
+  journal:
+    notice: "Nessuna parte di questo libro può essere riprodotta in alcuna forma senza il permesso scritto dell'editore, salvo brevi citazioni in una recensione."
+    belongs_to: "Questo diario appartiene a"
+    fields: ["Nome", "Iniziato il", "Finito il"]
+    how_to_use: "Come usare questo diario"
+    intro: "{count} domande, una per pagina, nell'ordine che preferisci."
+  planner:
+    notice: "Senza date per scelta: si comincia in qualsiasi settimana dell'anno."
+    belongs_to: "Questa agenda appartiene a"
+    fields: ["Nome", "Iniziata a", "Contatto"]
+    how_to_use: "Come usare questa agenda"
+    intro: "{weeks} settimane senza date: una pagina di piano e una di bilancio per ciascuna."
+  puzzle:
+    notice: "Puzzle e soluzioni generati e verificati dall'editore."
+    belongs_to: "Questo libro appartiene a"
+    fields: ["Nome", "Iniziato il"]
+    how_to_use: "Come usare questo libro"
+    intro: "{count} puzzle su griglie {size}x{size}, con tutte le soluzioni in fondo."
+    bullets:
+      - "Le parole corrono in orizzontale, in verticale e in diagonale — e alcune al contrario."
+      - "Ogni parola dell'elenco è nella griglia. Se non la trovi, c'è."
+      - "Le soluzioni iniziano dopo l'ultimo puzzle, nello stesso ordine."
+      - "Un puzzle alla volta basta. Il libro non scappa."
+    solutions: "Soluzioni"
+    part_label: "{theme} (Parte {n})"
+    closing:
+      - "Questi erano tutti i puzzle del libro."
+      - "Ogni griglia è stata controllata a macchina: ogni parola elencata c'è, e ogni soluzione è stata ricavata di nuovo dalla griglia."
+  logbook:
+    belongs_to: "Questo registro appartiene a"
+    fields: ["Nome", "Iniziato il"]
+    how_to_use: "Come usare questo registro"
+    intro: "{days} giorni, una pagina ciascuno, con un riepilogo ogni sette."
+
+cover:
+  badge:
+    journal: "{count} domande"
+    planner: "{weeks} settimane senza date"
+    puzzle: "{count} puzzle{answers}"
+    puzzle_answers: " + soluzioni"
+    logbook: "{days} giorni"
+    pages: "{pages} pagine"
+  subtitle_separators: [" — ", " – ", ": ", " per ", ", "]
+
+copy:
+  audience_default: "chi cercava proprio questo libro"
+  body: "{title} è pensato per {audience}. {unit}, {pages} pagine, formato {trim}."
+  closing: "Da {imprint}."
+  hook:
+    journal: "Una domanda al giorno, e nient'altro da decidere."
+    planner: "Una settimana che sa a cosa serve."
+    puzzle: "Puzzle a caratteri grandi, con tutte le soluzioni in fondo."
+    logbook: "Tutto quello che chiederà il prossimo medico, già scritto."
+    default: "Un libro che fa bene una cosa sola."
+  unit:
+    journal: "{prompt_count} domande guidate"
+    planner: "{weeks} settimane senza date"
+    puzzle: "{puzzle_count} puzzle con tutte le soluzioni"
+    logbook: "{days} giorni di registro"
+    default: "{units} voci"
+  benefits:
+    journal:
+      - "Una domanda per pagina — mai il blocco della pagina bianca"
+      - "Spazio per scrivere, non solo caselle da spuntare"
+      - "Senza date: un giorno saltato non costa nulla"
+      - "Copertina opaca e un dorso che resta aperto sul tavolo"
+    planner:
+      - "Un obiettivo prima della lista di cose da fare"
+      - "Un tracker delle abitudini in ogni pagina di bilancio"
+      - "Senza date: si comincia in qualsiasi settimana"
+      - "Due pagine a settimana — una per pianificare, una per il bilancio"
+    puzzle:
+      - "Griglie a caratteri grandi, senza bisogno della lente"
+      - "Tutte le soluzioni in fondo, nell'ordine dei puzzle"
+      - "Verificato a macchina: ogni parola elencata è nella griglia"
+      - "Un puzzle per pagina, con spazio per appoggiare la mano"
+    logbook:
+      - "Una pagina al giorno: farmaci, sintomi e parametri in un solo posto"
+      - "Un riepilogo settimanale che trasforma i giorni in un quadro chiaro"
+      - "Senza date: si comincia in qualsiasi giorno dell'anno"
+      - "Contatti, visite e spese raccolti nello stesso libro"
+  gap_rules:
+    - ["trasparen", "Stampa su un solo lato e margini generosi"]
+    - ["traspare", "Stampa su un solo lato e margini generosi"]
+    - ["sottil", "Carta più spessa della solita copia economica"]
+    - ["piccol", "Caratteri grandi e leggibili in tutto il libro"]
+    - ["ripet", "Nessuna domanda ripetuta — ogni pagina è diversa"]
+    - ["vuot", "Ogni pagina ha una funzione: niente riempitivi"]
+    - ["riempitiv", "Ogni pagina ha una funzione: niente riempitivi"]
+    - ["rilegatura", "Rilegato per restare aperto sul tavolo"]
+    - ["poco spazio", "Più spazio per scrivere in ogni pagina"]
+    - ["stretto", "Più spazio per scrivere in ogni pagina"]
+    - ["date", "Senza date: si comincia quando si vuole"]
+    - ["datat", "Senza date: si comincia quando si vuole"]
+    - ["generic", "Pagine pensate per chi assiste, non un quaderno qualunque"]
+
+listing:
+  whats_inside: "Cosa c'è dentro"
+  why_this_one: "Perché questo"
+  inside_common:
+    - "{pages} pagine, {trim}"
+    - "Frontespizio, numeri di pagina e una pagina di chiusura — non manca nulla"
+  inside:
+    journal:
+      - "{prompt_count} domande guidate, una per pagina"
+      - "{lines_per_page} righe in ogni pagina"
+      - "{dividers} sezioni per dividere il libro in tappe"
+    planner:
+      - "{weeks} settimane senza date, su due pagine"
+      - "Un tracker di {habits_per_week} abitudini in ogni pagina di bilancio"
+    planner_months: "{months} pagine di panoramica mensile"
+    planner_no_months: "Un obiettivo della settimana in ogni pagina di piano"
+    puzzle:
+      - "{puzzle_count} puzzle di parole nascoste"
+      - "Griglie {grid_size} x {grid_size} a caratteri grandi"
+      - "Sezione completa delle soluzioni, nell'ordine dei puzzle"
+    logbook:
+      - "{days} pagine giornaliere, ognuna con la sua domanda"
+      - "{weeks} pagine di riepilogo settimanale"
+    logbook_months: "{months} pagine di riepilogo mensile"
+    logbook_reference: "{reference} pagine informative prima del registro"
+    logbook_records: "{records} pagine di schede: {headings}"
+  dangling: ["per", "con", "e", "o", "che", "di", "a", "in", "su", "da", "del", "della", "dei", "delle", "al", "alla", "ai", "alle", "nel", "nella", "tra", "fra"]
+  articles: ["il", "lo", "la", "i", "gli", "le", "un", "uno", "una", "l"]
+  audience_fallback: "adulti"

@@ -1,0 +1,103 @@
+# A small Italian logbook pack for the tests: 40 pages land exactly on
+# 4 front + 1 reference + 28 days + 4 weekly + 1 monthly + 1 extra + 1 closing.
+language: italian
+title: "Il Piccolo Diario di Cura"
+subtitle: "{days} giorni di farmaci, sintomi e ore di assistenza"
+front:
+  belongs_to: {heading: "Questo diario appartiene a", fields: ["Il mio nome", "La persona che assisto"]}
+  how_to_use:
+    heading: "Come usare questo diario"
+    intro: "{days} pagine giornaliere e un riepilogo ogni settimana."
+    bullets:
+      - "Compila ogni giorno le stesse cose, alla stessa ora."
+      - "L'ultima riga della giornata è per te."
+  copyright_lines:
+    - "Copyright © {year} {holder}"
+    - "Tutti i diritti riservati."
+    - "Pubblicato da {imprint}."
+    - "{website}"
+reference:
+  - eyebrow: "Da sapere"
+    heading: "Che cosa annotare"
+    paragraphs:
+      - "Scrivi gli orari, non le impressioni: un orario dice al medico più di un ricordo."
+      - "Misura la pressione sempre alla stessa ora e con lo stesso apparecchio."
+    notes: ["Informazioni generali, non consigli medici."]
+profile: []
+cycle:
+  daily:
+    eyebrow: "Giorno {n}"
+    heading: "Diario della giornata"
+    elements:
+      - {type: fields, items: ["Data", "Ora"], columns: 2}
+      - {type: table, title: "Farmaci", columns: [{label: "Ora", width: 1}, {label: "Farmaco", width: 3}, {label: "Dose", width: 1}], rows: 4}
+      - {type: scale, title: "Come sta oggi", items: ["Dolore", "Umore"], min: 0, max: 10}
+      - {type: checks, title: "La giornata", items: ["Colazione", "Pranzo", "Cena"], columns: 3}
+      - {type: prompt, label: "Per te, oggi"}
+      - {type: lines, label: "Note", count: fill}
+  weekly:
+    every: 7
+    eyebrow: "Settimana {n}"
+    heading: "Le ore della settimana"
+    elements:
+      - {type: table, title: "Ore di assistenza", columns: [{label: "Giorno", width: 1}, {label: "Ore", width: 1}, {label: "Chi ha aiutato", width: 2}], rows: 7}
+      - {type: prompt, label: "Uno sguardo alla settimana"}
+      - {type: lines, label: "Che cosa è cambiato", count: fill}
+  monthly:
+    every_weeks: 4
+    eyebrow: "Mese {n}"
+    heading: "Il mese in sintesi"
+    elements:
+      - {type: fields, items: ["Dal", "Al", "Ore totali"], columns: 2}
+      - {type: prompt, label: "Il mese in una frase"}
+      - {type: lines, label: "Per il prossimo controllo", count: fill}
+extras:
+  - count: 1
+    eyebrow: "Registro"
+    heading: "Spese per la dichiarazione dei redditi"
+    elements:
+      - {type: note, text: "Una riga per ogni spesa, con il modo di pagamento."}
+      - {type: table, title: "Spese", columns: [{label: "Data", width: 1}, {label: "Descrizione", width: 3}, {label: "Importo", width: 1}], rows: fill}
+daily_prompts:
+  - "Che cosa ti ha fatto sorridere oggi?"
+  - "Una cosa che hai fatto bene e che nessuno ha visto."
+  - "Quante ore hai dormito stanotte?"
+  - "Chi potresti chiamare questa settimana per due chiacchiere?"
+  - "Una parola per come ti senti adesso."
+  - "Hai mangiato seduto, con calma, almeno una volta?"
+  - "Che cosa può aspettare fino a domani?"
+  - "Un ricordo di lui o di lei da conservare."
+  - "Di che cosa hai avuto paura oggi?"
+  - "Quale piccolo gesto ti ha aiutato?"
+  - "Hai bevuto abbastanza acqua anche tu?"
+  - "Che cosa diresti a un amico nella tua stessa giornata?"
+  - "Dieci minuti solo per te: come li useresti?"
+  - "Che cosa ti ha fatto arrabbiare? Va bene anche questo."
+  - "Una domanda per il medico che rimandi da tempo."
+  - "Che cosa è andato meglio del previsto?"
+  - "Quale canzone ti mette di buon umore?"
+  - "Sei uscito all'aria aperta oggi?"
+  - "Quale compito potrebbe fare qualcun altro?"
+  - "Un momento in cui ti sei sentito vicino a lei o a lui."
+  - "Che cosa ti ha chiesto il corpo oggi?"
+  - "Quale parte della routine diventa più facile?"
+  - "Di che cosa sei orgoglioso in questi giorni?"
+  - "Che cosa renderebbe più calma la mattina?"
+  - "Un suono, un profumo o un sapore di oggi."
+  - "Che cosa ha detto oggi che vuoi ricordare?"
+  - "Quando hai riso di gusto l'ultima volta?"
+  - "Che cosa ti ha sorpreso oggi?"
+  - "Come hai riposato oggi, se hai riposato?"
+  - "Un luogo che ti calma: quando potresti andarci?"
+weekly_prompts:
+  - "Il momento più difficile della settimana, e chi ti ha aiutato."
+  - "Quale cambiamento di salute segnalare alla prossima visita?"
+  - "Che cosa hai fatto per te questa settimana?"
+  - "Quale pratica o telefonata ti aspetta ancora?"
+  - "Che cosa renderebbe più leggera la prossima settimana?"
+monthly_prompts:
+  - "Guardando quattro settimane di pagine, che cosa è cambiato di più?"
+  - "Quale domanda portare al prossimo controllo?"
+closing_lines:
+  - "Questa è l'ultima pagina del diario."
+  - "Conservalo con gli altri documenti: a chi ti darà il cambio servirà."
