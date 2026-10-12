@@ -60,8 +60,6 @@ def cmd_spec(args: argparse.Namespace) -> int:
 
 
 def cmd_score(args: argparse.Namespace) -> int:
-    from .gates.base import GateInput
-    from .gates.g1_niche import NicheGate
 
     config = _config(args)
     niche = load_niche(args.niche)

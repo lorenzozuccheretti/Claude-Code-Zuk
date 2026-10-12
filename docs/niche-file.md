@@ -5,7 +5,7 @@ you collected.
 
 ```yaml
 niche: "Gratitude journal for new mothers"
-book_type: journal                 # journal | planner | puzzle
+book_type: journal                 # journal | planner | puzzle | logbook
 
 audience: "first-time mothers in the first year, usually buying at 11pm"
 audience_short: "first-time mothers"   # optional; used on the cover
@@ -54,7 +54,50 @@ constraints:
 
 options:                           # book-type options; see `kdp types`
   lines_per_page: 13
+
+copy:                              # optional: hand-written sales copy, used verbatim
+  hook: "Five quiet minutes, every night of the first year."
+  body: "Written for the year nobody warns you about."
+  benefits:
+    - "One prompt per page"
+    - "Lies flat on a nightstand"
+  closing: "From North Pine Press, with care."
+  cover_subtitle: "Prompts for the first year"
+  description_paragraphs:
+    - "The first paragraph of the Amazon description."
+    - "The second."
 ```
+
+## Hand-written copy
+
+The back cover and the listing description are generated from the niche
+evidence in the imprint's language (`brand.language`, see the locale tables in
+`content/templates/locale_<code>.yaml`). A press that has written its own words
+puts them in `copy:`; every key is optional and each one replaces only its own
+part:
+
+| Key | Replaces |
+| --- | --- |
+| `hook` | the first line on the back cover and the description's heading (otherwise `promise`, then the format's default) |
+| `body` | the back-cover paragraph ("… is built for …") |
+| `benefits` | the bullet list, on the back cover and in the description, in this order |
+| `closing` | the last line ("From {imprint}."); wins over `brand.tagline` |
+| `description_paragraphs` | the body paragraph in the listing description, one `<p>` each |
+| `cover_subtitle` | the line under the title on the front cover; otherwise the subtitle is cut at its first clause |
+
+The text is used verbatim, but not unchecked: station 4 still refuses a
+description over KDP's character limit, and the back cover still drops bullets
+until the copy clears the barcode keep-out.
+
+## Logbook options
+
+A `logbook` is built from a pack: `options.pack: caregiver` reads
+`content/templates/logbook_caregiver.yaml` (a path ending in `.yaml` is read as
+a file, relative to the niche file). With no `pack`, the English example pack
+(`logbook_example.yaml`) is used; it documents the pack schema in its header.
+The pack holds every word of the book, so it should be in the imprint's
+language. `options.days` pins the number of daily pages instead of solving it
+from `target_pages`.
 
 ## The ten signals
 

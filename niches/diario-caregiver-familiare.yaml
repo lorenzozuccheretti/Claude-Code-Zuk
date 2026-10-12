@@ -89,6 +89,23 @@ constraints:
 options:
   pack: caregiver
 
+copy:
+  cover_subtitle: "Farmaci, sintomi, parametri vitali e ore di assistenza, giorno per giorno"
+  hook: "Tutto ciò che serve ricordare della cura, e di chi cura, in cinque minuti al giorno."
+  body: "Un diario per chi assiste a casa un genitore, un coniuge o un figlio: farmaci, sintomi e parametri della persona assistita, e accanto le tue ore di assistenza, i permessi usati e le spese da conservare. Le regole citate sono verificate sulle fonti ufficiali e aggiornate a ottobre 2026."
+  benefits:
+    - "Ogni giorno: farmaci, parametri, pasti, sintomi e domande per il medico"
+    - "Ogni settimana: il registro delle tue ore di assistenza, giorno per giorno"
+    - "Registri di visite, variazioni di terapia, permessi, congedo e spese detraibili"
+    - "Schede per verbali, terapia in corso, contatti e chi ti dà il cambio"
+    - "Una domanda al giorno per te, perché anche chi cura ha bisogno di cura"
+  closing: "Di Dario Neri."
+  description_paragraphs:
+    - "Chi assiste un familiare annota ogni giorno farmaci, pressione, glicemia, sintomi e visite. Ma c'è un'altra parte della cura che nessun quaderno registra: le ore che ci metti tu, i permessi che usi, le spese che dovrai portare in dichiarazione."
+    - "Il Diario del Caregiver Familiare tiene insieme le due cose. Ogni pagina giornaliera raccoglie farmaci dati, parametri vitali, pasti, sintomi, episodi e domande per il medico, e una riga per le tue ore di assistenza. Ogni settimana un registro somma le ore e i permessi; ogni quattro settimane un riepilogo raccoglie visite e spese."
+    - "All'inizio trovi le schede da mostrare a un medico nuovo o al pronto soccorso: la persona assistita, verbali e riconoscimenti, terapia in corso, contatti utili, il tuo profilo da caregiver e chi ti dà il cambio. In fondo, i registri di visite, variazioni di terapia, spese per la dichiarazione dei redditi e permessi dell'anno."
+    - "Quattro pagine spiegano in breve le tutele per chi assiste (permessi mensili, congedo straordinario, lavoro agile, detrazione per l'assistenza) e perché contare le ore di cura, con le fonti ufficiali e la data di aggiornamento. Formato grande, carta bianca, pagine non datate: si comincia in qualsiasi giorno."
+
 notes: |
   Companion to the non-fiction guide «Caregiver familiare» (same author, in proof):
   the diary's reference pages summarise the rules the guide explains, with the

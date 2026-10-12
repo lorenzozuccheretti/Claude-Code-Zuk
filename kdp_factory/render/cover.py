@@ -134,6 +134,7 @@ class CoverRenderer:
         composition: str | None = None,
         badge: str = "",
         words: list[str] | None = None,
+        cover_subtitle: str = "",
     ) -> None:
         self.geo = geometry
         self.title = title
@@ -149,7 +150,7 @@ class CoverRenderer:
         self.art_style = art_style or artwork.choose_style(words, rng)
         self.composition = composition or self._choose_composition(words, rng)
         self.badge = (badge or "").strip()
-        self.cover_subtitle = short_subtitle(
+        self.cover_subtitle = " ".join(cover_subtitle.split()) or short_subtitle(
             subtitle, separators=lookup(strings(self.brand.language),
                                         "cover.subtitle_separators"))
         self.seed = seed

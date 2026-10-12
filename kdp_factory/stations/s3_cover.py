@@ -69,6 +69,7 @@ class CoverStation(Station):
             composition=(niche.options or {}).get("composition"),
             badge=badge_for(plan, self.config.brand.language),
             words=identity_words(niche, plan),
+            cover_subtitle=niche.copy.cover_subtitle,
         )
         cover_path = ctx.station_dir(3) / artifact_name(ctx.slug, "cover_wrap", "pdf")
         renderer.render(cover_path, guides=False)

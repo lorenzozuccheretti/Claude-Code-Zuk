@@ -65,7 +65,8 @@ That buys three things:
 | `niche.py` | The niche model and the 10-signal weighted scoring sheet |
 | `booktypes/` | Pluggable formats; each returns an `InteriorPlan` |
 | `content/` | Template packs, seeded RNG, shared text measure, copy, optional LLM hook |
-| `render/` | ReportLab interior and cover renderers; PDF read-back helpers |
+| `content/locale.py` | Buyer-visible labels per language (`templates/locale_<code>.yaml`), picked by `brand.language` |
+| `render/` | ReportLab interior and cover renderers (incl. the logbook's measured `form_page`); PDF read-back helpers |
 | `render/typography.py` | Vendored typefaces, registered once, with a builtin fallback |
 | `render/design.py` | Colour worlds, contrast maths and small motifs |
 | `render/artwork.py` | The seven cover artwork styles, as filled vector shapes |

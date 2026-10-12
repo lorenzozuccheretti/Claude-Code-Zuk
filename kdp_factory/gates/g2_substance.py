@@ -128,7 +128,7 @@ class SubstanceGate(Gate):
         report.add(
             "promise_numbers",
             not unsupported,
-            f"every number in the title and subtitle is backed by the book"
+            "every number in the title and subtitle is backed by the book"
             if not unsupported
             else f"the cover claims {unsupported} but the book has no such quantity "
             f"(real quantities: {sorted(truths)})",
@@ -189,7 +189,7 @@ class SubstanceGate(Gate):
         report.add(
             "value_no_empty_content_pages",
             not empty,
-            f"every content page has something printed on it"
+            "every content page has something printed on it"
             if not empty
             else f"{len(empty)} page(s) are marked as content but are effectively blank: "
             f"{empty[:5]}",

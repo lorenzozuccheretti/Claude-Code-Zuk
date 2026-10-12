@@ -75,7 +75,7 @@ book_types:
         tagged:
           - tags: [demenza, alzheimer, memoria]
             category: "Libri > Famiglia, salute e benessere > Malattie e disturbi > Malattia di Alzheimer"
-          - tags: [disabilita, disabile, disabili, invalidita, handicap]
+          - tags: [disabilità, disabile, disabili, invalidità, handicap, autosufficienza]
             category: "Libri > Famiglia, salute e benessere > Salute > Disabilità"
           - tags: [genitore, genitori, anziani, anziano]
             category: "Libri > Famiglia, salute e benessere > Relazioni familiari > Genitori anziani"

@@ -152,11 +152,16 @@ class NicheCopy:
     benefits: list[str] = field(default_factory=list)
     closing: str = ""
     description_paragraphs: list[str] = field(default_factory=list)
+    # The line under the title on the front cover. Left empty, the cover cuts
+    # the subtitle at its first clause; a subtitle that opens with a list
+    # ("farmaci, sintomi e parametri") has no clause to cut at, so a press
+    # writes the cover line itself.
+    cover_subtitle: str = ""
 
     @property
     def is_empty(self) -> bool:
         return not (self.hook or self.body or self.benefits or self.closing
-                    or self.description_paragraphs)
+                    or self.description_paragraphs or self.cover_subtitle)
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -165,6 +170,7 @@ class NicheCopy:
             "benefits": list(self.benefits),
             "closing": self.closing,
             "description_paragraphs": list(self.description_paragraphs),
+            **({"cover_subtitle": self.cover_subtitle} if self.cover_subtitle else {}),
         }
 
 
@@ -365,7 +371,7 @@ def _parse_copy(raw: Any, niche_name: str) -> NicheCopy:
         return NicheCopy()
     if not isinstance(raw, dict):
         raise ConfigError(f"{niche_name}: 'copy' must be a mapping")
-    known = {"hook", "body", "benefits", "closing", "description_paragraphs"}
+    known = {"hook", "body", "benefits", "closing", "description_paragraphs", "cover_subtitle"}
     unknown = set(raw) - known
     if unknown:
         raise ConfigError(
@@ -383,6 +389,7 @@ def _parse_copy(raw: Any, niche_name: str) -> NicheCopy:
         description_paragraphs=[
             str(p).strip() for p in (raw.get("description_paragraphs") or []) if str(p).strip()
         ],
+        cover_subtitle=str(raw.get("cover_subtitle") or "").strip(),
     )
 
 

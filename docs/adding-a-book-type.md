@@ -47,7 +47,12 @@ self.templates["colouring_page"] = self._colouring_page
 ```
 
 Content lives in `content/templates/*.yaml`, not in Python. Keep it there:
-adding vocabulary should be an edit, not a deploy.
+adding vocabulary should be an edit, not a deploy. The same goes for the words
+around the content — headings, copyright lines, labels: take them from the
+locale table (`self._strings(config)`, keys in `locale_en.yaml` and
+`locale_it.yaml`) so the type prints in the imprint's language. A type whose
+pages are forms can use the logbook's `form_page` template rather than adding
+its own.
 
 ## 3. Make the page count land on purpose
 
