@@ -39,6 +39,9 @@ SCHEMA: tuple[str, ...] = (
         b365_over25 DOUBLE, b365_under25 DOUBLE,
         ps_over25 DOUBLE, ps_under25 DOUBLE,
         psc_over25 DOUBLE, psc_under25 DOUBLE,
+        -- Market-average closing 1X2 and Over/Under 2.5
+        avgch DOUBLE, avgcd DOUBLE, avgca DOUBLE,
+        avgc_over25 DOUBLE, avgc_under25 DOUBLE,
         neutral BOOLEAN DEFAULT false,      -- played at a neutral venue (internationals)
         provisional BOOLEAN DEFAULT false,  -- score from The Odds API, until the slow source has it
         PRIMARY KEY (league, match_date, home_team, away_team)
@@ -198,6 +201,8 @@ def session(path: Path | str) -> Iterator[duckdb.DuckDBPyConnection]:
 MIGRATIONS: tuple[str, ...] = (
     "ALTER TABLE matches ADD COLUMN IF NOT EXISTS neutral BOOLEAN DEFAULT false",
     "ALTER TABLE matches ADD COLUMN IF NOT EXISTS provisional BOOLEAN DEFAULT false",
+    *(f"ALTER TABLE matches ADD COLUMN IF NOT EXISTS {c} DOUBLE"
+      for c in ("avgch", "avgcd", "avgca", "avgc_over25", "avgc_under25")),
     "ALTER TABLE sent_picks ADD COLUMN IF NOT EXISTS closing_price DOUBLE",
     "ALTER TABLE sent_picks ADD COLUMN IF NOT EXISTS closing_prob DOUBLE",
     "ALTER TABLE sent_picks ADD COLUMN IF NOT EXISTS closing_source VARCHAR",

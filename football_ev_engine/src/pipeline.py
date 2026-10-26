@@ -81,6 +81,7 @@ class OddsFetchReport:
     unmatched: list[str] = field(default_factory=list)
     fuzzy: list[tuple[str, str, float]] = field(default_factory=list)
     error: str | None = None
+    skipped: bool = False  # no fixture in the requested window, so no credits spent
 
 
 def fetch_odds(
@@ -88,8 +89,13 @@ def fetch_odds(
     settings: Settings,
     leagues: list[League],
     client: httpx.AsyncClient | None = None,
+    window: tuple[datetime, datetime] | None = None,
 ) -> tuple[list[OddsFetchReport], Quota]:
-    """Pull odds for each league, map team names, store the snapshot."""
+    """Pull odds for each league, map team names, store the snapshot.
+
+    With ``window`` (UTC, naive), a league is only priced (2 credits) when the
+    free ``/events`` list shows a fixture kicking off inside it.
+    """
 
     async def run() -> tuple[list[OddsFetchReport], Quota]:
         reports = []
@@ -100,6 +106,9 @@ def fetch_odds(
                 reports.append(report)
                 if lg.odds_api_key not in active:
                     report.error = "not active on The Odds API right now (off-season?)"
+                    continue
+                if window is not None and not _has_event_in(await api.events(lg.odds_api_key), window):
+                    report.skipped = True
                     continue
                 events = await api.odds(lg.odds_api_key)
                 fixtures, odds = events_to_frames(events, lg)
@@ -117,6 +126,16 @@ def fetch_odds(
             return reports, api.quota
 
     return asyncio.run(run())
+
+
+def _has_event_in(events: list[dict], window: tuple[datetime, datetime]) -> bool:
+    start, end = window
+    for ev in events:
+        kick = pd.Timestamp(ev["commence_time"])
+        kick = (kick.tz_convert("UTC") if kick.tzinfo else kick).tz_localize(None).to_pydatetime()
+        if start <= kick <= end:
+            return True
+    return False
 
 
 def fetch_scores(

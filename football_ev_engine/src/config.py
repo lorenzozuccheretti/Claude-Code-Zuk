@@ -83,6 +83,9 @@ class Settings(BaseSettings):
     odds_api_markets: str = "h2h,totals"
     # Stop spending credits once the monthly quota falls to this many.
     odds_api_min_remaining: int = 20
+    # Credits kept back per remaining day of the month for the daily odds fetch;
+    # optional calls (live results, closing lines) only use what's above that.
+    odds_api_daily_reserve: int = Field(12, ge=0)
 
     football_data_base_url: str = "https://www.football-data.co.uk/mmz4281"
     international_results_url: str = (

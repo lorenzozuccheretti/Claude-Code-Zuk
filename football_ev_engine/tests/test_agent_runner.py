@@ -41,6 +41,9 @@ def mock_odds(hours_ahead: int = 10):
                              books={"pinnacle": 0.025, "unibet_fr": 0.06, "williamhill": 0.05})
     respx.get(f"{API}/sports/soccer_italy_serie_a/odds").mock(
         return_value=httpx.Response(200, json=events, headers=QUOTA))
+    respx.get(f"{API}/sports/soccer_italy_serie_a/events").mock(return_value=httpx.Response(
+        200, json=[{k: e[k] for k in ("id", "sport_key", "commence_time", "home_team", "away_team")} for e in events],
+        headers=QUOTA))
 
 
 def tg_ok():

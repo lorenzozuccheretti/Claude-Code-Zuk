@@ -178,6 +178,10 @@ class OddsApiClient:
         return [Event.model_validate(e) for e in data]
 
 
+    async def events(self, sport_key: str) -> list[dict]:
+        """``GET /v4/sports/{sport}/events`` - upcoming events without odds (free)."""
+        return await self._get(f"sports/{sport_key}/events", {"dateFormat": "iso"}, cost=0)
+
     async def event_odds(self, sport_key: str, event_id: str, markets: str) -> Event:
         """``GET /v4/sports/{sport}/events/{id}/odds`` - one event (1 credit per market and region)."""
         regions = self.settings.odds_api_regions

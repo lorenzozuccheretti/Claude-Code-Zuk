@@ -96,17 +96,20 @@ def event_done_since(con: duckdb.DuckDBPyConnection, kind: str, day: date) -> bo
 
 # --- settlement ---------------------------------------------------------------
 
+# Closing prices by preference: Pinnacle, then the market average (football-data
+# dropped Pinnacle's columns in 2026-27; the average closing line is still there).
 _CLOSE_COLS = {
-    "h2h": (("home", "draw", "away"), ("psch", "pscd", "psca")),
-    "totals": (("over", "under"), ("psc_over25", "psc_under25")),
+    "h2h": (("home", "draw", "away"), (("psch", "pscd", "psca"), ("avgch", "avgcd", "avgca"))),
+    "totals": (("over", "under"), (("psc_over25", "psc_under25"), ("avgc_over25", "avgc_under25"))),
 }
 
 
 def settle(con: duckdb.DuckDBPyConnection, now: datetime | None = None) -> int:
     """Grade sent picks whose match now appears in the football-data history.
 
-    Profit is per 1 unit staked. CLV compares the price taken with Pinnacle's
-    de-vigged closing line when football-data has it (h2h and totals 2.5);
+    Profit is per 1 unit staked. CLV compares the price taken with the
+    de-vigged closing line from football-data (h2h and totals 2.5): Pinnacle's
+    when present, otherwise the market average;
     a CLV already stored by the pre-kick-off snapshot (:mod:`src.agent.closing`)
     is kept.
     Returns the number of picks settled.
@@ -132,12 +135,14 @@ def settle(con: duckdb.DuckDBPyConnection, now: datetime | None = None) -> int:
         m = match.iloc[0]
         won = grade(p.market, p.outcome, p.point, int(m["fthg"]), int(m["ftag"]))
         clv = None
-        outcomes, cols = _CLOSE_COLS.get(p.market, ((), ()))
-        if cols and (p.market == "h2h" or p.point == 2.5):
-            closing = [m.get(c) for c in cols]
-            if all(pd.notna(x) and x > 1 for x in closing):
-                fair = dict(zip(outcomes, devig(closing)))
-                clv = float(p.price * fair[p.outcome] - 1)
+        outcomes, sources = _CLOSE_COLS.get(p.market, ((), ()))
+        if sources and (p.market == "h2h" or p.point == 2.5):
+            for cols in sources:
+                closing = [m.get(c) for c in cols]
+                if all(pd.notna(x) and x > 1 for x in closing):
+                    fair = dict(zip(outcomes, devig(closing)))
+                    clv = float(p.price * fair[p.outcome] - 1)
+                    break
         if pd.isna(p.won):
             con.execute(
                 "UPDATE sent_picks SET won = ?, profit_units = ?, clv = coalesce(clv, ?) WHERE fixture_key = ?",
