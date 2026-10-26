@@ -138,6 +138,23 @@ def train(
 
 
 @app.command()
+def calibrate() -> None:
+    """Fit the Over/Under calibration on walk-forward predictions of every league (a minute or two)."""
+    s = get_settings()
+    with console.status("Walk-forward predictions for every league..."), session(s.db_file) as con:
+        try:
+            cal = pipeline.calibrate(con, s, list(LEAGUES.values()))
+        except ValueError as exc:
+            _fail(str(exc))
+    table = Table("Line", "a", "b", "Log loss raw", "Log loss calibrated",
+                  title=f"Totals calibration · {cal.samples} out-of-sample matches")
+    for line, (a, b) in sorted(cal.coefs.items()):
+        raw, fixed = cal.log_loss[line]
+        table.add_row(f"{line:g}", f"{a:+.3f}", f"{b:.3f}", f"{raw:.4f}", f"{fixed:.4f}")
+    console.print(table)
+
+
+@app.command()
 def predict(
     league: LeagueOpt = "serie-a",
     bankroll: Annotated[Optional[float], typer.Option(help="Bankroll for stake sizing")] = None,

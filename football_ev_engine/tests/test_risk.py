@@ -18,7 +18,7 @@ from tests.test_agent_runner import NOW, mock_odds, settings, tg_ok  # noqa: F40
 
 # The live agent's rules; model_weight=1 so P_model is exactly the probability given.
 AGENT = ValueRules(min_ev=0.035, min_prob=0.0, min_odds=1.75, max_odds=2.25, model_weight=1.0)
-RISK = RiskRules()
+RISK = RiskRules(big_match_under_penalty=0.035)  # rule 3 is opt-in
 TOP = {"Napoli", "Roma", "Inter", "Atalanta", "Milan", "Lazio", "Juventus"}
 
 
@@ -102,7 +102,9 @@ def test_rules_from_settings_and_league_names():
     s = Settings(_env_file=None, sandbox_leagues=["ligue-1", "E0"], extreme_line_min_ev=0.2, big_match_top_n=5)
     r = RiskRules.from_settings(s)
     assert r.sandbox_leagues == {"F1", "E0"} and r.extreme_line_min_ev == 0.2 and r.big_match_top_n == 5
-    assert RiskRules.from_settings(Settings(_env_file=None)).sandbox_leagues == {"F1"}
+    default = RiskRules.from_settings(Settings(_env_file=None))
+    assert default.sandbox_leagues == set() and default.big_match_under_penalty == 0  # rules 2-3 opt-in
+    assert default.extreme_line_min_ev == 0.12
     with pytest.raises(ValueError):
         league_codes(["ligue-2"])
 

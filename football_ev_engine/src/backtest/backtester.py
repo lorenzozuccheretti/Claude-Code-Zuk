@@ -27,6 +27,7 @@ import pandas as pd
 
 from src.engine.devig import devig
 from src.engine.risk import RiskRules, top_attack
+from src.models.calibration import TotalsCalibration
 from src.engine.value import H2H_OUTCOMES, TOTALS_OUTCOMES, ValueRules, blend, evaluate_market
 from src.models.dixon_coles import DixonColes, DixonColesParams
 from src.models.ml_classifier import MLBenchmark
@@ -52,6 +53,7 @@ class BacktestConfig:
     ml_kind: str | None = "logreg"  # None skips the ML benchmark
     min_team_matches: int = 10  # skip matches where a side has fewer in the fit
     risk: RiskRules | None = None  # risk overrides, as in the live agent
+    calibration: TotalsCalibration | None = None  # recalibrate totals probabilities
 
 
 @dataclass
@@ -149,7 +151,8 @@ def run_backtest(matches: pd.DataFrame, config: BacktestConfig) -> BacktestResul
 
                 markets = [("h2h", 0.0, H2H_OUTCOMES, h2h, H2H_COLS)]
                 if config.include_totals:
-                    markets.append(("totals", 2.5, TOTALS_OUTCOMES, probs.totals(2.5), TOT_COLS))
+                    totals = (config.calibration.wrap(probs) if config.calibration else probs).totals(2.5)
+                    markets.append(("totals", 2.5, TOTALS_OUTCOMES, totals, TOT_COLS))
                 goals = row["fthg"] + row["ftag"]
                 for market, point, outcomes, p_dc, cols in markets:
                     soft = _prices(row, cols["soft"], outcomes)

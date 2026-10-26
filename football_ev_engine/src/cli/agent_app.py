@@ -40,6 +40,7 @@ def _print_report(r: RunReport) -> None:
         return
     credits = f", {r.credits_remaining} Odds API credits left" if r.credits_remaining is not None else ""
     live = f" (+{r.live_results} fresh results)" if r.live_results else ""
+    live += " · totals calibration refitted" if r.calibrated else ""
     console.print(f"History +{r.history_rows} rows{live} · {r.settled} picks settled · models: {len(r.trained)} leagues · "
                   f"{r.odds_events} events priced{credits}")
     if r.data_through:

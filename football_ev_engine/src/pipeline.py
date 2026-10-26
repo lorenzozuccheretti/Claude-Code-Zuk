@@ -29,10 +29,13 @@ from src.data.live_results import purge_superseded, store_results
 from src.engine.risk import RiskRules, top_attack
 from src.engine.value import ValueBet, ValueRules, scan
 from src.models.dixon_coles import DixonColes, DixonColesParams, MatchProbabilities
+from src.models import calibration
+from src.models.calibration import TotalsCalibration
 from src.models.ml_classifier import MLBenchmark
 
 log = logging.getLogger(__name__)
 DC_MODEL = "dixon_coles"
+CALIBRATION_MODEL = "totals_calibration"
 
 
 # --- fetch-historical -------------------------------------------------------
@@ -170,6 +173,32 @@ def load_params(con: duckdb.DuckDBPyConnection, league: str) -> DixonColesParams
     return None if row is None else DixonColesParams.from_dict(json.loads(row[0]))
 
 
+def calibrate(con: duckdb.DuckDBPyConnection, settings: Settings, leagues: list[League],
+              now: datetime | None = None, refit_days: int = 14) -> TotalsCalibration:
+    """Fit the totals calibration on walk-forward predictions of every league, and store it."""
+    frames = []
+    for lg in leagues:
+        matches = load_matches(con, lg.fd_code)
+        if matches.empty:
+            continue
+        xi = settings.decay_xi if lg.decay_xi is None else lg.decay_xi
+        frames.append(calibration.walk_forward_predictions(
+            matches, xi, lg.window_days or settings.training_window_days, refit_days,
+            settings.min_team_matches, max_goals=settings.max_goals))
+    preds = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+    now = now or datetime.now(timezone.utc).replace(tzinfo=None)
+    cal = calibration.fit(preds, fitted_at=now)
+    con.execute("INSERT OR REPLACE INTO model_params VALUES (?, 'ALL', ?, ?)",
+                [CALIBRATION_MODEL, now, json.dumps(cal.to_dict())])
+    return cal
+
+
+def load_calibration(con: duckdb.DuckDBPyConnection) -> TotalsCalibration | None:
+    row = con.execute("SELECT params FROM model_params WHERE model = ? AND league = 'ALL'",
+                      [CALIBRATION_MODEL]).fetchone()
+    return None if row is None else TotalsCalibration.from_dict(json.loads(row[0]))
+
+
 def train(
     con: duckdb.DuckDBPyConnection, settings: Settings, league: League, ml_kind: str | None = "logreg"
 ) -> TrainReport:
@@ -271,8 +300,11 @@ def predict(
         list(fixtures["event_id"]),
     ).df()
 
+    cal = load_calibration(con) if settings.calibrate_totals else None
+
     def price(home: str, away: str) -> MatchProbabilities | None:
-        return model.predict(home, away) if model.can_price(home, away, settings.min_team_matches) else None
+        probs = model.predict(home, away) if model.can_price(home, away, settings.min_team_matches) else None
+        return cal.wrap(probs) if cal else probs
 
     risk = RiskRules.from_settings(settings)
     top = top_attack(params.attack, risk.big_match_top_n, current_teams(con, league.fd_code))

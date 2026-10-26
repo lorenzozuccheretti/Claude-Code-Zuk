@@ -118,26 +118,34 @@ from the backtest's Brier table rather than by feel.
 Markets priced: 1X2 (`h2h`) and totals on half-goal lines. Integer and
 quarter lines are skipped because they need push handling.
 
-**Risk overrides** (`src/engine/risk.py`) tighten the rules where the model is weakest. Each is set in `.env` and switched off with 0 (or `[]`):
-
-| Rule | Default | Effect |
-|---|---|---|
-| Extreme totals lines | `EXTREME_LINE_MIN_EV=0.12` | Over 3.5 and above, and Under 1.5 and below, need EV ≥ 12% instead of `MIN_EV` |
-| Big-match unders | `BIG_MATCH_TOP_N=7`, `BIG_MATCH_UNDER_PENALTY=0.035` | When both sides rank in their league's top 7 attacks (Dixon-Coles ratings, current season), Under 2.5 loses 3.5 points of P_model before EV and stake |
-| Sandbox leagues | `SANDBOX_LEAGUES=["ligue-1"]` | The agent records and settles these picks as paper trades, never sends them, and reports them separately. They have their own daily cap |
-
-The probability penalty feeds the Kelly stake too, so a penalised bet that survives is staked smaller. A rejected bet never reaches staking. The backtest applies the two totals rules as well (`--no-risk` turns them off). Its archive has only Over/Under 2.5 prices, though, so the extreme-line rule never fires there.
-
-Walk-forward calibration of the Dixon-Coles totals (7,180 matches, 2023–26, all six competitions) shows the model is overconfident at both tails:
+**Totals calibration** (`src/models/calibration.py`). Walk-forward, Dixon-Coles is overconfident on goal totals. Its ratings spread the matches too far apart:
 
 | Model says | Model avg | Actual |
 |---|---|---|
 | Over 3.5 at 55%+ | 64.0% | 51.4% |
-| Over 3.5 at 45–55% | 49.5% | 46.2% |
 | Under 2.5 at 55–65% | 59.7% | 54.1% |
 | Under 2.5 at 65%+ | 72.5% | 59.1% |
 
-The live estimate is only 35% Dixon-Coles, so about a third of this gap reaches P_model.
+So every half-goal line is recalibrated with `logit P' = a + b·logit P`. The coefficients are fitted on out-of-sample predictions only (refit every 14 days, predict the next block) and pooled across the six competitions; *b* comes out at about 0.5 on every line. `python main.py calibrate` refits them, and the agent does so by itself every 30 days (`CALIBRATE_TOTALS`, `CALIBRATION_REFRESH_DAYS`).
+
+How it was checked: coefficients fitted on predictions before July 2025, then tested on 2025-26.
+- Log loss improved on every line (Over 2.5: 0.6925 → 0.6777).
+- The calibrated averages matched the observed rates in every probability band.
+- In the backtest it removed 111 of 128 Over/Under 2.5 bets. Those bets had a −16% yield and −4.4% CLV: the "value" was the miscalibration.
+
+1X2 is left alone.
+
+**Risk overrides** (`src/engine/risk.py`) tighten the rules further. Each is set in `.env` and switched off with 0 (or `[]`):
+
+| Rule | Default | Effect |
+|---|---|---|
+| Extreme totals lines | **on**, `EXTREME_LINE_MIN_EV=0.12` | Over 3.5 and above, and Under 1.5 and below, need EV ≥ 12% instead of `MIN_EV`. This rule cannot be backtested, because the odds archive has only 2.5 lines |
+| Big-match unders | off (`BIG_MATCH_UNDER_PENALTY=0`) | When both sides rank in their league's top `BIG_MATCH_TOP_N` attacks, Under 2.5 loses that much P_model before EV and stake. Off because it fired on 8 of 562 backtest bets, and the calibration fixes the general under bias |
+| Sandbox leagues | off (`SANDBOX_LEAGUES=[]`) | The agent records and settles those leagues' picks as paper trades, never sends them, and reports them separately with their own daily cap. Off because Ligue 1 wasn't an outlier in the backtest (−8.5% yield, against −18% for Serie A) |
+
+A probability penalty feeds the Kelly stake too, and a rejected bet never reaches staking. The backtest takes `risk` and `calibration` as well (`--no-risk` to compare).
+
+Neither change creates an edge. Pinnacle's pre-match price beats every blend with the model on Brier score, for both 1X2 and totals, so the honest test remains the recorded CLV.
 
 ### 5. Backtest (`backtest/backtester.py`)
 

@@ -3,7 +3,7 @@
 1. Refresh the current season from football-data.co.uk (full history on first run).
 2. Settle earlier picks whose results are now in, and fill results the slow
    sources lack from The Odds API ``/scores`` (only for leagues that need it).
-3. Refit Dixon-Coles for every league.
+3. Refit Dixon-Coles for every league, and the totals calibration monthly.
 4. Fetch fresh odds from The Odds API (2 credits per league).
 5. Scan with the risk overrides (:mod:`src.engine.risk`), select at most
    ``MAX_DAILY_PICKS``, write reasoning. Picks from sandbox leagues are
@@ -61,6 +61,7 @@ class RunReport:
     notices: int = 0  # other messages delivered (no-pick notice, weekly report)
     skipped: str = ""  # why the run stopped early, if it did
     report_sent: bool = False
+    calibrated: bool = False  # totals calibration refitted on this run
     errors: list[str] = field(default_factory=list)
 
 
@@ -83,6 +84,7 @@ def _candidates(con: duckdb.DuckDBPyConnection, s: AgentSettings, now: datetime,
                 report: RunReport) -> tuple[list[Pick], dict[str, DixonColes]]:
     rules = ValueRules.from_settings(s)
     risk = RiskRules.from_settings(s)
+    cal = pipeline.load_calibration(con) if s.calibrate_totals else None
     latest = now + timedelta(hours=s.pick_horizon_hours)
     picks: list[Pick] = []
     models: dict[str, DixonColes] = {}
@@ -104,7 +106,8 @@ def _candidates(con: duckdb.DuckDBPyConnection, s: AgentSettings, now: datetime,
         ).df()
 
         def price(home: str, away: str, m=model):
-            return m.predict(home, away) if m and m.can_price(home, away, s.min_team_matches) else None
+            probs = m.predict(home, away) if m and m.can_price(home, away, s.min_team_matches) else None
+            return cal.wrap(probs) if cal else probs
 
         top = top_attack(model.params.attack, risk.big_match_top_n, pipeline.current_teams(con, lg.fd_code)) if model else set()
 
@@ -115,6 +118,19 @@ def _candidates(con: duckdb.DuckDBPyConnection, s: AgentSettings, now: datetime,
         picks.extend(to_picks(bets, fixtures, lg.name))
     report.candidates = len(picks)
     return picks, models
+
+
+def _refresh_calibration(con: duckdb.DuckDBPyConnection, s: AgentSettings, now: datetime,
+                         report: RunReport) -> None:
+    """Refit the totals calibration when it is missing or older than CALIBRATION_REFRESH_DAYS."""
+    cal = pipeline.load_calibration(con)
+    if cal and cal.fitted_at and now - cal.fitted_at < timedelta(days=s.calibration_refresh_days):
+        return
+    try:
+        pipeline.calibrate(con, s, list(LEAGUES.values()), now=now)
+        report.calibrated = True
+    except Exception as exc:  # noqa: BLE001 - the previous calibration (or none) still works
+        report.errors.append(f"totals calibration not refreshed: {exc}")
 
 
 def _reason(con, s: AgentSettings, pick: Pick, models: dict[str, DixonColes], llm_client) -> str:
@@ -176,6 +192,9 @@ def run_daily(
                 report.trained.append(lg.slug)
             except ValueError as exc:
                 report.errors.append(f"train {lg.slug}: {exc}")
+
+        if s.calibrate_totals:
+            _refresh_calibration(con, s, now, report)
 
         if fetch:
             try:

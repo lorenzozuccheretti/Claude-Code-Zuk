@@ -119,6 +119,10 @@ class Settings(BaseSettings):
     model_weight: float = Field(0.35, ge=0, le=1)
     devig_method: str = "multiplicative"
 
+    # Recalibrate Dixon-Coles goal totals (src/models/calibration.py); refit monthly.
+    calibrate_totals: bool = True
+    calibration_refresh_days: int = Field(30, gt=0)
+
     # Risk overrides (src/engine/risk.py). Each rule is off at 0 / empty.
     # Rule 1: totals at or beyond these lines need EXTREME_LINE_MIN_EV instead of MIN_EV.
     extreme_over_from: float = 3.5
@@ -127,11 +131,13 @@ class Settings(BaseSettings):
     # Rule 3: Under BIG_MATCH_UNDER_LINE loses this much probability when both
     # sides rank in their league's top BIG_MATCH_TOP_N attacks (Dixon-Coles ratings).
     big_match_under_line: float = 2.5
-    big_match_under_penalty: float = Field(0.035, ge=0, lt=1)
+    # Off by default: it fired on 8 of 562 backtest bets, and the totals
+    # calibration already corrects the model's general Under 2.5 overconfidence.
+    big_match_under_penalty: float = Field(0.0, ge=0, lt=1)
     big_match_top_n: int = Field(7, ge=0)
     # Rule 2: leagues (slugs or football-data codes) whose picks are paper-traded
-    # by the agent: recorded and settled, never sent. JSON list in .env.
-    sandbox_leagues: list[str] = ["ligue-1"]
+    # by the agent: recorded and settled, never sent. JSON list in .env, e.g. ["ligue-1"].
+    sandbox_leagues: list[str] = []
 
     # Dixon-Coles.
     decay_xi: float = Field(0.005, ge=0)  # per day

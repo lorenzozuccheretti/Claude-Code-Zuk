@@ -12,8 +12,13 @@ by setting its parameter to 0 (or an empty list).
    agent: recorded and settled, never sent. Applied in
    :mod:`src.agent.runner`; :meth:`RiskRules.is_sandboxed` decides.
 3. **Big-match Under 2.5.** When both sides rank in their league's top
-   ``BIG_MATCH_TOP_N`` attacks, ``BIG_MATCH_UNDER_PENALTY`` (3.5 points) comes
-   off P_model for the under before EV and stake are computed.
+   ``BIG_MATCH_TOP_N`` attacks, ``BIG_MATCH_UNDER_PENALTY`` comes off P_model
+   for the under before EV and stake are computed.
+
+Rules 2 and 3 are off by default. Neither held up on history: Ligue 1 was
+not an outlier in the backtest, and rule 3 fired on 8 of 562 bets. The
+totals calibration (:mod:`src.models.calibration`) corrects the model's
+overconfidence on unders across all matches instead.
 
 Overrides only ever make the engine stricter: an EV floor is raised, never
 lowered, and the probability shift lowers the stake together with the EV, so
@@ -51,7 +56,7 @@ class RiskRules:
     extreme_under_to: float = 1.5
     extreme_line_min_ev: float = 0.12
     big_match_under_line: float = 2.5
-    big_match_under_penalty: float = 0.035
+    big_match_under_penalty: float = 0.0
     big_match_top_n: int = 7
     sandbox_leagues: frozenset[str] = frozenset()  # football-data codes
 
