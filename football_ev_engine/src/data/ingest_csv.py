@@ -51,12 +51,19 @@ COLUMN_MAP: dict[str, str] = {
     "AvgH": "avgh",
     "AvgD": "avgd",
     "AvgA": "avga",
+    # Market-average closing prices: the only closing line in the 2026-27
+    # files, which dropped Pinnacle's columns.
+    "AvgCH": "avgch",
+    "AvgCD": "avgcd",
+    "AvgCA": "avgca",
     "B365>2.5": "b365_over25",
     "B365<2.5": "b365_under25",
     "P>2.5": "ps_over25",
     "P<2.5": "ps_under25",
     "PC>2.5": "psc_over25",
     "PC<2.5": "psc_under25",
+    "AvgC>2.5": "avgc_over25",
+    "AvgC<2.5": "avgc_under25",
 }
 # Older files name the market average differently.
 FALLBACK_COLUMNS: dict[str, str] = {"BbAvH": "avgh", "BbAvD": "avgd", "BbAvA": "avga"}

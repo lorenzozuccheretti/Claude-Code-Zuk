@@ -1,10 +1,10 @@
 """Closing-line snapshot for recorded picks, taken shortly before kick-off.
 
-Settlement can only take Pinnacle's true closing price from football-data,
-which quotes it for 1X2 and Over/Under 2.5 in the club leagues. Picks on
-other lines (Over 3.5, Under 1.5) and every national-team pick would never
-get a CLV. So ``agent closing`` runs every hour through the match day; for
-each pick (sent or sandbox) kicking off within ``window`` it fetches that
+Settlement takes the closing line of club 1X2 and Over/Under 2.5 picks from
+football-data for free. Picks on other lines (Over 3.5, Under 1.5) and every
+national-team pick would never get a CLV. So ``agent closing`` runs every
+hour through the match day; for each such pick (sent or sandbox) kicking off
+within ``window``, and only when the month's spare credits allow, it fetches that
 one event's market (1 credit, 2 if the line needs ``alternate_totals``),
 de-vigs Pinnacle, or the soft-book consensus when Pinnacle doesn't quote the
 line, and stores::
@@ -27,6 +27,7 @@ import httpx
 import pandas as pd
 
 from src.config import LEAGUES, Settings
+from src.data.budget import affordable
 from src.data.ingest_odds_api import Event, OddsApiClient, QuotaExhausted, events_to_frames
 from src.engine.devig import devig
 from src.engine.value import H2H_OUTCOMES, TOTALS_OUTCOMES, fair_from_books
@@ -43,11 +44,16 @@ class ClosingReport:
 
 
 def due_picks(con: duckdb.DuckDBPyConnection, now: datetime, window: timedelta = DEFAULT_WINDOW) -> pd.DataFrame:
-    """Recorded picks without a snapshot that kick off within ``window``."""
+    """Recorded picks without a snapshot that kick off within ``window``.
+
+    Club 1X2 and Over/Under 2.5 picks are left out: football-data publishes
+    their closing line for free, and settlement turns it into CLV.
+    """
     return con.execute(
         "SELECT p.fixture_key, p.event_id, p.league, p.market, p.outcome, p.point, p.price, f.sport_key "
         "FROM sent_picks p JOIN fixtures f USING (event_id) "
         "WHERE p.status IN ('sent', 'sandbox') AND p.closing_at IS NULL "
+        "AND (p.league = 'INT' OR (p.market = 'totals' AND p.point <> 2.5)) "
         "AND p.commence_time > ? AND p.commence_time <= ? ORDER BY p.commence_time",
         [now, now + window],
     ).df()
@@ -94,6 +100,9 @@ def capture(con: duckdb.DuckDBPyConnection, settings: Settings, now: datetime,
     due = due_picks(con, now, window)
     report.due = len(due)
     if due.empty:
+        return report
+    if not affordable(con, now.date(), settings.odds_api_daily_reserve, len(due)):
+        report.errors.append("skipped: not enough spare Odds API credits this month")
         return report
 
     async def run() -> None:

@@ -33,6 +33,8 @@ from src.agent.settings import AgentSettings
 from src.agent.telegram import TelegramClient, format_no_picks, format_pick, format_record
 from src.config import LEAGUES, recent_seasons
 from src.data.database import session
+from src.data.budget import spare_credits
+from src.data.ingest_odds_api import last_known_remaining
 from src.data.live_results import sports_to_refresh
 from src.engine.risk import RiskRules, top_attack
 from src.engine.value import ValueRules, scan
@@ -62,6 +64,7 @@ class RunReport:
     skipped: str = ""  # why the run stopped early, if it did
     report_sent: bool = False
     calibrated: bool = False  # totals calibration refitted on this run
+    budget_skipped: int = 0  # optional /scores calls left out to stay within the monthly credits
     errors: list[str] = field(default_factory=list)
 
 
@@ -118,6 +121,28 @@ def _candidates(con: duckdb.DuckDBPyConnection, s: AgentSettings, now: datetime,
         picks.extend(to_picks(bets, fixtures, lg.name))
     report.candidates = len(picks)
     return picks, models
+
+
+def _affordable_scores(con: duckdb.DuckDBPyConnection, s: AgentSettings, now: datetime, today,
+                       report: RunReport) -> list[str]:
+    """Sport keys for ``/scores`` (2 credits each) that fit the month's spare credits.
+
+    Settling sent picks comes first, then fresh results for the model. What
+    doesn't fit waits for football-data, which is free.
+    """
+    settle = sorted(store.unsettled_sports(con, now))
+    fresh = [k for k in sports_to_refresh(con, now, timedelta(hours=24)) if k not in settle]
+    spare = spare_credits(last_known_remaining(con), today, s.odds_api_daily_reserve)
+    if spare is None:
+        return settle + fresh
+    keys = []
+    for key in settle + fresh:
+        if spare < 2:
+            report.budget_skipped += 1
+            continue
+        keys.append(key)
+        spare -= 2
+    return keys
 
 
 def _refresh_calibration(con: duckdb.DuckDBPyConnection, s: AgentSettings, now: datetime,
@@ -178,7 +203,7 @@ def run_daily(
         report.settled = store.settle(con, now)
         if fetch:
             try:
-                keys = sorted(set(store.unsettled_sports(con, now)) | set(sports_to_refresh(con, now, timedelta(hours=24))))
+                keys = _affordable_scores(con, s, now, local_today, report)
                 settled, report.live_results = pipeline.fetch_scores(con, s, keys, client=odds_client, now=now)
                 report.settled += settled
             except Exception as exc:  # noqa: BLE001 - the history sources will catch up later
@@ -198,7 +223,9 @@ def run_daily(
 
         if fetch:
             try:
-                reports, quota = pipeline.fetch_odds(con, s, list(LEAGUES.values()), client=odds_client)
+                window = (now + timedelta(minutes=s.min_lead_minutes), now + timedelta(hours=s.pick_horizon_hours))
+                reports, quota = pipeline.fetch_odds(con, s, list(LEAGUES.values()), client=odds_client,
+                                                     window=window)
                 report.odds_events = sum(r.events for r in reports)
                 report.credits_remaining = quota.remaining
                 report.errors += [f"odds {r.league}: {r.error}" for r in reports if r.error]

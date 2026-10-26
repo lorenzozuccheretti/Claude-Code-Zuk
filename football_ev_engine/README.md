@@ -178,7 +178,7 @@ most two picks to a Telegram chat:
 1. Refreshes the current season from football-data (the full history on the first run) and settles earlier picks.
    Results the slow sources don't have yet (football-data updates a couple of times a week; the national-team file can lag by weeks) are filled from The Odds API `/scores` as *provisional* rows, so the model trains on last night's games. It only calls `/scores` for a league whose round is over, or whose oldest missing result is about to leave the API's 3-day window: about 2 credits per league per round. Provisional rows are dropped once the official source publishes the match.
 2. Refits Dixon-Coles for all five leagues.
-3. Fetches fresh odds. That costs 10 credits a run for the five leagues, plus 2 while the Nations League is on: about 300–360 a month on the free tier's 500.
+3. Fetches fresh odds, 2 credits per competition. It first checks the free `/events` list, and only pays for competitions with a fixture kicking off in the pick window (1–36 hours away). In October 2026 that was 90 credits for the five leagues instead of 250. See **Credit budget** below.
 4. Keeps outcomes priced **1.75–2.25** with **EV ≥ +3.5%** and kick-off 1–36 hours away. It ranks them by **EV × P_model** and sends the top 1–2 (0 if nothing qualifies).
 5. Never sends a fixture twice. Only one pick per match is allowed, because a home win and an under on the same game are correlated. The cap is 2 per local calendar day, even if the job runs more than once.
 
@@ -193,7 +193,7 @@ effort) writes the two sentences under a "use only these facts" instruction,
 with server-side refusal fallback enabled. Without a key, or if the call
 fails, a deterministic template writes them.
 
-**The track record.** Each pick is graded the day after the match from The Odds API's results endpoint (2 credits per competition with a pending pick). Once football-data publishes Pinnacle's closing prices, the pick also gets its **CLV against the de-vigged closing line**. After 50–100 picks, the CLV tells you whether the edge is real, long before profit does.
+**The track record.** Each pick is graded the day after the match from The Odds API's results endpoint (2 credits per competition with a pending pick), or from football-data when credits are short. Once football-data publishes the closing prices, the pick also gets its **CLV against the de-vigged closing line**. That is Pinnacle's close when present; the 2026-27 files dropped it, so the market-average close is used instead. After 50–100 picks, the CLV tells you whether the edge is real, long before profit does.
 
 **Reporting.** Every Monday (`REPORT_WEEKDAY`, 0 = Monday, -1 = off), the agent posts a summary. It covers the week and all-time results, P/L at flat 1-unit stakes and at the suggested Kelly stakes, average odds, EV and CLV, a breakdown by competition, market and month, and the last 10 picks with ✅/❌/⏳. A verdict line is based on CLV. The full history comes attached as `picks_history.csv`, which opens in Excel or Google Sheets. On demand: `python main.py agent report [--send] [--days 30] [--csv file.csv]`, or **Run workflow → mode: report** on GitHub. `agent history` lists each pick.
 
@@ -215,7 +215,20 @@ fails, a deterministic template writes them.
 | GitHub Actions | `.github/workflows/football-agent.yml` runs daily at 07:41 UTC, with backups at 09:23 and 11:07 that do nothing once the day is done (GitHub often starts top-of-the-hour schedules late, or skips them). It can also be started by hand in `run`, `dry-run`, `report` or `closing` mode. Add the secrets it lists. The database is carried between runs in the Actions cache, and GitHub evicts that cache after 7 days without a run |
 | cron | `0 10 * * * cd /path/football_ev_engine && python main.py agent run` |
 
-**Closing line (CLV).** football-data only has Pinnacle's closing price for 1X2 and Over/Under 2.5 in the club leagues. `python main.py agent closing` covers everything else. The workflow runs it hourly at :50 from 10:50 to 20:50 UTC. For each pick (sent or sandbox) kicking off within 100 minutes, it fetches that event's market and stores the de-vigged closing probability and `clv = price × closing fair probability − 1`. It falls back to the soft-book consensus when Pinnacle doesn't quote the line. Each pick costs 1 credit, or 2 when the line is only quoted under `alternate_totals`. The snapshot is taken 40–100 minutes before kick-off, so it is a close proxy for the closing line, not the final price. Settlement keeps it, and football-data's close only fills picks the snapshot missed. The weekly report shows the average CLV and the share of picks that beat the close.
+**Closing line (CLV).** football-data's closing prices cover 1X2 and Over/Under 2.5 in the club leagues for free. `python main.py agent closing` covers only the rest: national teams and other totals lines. The workflow runs it hourly at :50 from 10:50 to 20:50 UTC. For each pick (sent or sandbox) kicking off within 100 minutes, it fetches that event's market and stores the de-vigged closing probability and `clv = price × closing fair probability − 1`. It falls back to the soft-book consensus when Pinnacle doesn't quote the line. Each pick costs 1 credit, or 2 when the line is only quoted under `alternate_totals`. The snapshot is taken 40–100 minutes before kick-off, so it is a close proxy for the closing line, not the final price. Settlement keeps it, and football-data's close only fills picks the snapshot missed. The weekly report shows the average CLV and the share of picks that beat the close.
+
+### Credit budget
+
+The free plan gives 500 credits a month, reset on the 1st. October 2026 used about 14.5 a day before these limits. With them, a typical month should come to roughly 250:
+
+| Call | Cost | When |
+|---|---|---|
+| Odds (`/odds`) | 2 per competition | Only for competitions with a fixture 1–36 h away (the free `/events` list decides) |
+| Results (`/scores`) | 2 per competition | Settling sent picks first, then fresh results once a round is over |
+| Closing line | 1 per pick | National-team picks and totals lines other than 2.5 only |
+| Sports and events lists | free | Every run |
+
+Everything except the odds is optional. It only spends credits above a reserve of `ODDS_API_DAILY_RESERVE` (12) for every day left in the month, so the daily picks can't run dry before the reset. Skipped results come from football-data a day or two later, for free. The client also refuses any call that would leave fewer than `ODDS_API_MIN_REMAINING` (20).
 
 ### What the backtest says about these rules
 
