@@ -5,7 +5,9 @@
    sources lack from The Odds API ``/scores`` (only for leagues that need it).
 3. Refit Dixon-Coles for every league.
 4. Fetch fresh odds from The Odds API (2 credits per league).
-5. Scan, select at most ``MAX_DAILY_PICKS``, write reasoning.
+5. Scan with the risk overrides (:mod:`src.engine.risk`), select at most
+   ``MAX_DAILY_PICKS``, write reasoning. Picks from sandbox leagues are
+   selected separately and recorded as paper trades, never sent.
 6. Send to Telegram and record, or print everything in dry-run mode.
 
 A failing step is recorded in the report and the run carries on where that
@@ -32,6 +34,7 @@ from src.agent.telegram import TelegramClient, format_no_picks, format_pick, for
 from src.config import LEAGUES, recent_seasons
 from src.data.database import session
 from src.data.live_results import sports_to_refresh
+from src.engine.risk import RiskRules, top_attack
 from src.engine.value import ValueRules, scan
 from src.models.dixon_coles import DixonColes
 
@@ -52,6 +55,7 @@ class RunReport:
     scanned: int = 0
     candidates: int = 0
     picks: list[Pick] = field(default_factory=list)
+    sandbox: list[Pick] = field(default_factory=list)  # paper picks from sandbox leagues
     messages: list[str] = field(default_factory=list)
     sent: int = 0  # picks delivered
     notices: int = 0  # other messages delivered (no-pick notice, weekly report)
@@ -78,6 +82,7 @@ def _refresh_history(con: duckdb.DuckDBPyConnection, s: AgentSettings, report: R
 def _candidates(con: duckdb.DuckDBPyConnection, s: AgentSettings, now: datetime,
                 report: RunReport) -> tuple[list[Pick], dict[str, DixonColes]]:
     rules = ValueRules.from_settings(s)
+    risk = RiskRules.from_settings(s)
     latest = now + timedelta(hours=s.pick_horizon_hours)
     picks: list[Pick] = []
     models: dict[str, DixonColes] = {}
@@ -101,7 +106,12 @@ def _candidates(con: duckdb.DuckDBPyConnection, s: AgentSettings, now: datetime,
         def price(home: str, away: str, m=model):
             return m.predict(home, away) if m and m.can_price(home, away, s.min_team_matches) else None
 
-        bets, _ = scan(fixtures, odds, price, rules, s.sharp_bookmaker, s.soft_bookmakers)
+        top = top_attack(model.params.attack, risk.big_match_top_n, pipeline.current_teams(con, lg.fd_code)) if model else set()
+
+        def risk_for(home: str, away: str, market: str, point: float, top=top):
+            return risk.market_risk(market, point, home, away, top)
+
+        bets, _ = scan(fixtures, odds, price, rules, s.sharp_bookmaker, s.soft_bookmakers, risk_for)
         picks.extend(to_picks(bets, fixtures, lg.name))
     report.candidates = len(picks)
     return picks, models
@@ -180,9 +190,20 @@ def run_daily(
                 return report
 
         candidates, models = _candidates(con, s, now, report)
+        risk = RiskRules.from_settings(s)
+        live = [c for c in candidates if not risk.is_sandboxed(c.league)]
+        paper = [c for c in candidates if risk.is_sandboxed(c.league)]
+        blocked = store.blocked_fixtures(con)
         sent_today = store.sent_count_on(con, local_today, s.tz)
-        report.picks = select(candidates, now, store.blocked_fixtures(con), sent_today,
+        report.picks = select(live, now, blocked, sent_today,
                               s.max_daily_picks, s.pick_horizon_hours, s.min_lead_minutes)
+        # Sandbox picks get their own daily cap, so they never take a real pick's slot.
+        paper_today = store.sent_count_on(con, local_today, s.tz, ("sandbox",))
+        report.sandbox = select(paper, now, blocked, paper_today,
+                                s.max_daily_picks, s.pick_horizon_hours, s.min_lead_minutes)
+        if not dry_run:
+            for pick in report.sandbox:
+                store.record_sending(con, pick.db_row(), status="sandbox")
 
         for pick in report.picks:
             pick.reasoning = _reason(con, s, pick, models, llm_client)

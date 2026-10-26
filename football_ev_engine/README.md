@@ -118,6 +118,27 @@ from the backtest's Brier table rather than by feel.
 Markets priced: 1X2 (`h2h`) and totals on half-goal lines. Integer and
 quarter lines are skipped because they need push handling.
 
+**Risk overrides** (`src/engine/risk.py`) tighten the rules where the model is weakest. Each is set in `.env` and switched off with 0 (or `[]`):
+
+| Rule | Default | Effect |
+|---|---|---|
+| Extreme totals lines | `EXTREME_LINE_MIN_EV=0.12` | Over 3.5 and above, and Under 1.5 and below, need EV ≥ 12% instead of `MIN_EV` |
+| Big-match unders | `BIG_MATCH_TOP_N=7`, `BIG_MATCH_UNDER_PENALTY=0.035` | When both sides rank in their league's top 7 attacks (Dixon-Coles ratings, current season), Under 2.5 loses 3.5 points of P_model before EV and stake |
+| Sandbox leagues | `SANDBOX_LEAGUES=["ligue-1"]` | The agent records and settles these picks as paper trades, never sends them, and reports them separately. They have their own daily cap |
+
+The probability penalty feeds the Kelly stake too, so a penalised bet that survives is staked smaller. A rejected bet never reaches staking. The backtest applies the two totals rules as well (`--no-risk` turns them off). Its archive has only Over/Under 2.5 prices, though, so the extreme-line rule never fires there.
+
+Walk-forward calibration of the Dixon-Coles totals (7,180 matches, 2023–26, all six competitions) shows the model is overconfident at both tails:
+
+| Model says | Model avg | Actual |
+|---|---|---|
+| Over 3.5 at 55%+ | 64.0% | 51.4% |
+| Over 3.5 at 45–55% | 49.5% | 46.2% |
+| Under 2.5 at 55–65% | 59.7% | 54.1% |
+| Under 2.5 at 65%+ | 72.5% | 59.1% |
+
+The live estimate is only 35% Dixon-Coles, so about a third of this gap reaches P_model.
+
 ### 5. Backtest (`backtest/backtester.py`)
 
 The backtest is walk-forward. Every `--refit-days` (default 7), Dixon-Coles is
@@ -183,8 +204,10 @@ fails, a deterministic template writes them.
 |---|---|
 | Local machine or server | `python main.py agent schedule` runs every day at `RUN_TIME` in `TIMEZONE` (APScheduler). Add `--run-now` to also run once immediately |
 | Docker | `docker compose up -d --build` runs the scheduler, with the database in `./data` |
-| GitHub Actions | `.github/workflows/football-agent.yml` runs daily at 07:41 UTC, with backups at 09:23 and 11:07 that do nothing once the day is done (GitHub often starts top-of-the-hour schedules late, or skips them). It can also be started by hand in `run`, `dry-run` or `report` mode. Add the secrets it lists. The database is carried between runs in the Actions cache, and GitHub evicts that cache after 7 days without a run |
+| GitHub Actions | `.github/workflows/football-agent.yml` runs daily at 07:41 UTC, with backups at 09:23 and 11:07 that do nothing once the day is done (GitHub often starts top-of-the-hour schedules late, or skips them). It can also be started by hand in `run`, `dry-run`, `report` or `closing` mode. Add the secrets it lists. The database is carried between runs in the Actions cache, and GitHub evicts that cache after 7 days without a run |
 | cron | `0 10 * * * cd /path/football_ev_engine && python main.py agent run` |
+
+**Closing line (CLV).** football-data only has Pinnacle's closing price for 1X2 and Over/Under 2.5 in the club leagues. `python main.py agent closing` covers everything else. The workflow runs it hourly at :50 from 10:50 to 20:50 UTC. For each pick (sent or sandbox) kicking off within 100 minutes, it fetches that event's market and stores the de-vigged closing probability and `clv = price × closing fair probability − 1`. It falls back to the soft-book consensus when Pinnacle doesn't quote the line. Each pick costs 1 credit, or 2 when the line is only quoted under `alternate_totals`. The snapshot is taken 40–100 minutes before kick-off, so it is a close proxy for the closing line, not the final price. Settlement keeps it, and football-data's close only fills picks the snapshot missed. The weekly report shows the average CLV and the share of picks that beat the close.
 
 ### What the backtest says about these rules
 

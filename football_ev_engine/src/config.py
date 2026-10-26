@@ -119,6 +119,20 @@ class Settings(BaseSettings):
     model_weight: float = Field(0.35, ge=0, le=1)
     devig_method: str = "multiplicative"
 
+    # Risk overrides (src/engine/risk.py). Each rule is off at 0 / empty.
+    # Rule 1: totals at or beyond these lines need EXTREME_LINE_MIN_EV instead of MIN_EV.
+    extreme_over_from: float = 3.5
+    extreme_under_to: float = 1.5
+    extreme_line_min_ev: float = Field(0.12, ge=0)
+    # Rule 3: Under BIG_MATCH_UNDER_LINE loses this much probability when both
+    # sides rank in their league's top BIG_MATCH_TOP_N attacks (Dixon-Coles ratings).
+    big_match_under_line: float = 2.5
+    big_match_under_penalty: float = Field(0.035, ge=0, lt=1)
+    big_match_top_n: int = Field(7, ge=0)
+    # Rule 2: leagues (slugs or football-data codes) whose picks are paper-traded
+    # by the agent: recorded and settled, never sent. JSON list in .env.
+    sandbox_leagues: list[str] = ["ligue-1"]
+
     # Dixon-Coles.
     decay_xi: float = Field(0.005, ge=0)  # per day
     training_window_days: int = Field(1095, gt=0)

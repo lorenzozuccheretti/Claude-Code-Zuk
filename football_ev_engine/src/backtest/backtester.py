@@ -26,6 +26,7 @@ import numpy as np
 import pandas as pd
 
 from src.engine.devig import devig
+from src.engine.risk import RiskRules, top_attack
 from src.engine.value import H2H_OUTCOMES, TOTALS_OUTCOMES, ValueRules, blend, evaluate_market
 from src.models.dixon_coles import DixonColes, DixonColesParams
 from src.models.ml_classifier import MLBenchmark
@@ -50,6 +51,7 @@ class BacktestConfig:
     include_totals: bool = True
     ml_kind: str | None = "logreg"  # None skips the ML benchmark
     min_team_matches: int = 10  # skip matches where a side has fewer in the fit
+    risk: RiskRules | None = None  # risk overrides, as in the live agent
 
 
 @dataclass
@@ -129,6 +131,7 @@ def run_backtest(matches: pd.DataFrame, config: BacktestConfig) -> BacktestResul
                 log.warning("Skipping block %s: %s", block_start.date(), exc)
                 block_start = block_end
                 continue
+            season_teams = {}
             for idx, row in block.iterrows():
                 if not model.can_price(row["home_team"], row["away_team"], config.min_team_matches):
                     continue
@@ -153,8 +156,16 @@ def run_backtest(matches: pd.DataFrame, config: BacktestConfig) -> BacktestResul
                     if not soft:
                         continue
                     sharp = _prices(row, cols["sharp"], outcomes)
+                    risk = None
+                    if config.risk is not None:
+                        if row["season"] not in season_teams:
+                            in_season = df[df["season"] == row["season"]]
+                            pool = set(in_season["home_team"]) | set(in_season["away_team"])
+                            season_teams[row["season"]] = top_attack(params.attack, config.risk.big_match_top_n, pool)
+                        risk = config.risk.market_risk(market, point, row["home_team"], row["away_team"],
+                                                       season_teams[row["season"]])
                     for bet in evaluate_market(str(idx), market, point, outcomes, p_dc, sharp,
-                                               {"bet365": soft}, rules):
+                                               {"bet365": soft}, rules, risk):
                         won = (RESULT_TO_OUTCOME[row["ftr"]] == bet.outcome if market == "h2h"
                                else (goals > point) == (bet.outcome == "over"))
                         close = _fair(row, cols["close"], outcomes, rules.devig_method)

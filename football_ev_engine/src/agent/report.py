@@ -24,6 +24,7 @@ from src.config import LEAGUES
 
 LEAGUE_NAMES = {lg.fd_code: lg.name for lg in LEAGUES.values()}
 MIN_PICKS_FOR_VERDICT = 50
+SANDBOX_REVIEW_PICKS = 20  # settled paper picks before a sandbox league is worth a review
 
 
 @dataclass
@@ -51,15 +52,18 @@ class Report:
     avg_ev: float | None
     avg_clv: float | None
     clv_count: int
+    clv_beat_pct: float | None  # share of picks that beat the closing line
     kelly_bankroll_pct: float  # compounded bankroll change following the Kelly stakes
     by_competition: list[Slice] = field(default_factory=list)
     by_market: list[Slice] = field(default_factory=list)
     by_month: list[Slice] = field(default_factory=list)
     recent: pd.DataFrame = field(default_factory=pd.DataFrame)
+    sandbox: list[Slice] = field(default_factory=list)  # paper picks, per competition
+    sandbox_clv: dict[str, float] = field(default_factory=dict)  # competition -> avg CLV
 
 
-def _load(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
-    df = con.execute("SELECT * FROM sent_picks WHERE status = 'sent' ORDER BY commence_time").df()
+def _load(con: duckdb.DuckDBPyConnection, status: str = "sent") -> pd.DataFrame:
+    df = con.execute("SELECT * FROM sent_picks WHERE status = ? ORDER BY commence_time", [status]).df()
     if df.empty:
         return df
     df["commence_time"] = pd.to_datetime(df["commence_time"])
@@ -82,9 +86,15 @@ def build_report(con: duckdb.DuckDBPyConnection, tz: ZoneInfo, days: int = 7,
     end = local_now.date()
     start = end - timedelta(days=days - 1)
     df = _load(con)
+    paper = _load(con, "sandbox")
+    sandbox = [_slice(k, g) for k, g in paper.groupby("competition")] if not paper.empty else []
+    sandbox_clv = ({k: float(v) for k, v in pd.to_numeric(paper["clv"], errors="coerce")
+                    .groupby(paper["competition"]).mean().dropna().items()}
+                   if not paper.empty else {})
     if df.empty:
         empty = Slice("", 0, 0, 0, 0.0)
-        return Report(now, start, end, empty, empty, 0, None, None, None, 0, 0.0)
+        return Report(now, start, end, empty, empty, 0, None, None, None, 0, None, 0.0,
+                      sandbox=sandbox, sandbox_clv=sandbox_clv)
 
     local_kick = df["commence_time"].dt.tz_localize("UTC").dt.tz_convert(tz).dt.date
     in_period = (local_kick >= start) & (local_kick <= end)
@@ -101,11 +111,13 @@ def build_report(con: duckdb.DuckDBPyConnection, tz: ZoneInfo, days: int = 7,
         avg_ev=float(df["ev"].mean()),
         avg_clv=float(clv.mean()) if len(clv) else None,
         clv_count=len(clv),
+        clv_beat_pct=float((clv > 0).mean() * 100) if len(clv) else None,
         kelly_bankroll_pct=growth,
         by_competition=[_slice(k, g) for k, g in df.groupby("competition")],
         by_market=[_slice(k, g) for k, g in df.groupby("market_label")],
         by_month=[_slice(k, g) for k, g in df.groupby(month)],
         recent=df.tail(recent).iloc[::-1],
+        sandbox=sandbox, sandbox_clv=sandbox_clv,
     )
 
 
@@ -145,7 +157,7 @@ def _verdict(r: Report) -> str:
 def format_report(r: Report, title: str = "Weekly report") -> str:
     e = lambda t: html.escape(str(t), quote=False)  # noqa: E731
     if r.overall.picks == 0:
-        return f"📊 <b>{e(title)}</b>\n\nNo picks have been sent yet."
+        return f"📊 <b>{e(title)}</b>\n\nNo picks have been sent yet." + _sandbox_lines(r)
     lines = [
         f"📊 <b>{e(title)}</b> · {r.period_start:%d %b} – {r.period_end:%d %b %Y}",
         "",
@@ -154,6 +166,8 @@ def format_report(r: Report, title: str = "Weekly report") -> str:
         f"💰 Following the Kelly stakes: bankroll <b>{r.kelly_bankroll_pct:+.1f}%</b>",
         f"📊 Avg odds {r.avg_odds:.2f} · avg predicted EV {r.avg_ev:+.1%}"
         + (f" · avg CLV <b>{r.avg_clv:+.1%}</b> ({r.clv_count})" if r.avg_clv is not None else ""),
+        *([f"🎯 Beat the closing line: <b>{r.clv_beat_pct:.0f}%</b> of {r.clv_count} picks"]
+          if r.clv_beat_pct is not None else []),
         "",
         "<b>By competition</b>",
         *[f"• {e(s.label)}: {e(_line(s))}" for s in r.by_competition],
@@ -167,6 +181,20 @@ def format_report(r: Report, title: str = "Weekly report") -> str:
         lines.append(f"{_result_icon(row.won)} {row.commence_time:%d/%m} {e(row.home_team)}–{e(row.away_team)} "
                      f"{_pick_label(row)} @ {row.price:.2f}")
     lines += ["", f"🔎 <i>{e(_verdict(r))}</i>"]
+    return "\n".join(lines) + _sandbox_lines(r)
+
+
+def _sandbox_lines(r: Report) -> str:
+    if not r.sandbox:
+        return ""
+    e = lambda t: html.escape(str(t), quote=False)  # noqa: E731
+    lines = ["", "", "🧪 <b>Sandbox</b> (paper picks, not sent, not in the figures above)"]
+    for sl in r.sandbox:
+        clv = r.sandbox_clv.get(sl.label)
+        extra = f" · avg CLV {clv:+.1%}" if clv is not None else ""
+        ready = " · <b>ready for review</b>" if sl.settled >= SANDBOX_REVIEW_PICKS else \
+            f" · {sl.settled}/{SANDBOX_REVIEW_PICKS} settled before review"
+        lines.append(f"• {e(sl.label)}: {e(_line(sl))}{e(extra)}{ready}")
     return "\n".join(lines)
 
 

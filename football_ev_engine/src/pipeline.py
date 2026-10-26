@@ -26,6 +26,7 @@ from src.data.ingest_csv import FetchResult, download_seasons
 from src.data.ingest_international import download_results
 from src.data.ingest_odds_api import OddsApiClient, Quota, events_to_frames, store_snapshot
 from src.data.live_results import purge_superseded, store_results
+from src.engine.risk import RiskRules, top_attack
 from src.engine.value import ValueBet, ValueRules, scan
 from src.models.dixon_coles import DixonColes, DixonColesParams, MatchProbabilities
 from src.models.ml_classifier import MLBenchmark
@@ -233,6 +234,17 @@ class PredictResult:
     fixtures: int
 
 
+def current_teams(con: duckdb.DuckDBPyConnection, league: str) -> set[str]:
+    """Teams of the league's latest season (national teams: the last 365 days)."""
+    if league == "INT":
+        where, params = "match_date >= current_date - 365", [league]
+    else:
+        where, params = "season = (SELECT max(season) FROM matches WHERE league = ?)", [league, league]
+    rows = con.execute(f"SELECT DISTINCT home_team, away_team FROM matches WHERE league = ? AND {where}",
+                       params).fetchall()
+    return {t for r in rows for t in r}
+
+
 def predict(
     con: duckdb.DuckDBPyConnection,
     settings: Settings,
@@ -262,7 +274,10 @@ def predict(
     def price(home: str, away: str) -> MatchProbabilities | None:
         return model.predict(home, away) if model.can_price(home, away, settings.min_team_matches) else None
 
-    bets, notes = scan(fixtures, odds, price, rules, settings.sharp_bookmaker, settings.soft_bookmakers)
+    risk = RiskRules.from_settings(settings)
+    top = top_attack(params.attack, risk.big_match_top_n, current_teams(con, league.fd_code))
+    bets, notes = scan(fixtures, odds, price, rules, settings.sharp_bookmaker, settings.soft_bookmakers,
+                       lambda home, away, market, point: risk.market_risk(market, point, home, away, top))
     table = _bets_frame(bets, fixtures, bankroll)
     if save and not table.empty:
         rows = table.assign(created_at=now, league=league.fd_code)

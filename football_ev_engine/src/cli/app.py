@@ -19,6 +19,7 @@ from src.config import LEAGUES, get_league, get_settings, parse_season, recent_s
 from src.data.alias_matcher import export_aliases, import_aliases, set_manual_alias
 from src.data.database import session
 from src.data.ingest_odds_api import QuotaExhausted
+from src.engine.risk import RiskRules
 from src.engine.value import ValueRules
 
 app = typer.Typer(help="Football +EV engine: Dixon-Coles pricing, de-vigging, value detection, Kelly staking.",
@@ -189,6 +190,7 @@ def backtest(
     refit_days: Annotated[int, typer.Option(help="Refit the model every N days")] = 7,
     totals: Annotated[bool, typer.Option(help="Also bet Over/Under 2.5")] = True,
     ml: Annotated[str, typer.Option(help="ML benchmark: logreg, gbm or none")] = "logreg",
+    risk: Annotated[bool, typer.Option(help="Apply the risk overrides (extreme lines, big-match unders)")] = True,
 ) -> None:
     """Walk-forward out-of-sample simulation: Yield, ROI, Brier, drawdown."""
     s = get_settings()
@@ -200,7 +202,8 @@ def backtest(
                                 refit_every_days=refit_days, training_window_days=s.training_window_days,
                                 xi=s.decay_xi, max_goals=s.max_goals, include_totals=totals,
                                 min_team_matches=s.min_team_matches,
-                                ml_kind=None if ml == "none" else ml)
+                                ml_kind=None if ml == "none" else ml,
+                                risk=RiskRules.from_settings(s) if risk else None)
         with console.status(f"Backtesting {lg.name} {', '.join(season_list)}..."), session(s.db_file) as con:
             result = pipeline.backtest(con, s, lg, config)
     except (KeyError, ValueError) as exc:
