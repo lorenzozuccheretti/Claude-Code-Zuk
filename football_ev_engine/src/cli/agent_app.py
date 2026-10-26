@@ -143,7 +143,8 @@ def report(
     with session(s.db_file) as con:
         store.settle(con)
         title = "Weekly report" if days == 7 else f"Report ({days} days)"
-        text = format_report(build_report(con, s.tz, days=days), title)
+        text = format_report(build_report(con, s.tz, days=days, bankroll=s.bankroll,
+                                          bankroll_start=s.bankroll_start), title)
         console.print(_plain(text))
         if csv:
             console.print(f"Wrote {export_csv(con, csv)} picks to {csv}")

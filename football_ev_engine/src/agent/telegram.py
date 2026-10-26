@@ -100,7 +100,12 @@ def _local(ts: datetime, tz: ZoneInfo) -> datetime:
     return ts.replace(tzinfo=timezone.utc).astimezone(tz)
 
 
-def format_pick(pick: Pick, tz: ZoneInfo, index: int | None = None, total: int | None = None) -> str:
+def euro(amount: float) -> str:
+    return f"€{amount:,.0f}".replace(",", ".")
+
+
+def format_pick(pick: Pick, tz: ZoneInfo, index: int | None = None, total: int | None = None,
+                bankroll: float | None = None) -> str:
     def e(text: str) -> str:
         return html.escape(text, quote=False)
 
@@ -115,7 +120,8 @@ def format_pick(pick: Pick, tz: ZoneInfo, index: int | None = None, total: int |
         f"📊 Odds: <b>{pick.price:.2f}</b> ({e(bookmaker_name(pick.bookmaker))})",
         f"🧮 Engine probability: <b>{pick.p_model:.1%}</b> (fair odds {pick.fair_odds:.2f})",
         f"📈 Expected value: <b>{pick.ev:+.1%}</b>",
-        f"💰 Kelly stake: <b>{pick.stake_pct:.1%}</b> of bankroll",
+        f"💰 Kelly stake: <b>{pick.stake_pct:.1%}</b> of bankroll"
+        + (f" = <b>{euro(max(pick.stake_pct * bankroll, 1.0))}</b> (bankroll {euro(bankroll)})" if bankroll else ""),
     ]
     if pick.reasoning:
         lines += ["", f"💡 <i>{e(pick.reasoning)}</i>"]

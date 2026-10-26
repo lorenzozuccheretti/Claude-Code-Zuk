@@ -195,6 +195,21 @@ def unsettled_sports(con: duckdb.DuckDBPyConnection, now: datetime) -> list[str]
     return [r[0] for r in rows]
 
 
+def current_bankroll(con: duckdb.DuckDBPyConnection, initial: float, start: date | None,
+                     tz: ZoneInfo | None = None) -> float:
+    """``initial`` compounded by the Kelly stakes of picks settled since ``start`` (local kick-off date)."""
+    if start is None:
+        return initial
+    begin, _ = local_day_bounds(start, tz or ZoneInfo("UTC"))
+    rows = con.execute(
+        "SELECT stake_pct, profit_units FROM sent_picks WHERE status = 'sent' AND won IS NOT NULL "
+        "AND commence_time >= ? ORDER BY commence_time", [begin]).fetchall()
+    bankroll = initial
+    for stake_pct, profit in rows:
+        bankroll *= 1 + stake_pct * profit
+    return bankroll
+
+
 @dataclass
 class TrackRecord:
     picks: int

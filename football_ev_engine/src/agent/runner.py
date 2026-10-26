@@ -254,9 +254,10 @@ def run_daily(
         for pick in report.picks:
             pick.reasoning = _reason(con, s, pick, models, llm_client)
         record_line = format_record(store.track_record(con))
+        bankroll = store.current_bankroll(con, s.bankroll, s.bankroll_start, s.tz)
         total = len(report.picks)
         for i, pick in enumerate(report.picks, start=1):
-            text = format_pick(pick, s.tz, i, total)
+            text = format_pick(pick, s.tz, i, total, bankroll)
             if i == total:
                 text += "\n\n" + record_line
             report.messages.append(text)
@@ -302,7 +303,8 @@ def send_report(con, s: AgentSettings, telegram: TelegramClient | None, now: dat
                 report: RunReport | None = None, dry_run: bool = False, days: int = 7,
                 title: str = "Weekly report") -> bool:
     """Send the summary message plus the CSV history. Returns True on success."""
-    text = format_report(build_report(con, s.tz, days=days, now=now), title)
+    text = format_report(build_report(con, s.tz, days=days, now=now, bankroll=s.bankroll,
+                                      bankroll_start=s.bankroll_start), title)
     if report is not None:
         report.messages.append(text)
     if dry_run:

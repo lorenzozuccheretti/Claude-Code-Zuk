@@ -183,7 +183,7 @@ most two picks to a Telegram chat:
 5. Never sends a fixture twice. Only one pick per match is allowed, because a home win and an under on the same game are correlated. The cap is 2 per local calendar day, even if the job runs more than once.
 
 Each message carries the match, local kick-off time, selection, best soft price with its bookmaker,
-engine probability and fair odds, EV, a quarter-Kelly stake, and a two-sentence rationale. The last message of the day also shows the running track record.
+engine probability and fair odds, EV, a quarter-Kelly stake (as a share of bankroll and in euro on `BANKROLL`), and a two-sentence rationale. From `BANKROLL_START` on, settled picks compound the bankroll, so the stakes follow it; the weekly report shows the bankroll in euro. The last message of the day also shows the running track record.
 
 **The rationale.** It is built from facts the engine computed: last-five form,
 the model's expected goals, defensive rank, and the shots-on-target trend.

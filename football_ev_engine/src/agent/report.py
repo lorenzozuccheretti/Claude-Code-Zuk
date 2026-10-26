@@ -20,6 +20,7 @@ from zoneinfo import ZoneInfo
 import duckdb
 import pandas as pd
 
+from src.agent.telegram import euro
 from src.config import LEAGUES
 
 LEAGUE_NAMES = {lg.fd_code: lg.name for lg in LEAGUES.values()}
@@ -54,6 +55,9 @@ class Report:
     clv_count: int
     clv_beat_pct: float | None  # share of picks that beat the closing line
     kelly_bankroll_pct: float  # compounded bankroll change following the Kelly stakes
+    bankroll: float | None = None  # starting capital in euro
+    bankroll_now: float | None = None  # after the Kelly stakes since bankroll_start (or all time)
+    bankroll_start: date | None = None
     by_competition: list[Slice] = field(default_factory=list)
     by_market: list[Slice] = field(default_factory=list)
     by_month: list[Slice] = field(default_factory=list)
@@ -80,7 +84,8 @@ def _slice(label: str, df: pd.DataFrame) -> Slice:
 
 
 def build_report(con: duckdb.DuckDBPyConnection, tz: ZoneInfo, days: int = 7,
-                 now: datetime | None = None, recent: int = 10) -> Report:
+                 now: datetime | None = None, recent: int = 10, bankroll: float | None = None,
+                 bankroll_start: date | None = None) -> Report:
     now = now or datetime.now(timezone.utc).replace(tzinfo=None)
     local_now = now.replace(tzinfo=timezone.utc).astimezone(tz)
     end = local_now.date()
@@ -99,6 +104,8 @@ def build_report(con: duckdb.DuckDBPyConnection, tz: ZoneInfo, days: int = 7,
     local_kick = df["commence_time"].dt.tz_localize("UTC").dt.tz_convert(tz).dt.date
     in_period = (local_kick >= start) & (local_kick <= end)
     settled = df[df["won"].notna()].sort_values("commence_time")
+    if bankroll_start is not None:
+        settled = settled[local_kick[settled.index] >= bankroll_start]
     growth = float(((1 + settled["stake_pct"] * settled["profit_units"]).prod() - 1) * 100) if len(settled) else 0.0
     clv = pd.to_numeric(df["clv"], errors="coerce").dropna()
     month = df["commence_time"].dt.tz_localize("UTC").dt.tz_convert(tz).dt.strftime("%Y-%m")
@@ -113,6 +120,8 @@ def build_report(con: duckdb.DuckDBPyConnection, tz: ZoneInfo, days: int = 7,
         clv_count=len(clv),
         clv_beat_pct=float((clv > 0).mean() * 100) if len(clv) else None,
         kelly_bankroll_pct=growth,
+        bankroll=bankroll, bankroll_now=bankroll * (1 + growth / 100) if bankroll else None,
+        bankroll_start=bankroll_start,
         by_competition=[_slice(k, g) for k, g in df.groupby("competition")],
         by_market=[_slice(k, g) for k, g in df.groupby("market_label")],
         by_month=[_slice(k, g) for k, g in df.groupby(month)],
@@ -163,7 +172,9 @@ def format_report(r: Report, title: str = "Weekly report") -> str:
         "",
         f"🗓 <b>This period:</b> {e(_line(r.period))}",
         f"📒 <b>All time:</b> {e(_line(r.overall))}",
-        f"💰 Following the Kelly stakes: bankroll <b>{r.kelly_bankroll_pct:+.1f}%</b>",
+        f"💰 Following the Kelly stakes{f' since {r.bankroll_start:%d %b}' if r.bankroll_start else ''}: "
+        f"bankroll <b>{r.kelly_bankroll_pct:+.1f}%</b>"
+        + (f" ({euro(r.bankroll)} → <b>{euro(r.bankroll_now)}</b>)" if r.bankroll else ""),
         f"📊 Avg odds {r.avg_odds:.2f} · avg predicted EV {r.avg_ev:+.1%}"
         + (f" · avg CLV <b>{r.avg_clv:+.1%}</b> ({r.clv_count})" if r.avg_clv is not None else ""),
         *([f"🎯 Beat the closing line: <b>{r.clv_beat_pct:.0f}%</b> of {r.clv_count} picks"]
