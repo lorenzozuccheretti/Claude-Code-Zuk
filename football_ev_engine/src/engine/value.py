@@ -22,7 +22,9 @@ backtest reports Brier scores for the model, the market and the blend so
 consensus of the soft books stands in for it.
 
 A bet is kept only if ``EV >= min_ev``, ``P_model >= min_prob`` and
-``min_odds <= O_soft <= max_odds``.
+``min_odds <= O_soft <= max_odds``. A :class:`~src.engine.risk.MarketRisk`
+can tighten this per outcome (higher EV floor, lower P_model) before the
+check and the Kelly stake.
 """
 
 from __future__ import annotations
@@ -35,6 +37,7 @@ import pandas as pd
 
 from src.config import Settings
 from src.engine.devig import devig
+from src.engine.risk import NO_RISK, MarketRisk
 from src.engine.staking import stake_fraction
 
 H2H_OUTCOMES = ("home", "draw", "away")
@@ -62,8 +65,9 @@ class ValueRules:
         base.update({k: v for k, v in overrides.items() if v is not None})
         return cls(**base)
 
-    def accepts(self, p: float, odds: float, ev: float) -> bool:
-        return ev >= self.min_ev and p >= self.min_prob and self.min_odds <= odds <= self.max_odds
+    def accepts(self, p: float, odds: float, ev: float, min_ev: float | None = None) -> bool:
+        floor = self.min_ev if min_ev is None else min_ev
+        return ev >= floor and p >= self.min_prob and self.min_odds <= odds <= self.max_odds
 
 
 def expected_value(p: float, odds: float) -> float:
@@ -123,13 +127,17 @@ def evaluate_market(
     sharp: Mapping[str, float] | None,
     soft: Mapping[str, Mapping[str, float]],
     rules: ValueRules,
+    risk: MarketRisk | None = None,
 ) -> list[ValueBet]:
     """Value bets for one complete market (e.g. an event's 1X2).
 
     ``sharp`` maps outcome -> sharp price; ``soft`` maps bookmaker ->
     outcome -> price. For each outcome only the best soft price is
-    considered, so one selection produces at most one bet.
+    considered, so one selection produces at most one bet. ``risk``
+    adjusts P_model and raises the EV floor per outcome; the stake is sized
+    on the adjusted probability.
     """
+    risk = risk or NO_RISK
     p_sharp: dict[str, float] | None = None
     source: str | None = None
     if sharp and all(o in sharp for o in outcomes):
@@ -149,8 +157,9 @@ def evaluate_market(
         p = blend(pd_, ps, rules.model_weight)
         if p is None:
             continue
+        p = risk.adjust(o, p)
         ev = expected_value(p, price)
-        if rules.accepts(p, price, ev):
+        if rules.accepts(p, price, ev, risk.floor(o, rules.min_ev)):
             stake = stake_fraction(p, price, rules.kelly_fraction, rules.max_stake_pct)
             bets.append(ValueBet(event_id, market, o, point, book, price, pd_, ps, source, p, ev, stake))
     return bets
@@ -163,12 +172,14 @@ def scan(
     rules: ValueRules,
     sharp_book: str,
     soft_books: list[str],
+    risk_for: Callable[[str, str, str, float], MarketRisk] | None = None,
 ) -> tuple[list[ValueBet], list[str]]:
     """Evaluate every fixture's h2h and half-goal totals markets.
 
     ``predict(home, away)`` returns a
     :class:`~src.models.dixon_coles.MatchProbabilities` or ``None`` when the
-    model can't price the match. Returns the bets and human-readable notes
+    model can't price the match. ``risk_for(home, away, market, point)``
+    supplies the risk overrides for each market. Returns the bets and human-readable notes
     about fixtures that were skipped.
     """
     bets: list[ValueBet] = []
@@ -202,5 +213,7 @@ def scan(
                 soft[book] = bgrp.set_index("outcome")["price"].to_dict()
             if probs is None and not sharp:
                 continue  # neither model nor sharp line: nothing to anchor on
-            bets.extend(evaluate_market(fx.event_id, market, float(point), outcomes, p_dc, sharp, soft, rules))
+            risk = risk_for(fx.home_team, fx.away_team, market, float(point)) if risk_for else None
+            bets.extend(evaluate_market(fx.event_id, market, float(point), outcomes, p_dc, sharp, soft, rules,
+                                        risk))
     return bets, notes

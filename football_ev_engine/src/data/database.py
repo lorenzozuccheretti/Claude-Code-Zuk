@@ -132,7 +132,12 @@ SCHEMA: tuple[str, ...] = (
         -- Filled in by settlement once football-data has the result.
         won            BOOLEAN,
         profit_units   DOUBLE,               -- per 1 unit staked
-        clv            DOUBLE                -- EV vs Pinnacle's de-vigged closing line
+        clv            DOUBLE,               -- EV vs the de-vigged closing line
+        -- Near-kick-off snapshot taken by `agent closing` (all markets and lines).
+        closing_price  DOUBLE,               -- sharp price for the pick's outcome, if quoted
+        closing_prob   DOUBLE,               -- de-vigged fair probability of the outcome
+        closing_source VARCHAR,              -- pinnacle / consensus
+        closing_at     TIMESTAMP             -- UTC time of the snapshot
     )
     """,
     # Once-a-day agent events (daily run, no-pick notice, weekly report), so a
@@ -193,6 +198,10 @@ def session(path: Path | str) -> Iterator[duckdb.DuckDBPyConnection]:
 MIGRATIONS: tuple[str, ...] = (
     "ALTER TABLE matches ADD COLUMN IF NOT EXISTS neutral BOOLEAN DEFAULT false",
     "ALTER TABLE matches ADD COLUMN IF NOT EXISTS provisional BOOLEAN DEFAULT false",
+    "ALTER TABLE sent_picks ADD COLUMN IF NOT EXISTS closing_price DOUBLE",
+    "ALTER TABLE sent_picks ADD COLUMN IF NOT EXISTS closing_prob DOUBLE",
+    "ALTER TABLE sent_picks ADD COLUMN IF NOT EXISTS closing_source VARCHAR",
+    "ALTER TABLE sent_picks ADD COLUMN IF NOT EXISTS closing_at TIMESTAMP",
 )
 
 

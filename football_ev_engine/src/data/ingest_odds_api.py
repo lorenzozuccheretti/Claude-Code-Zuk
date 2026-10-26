@@ -178,6 +178,17 @@ class OddsApiClient:
         return [Event.model_validate(e) for e in data]
 
 
+    async def event_odds(self, sport_key: str, event_id: str, markets: str) -> Event:
+        """``GET /v4/sports/{sport}/events/{id}/odds`` - one event (1 credit per market and region)."""
+        regions = self.settings.odds_api_regions
+        cost = len(markets.split(",")) * len(regions.split(","))
+        data = await self._get(
+            f"sports/{sport_key}/events/{event_id}/odds",
+            {"regions": regions, "markets": markets, "oddsFormat": "decimal", "dateFormat": "iso"},
+            cost=cost,
+        )
+        return Event.model_validate(data)
+
     async def scores(self, sport_key: str, days_from: int = 3) -> list[dict]:
         """``GET /v4/sports/{sport}/scores`` - results of the last ``days_from`` days (2 credits)."""
         return await self._get(f"sports/{sport_key}/scores", {"daysFrom": days_from, "dateFormat": "iso"}, cost=2)

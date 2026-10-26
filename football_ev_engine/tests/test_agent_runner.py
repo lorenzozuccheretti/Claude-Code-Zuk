@@ -30,7 +30,8 @@ def settings(tmp_path, synthetic_matches):
     # Wide-open value rules so the synthetic prices always yield candidates.
     return AgentSettings(_env_file=None, db_path=db, aliases_json=tmp_path / "a.json", odds_api_key="k",
                          telegram_bot_token="T", telegram_chat_id="1", min_ev=-1.0, min_odds=1.01,
-                         max_odds=100.0, timezone="Europe/Rome", report_weekday=-1)
+                         max_odds=100.0, timezone="Europe/Rome", report_weekday=-1,
+                         calibrate_totals=False)  # covered in test_calibration.py
 
 
 def mock_odds(hours_ahead: int = 10):

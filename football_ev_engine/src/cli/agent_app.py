@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import html
 import re
-from datetime import timezone
+from datetime import timedelta, timezone
 from pathlib import Path
 from typing import Annotated, Optional
 
@@ -14,6 +14,7 @@ from rich.markup import escape
 from rich.table import Table
 
 from src.agent import store
+from src.agent.closing import DEFAULT_WINDOW, capture
 from src.agent.report import build_report, export_csv, format_report
 from src.agent.runner import RunReport, run_daily, send_report
 from src.agent.scheduler import build_scheduler
@@ -39,6 +40,7 @@ def _print_report(r: RunReport) -> None:
         return
     credits = f", {r.credits_remaining} Odds API credits left" if r.credits_remaining is not None else ""
     live = f" (+{r.live_results} fresh results)" if r.live_results else ""
+    live += " · totals calibration refitted" if r.calibrated else ""
     console.print(f"History +{r.history_rows} rows{live} · {r.settled} picks settled · models: {len(r.trained)} leagues · "
                   f"{r.odds_events} events priced{credits}")
     if r.data_through:
@@ -48,6 +50,11 @@ def _print_report(r: RunReport) -> None:
     for text in r.messages:
         console.rule()
         console.print(_plain(text))
+    if r.sandbox:
+        console.rule("[cyan]sandbox (paper only, not sent)")
+        for p in r.sandbox:
+            console.print(f"{escape(p.league_name)}: {escape(p.home_team)} v {escape(p.away_team)} · "
+                          f"{escape(p.selection_label)} @ {p.price:.2f} ({p.bookmaker}) · EV {p.ev:+.1%}")
     if r.errors:
         console.rule("[yellow]warnings")
         for e in r.errors:
@@ -70,6 +77,21 @@ def run(
     _print_report(report)
     if report.errors and not report.dry_run and report.sent == 0 and report.picks:
         raise typer.Exit(1)
+
+
+@agent_app.command("closing")
+def closing(
+    window: Annotated[int, typer.Option(help="Snapshot picks kicking off within this many minutes")] =
+    int(DEFAULT_WINDOW.total_seconds() // 60),
+) -> None:
+    """Snapshot the closing line of picks about to kick off, for CLV (1 credit per pick)."""
+    s = get_agent_settings()
+    with session(s.db_file) as con:
+        r = capture(con, s, store.utcnow(), timedelta(minutes=window))
+    credits = f" · {r.credits_remaining} Odds API credits left" if r.credits_remaining is not None else ""
+    console.print(f"Closing lines: {r.captured}/{r.due} picks due in the next {window} min captured{credits}")
+    for e in r.errors:
+        console.print(f"[yellow]•[/] {escape(e)}")
 
 
 @agent_app.command("schedule")

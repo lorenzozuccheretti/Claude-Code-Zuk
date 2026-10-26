@@ -18,6 +18,7 @@ import pandas as pd
 from src.engine.devig import devig
 
 ACTIVE = ("sending", "sent")
+SETTLED_STATUSES = ("sent", "sandbox")  # sandbox = paper pick, recorded but never sent
 
 
 def utcnow() -> datetime:
@@ -31,7 +32,7 @@ def fixture_key(league: str, home: str, away: str, commence_time: datetime) -> s
 
 def blocked_fixtures(con: duckdb.DuckDBPyConnection) -> set[str]:
     rows = con.execute(
-        f"SELECT fixture_key FROM sent_picks WHERE status IN {ACTIVE}"
+        f"SELECT fixture_key FROM sent_picks WHERE status IN {ACTIVE + ('sandbox',)}"
     ).fetchall()
     return {r[0] for r in rows}
 
@@ -44,19 +45,21 @@ def local_day_bounds(day: date, tz: ZoneInfo) -> tuple[datetime, datetime]:
             end.astimezone(timezone.utc).replace(tzinfo=None))
 
 
-def sent_count_on(con: duckdb.DuckDBPyConnection, day: date, tz: ZoneInfo) -> int:
+def sent_count_on(con: duckdb.DuckDBPyConnection, day: date, tz: ZoneInfo,
+                  statuses: tuple[str, ...] = ACTIVE) -> int:
     start, end = local_day_bounds(day, tz)
+    marks = ", ".join("?" for _ in statuses)
     return con.execute(
-        f"SELECT count(*) FROM sent_picks WHERE status IN {ACTIVE} AND sent_at >= ? AND sent_at < ?",
-        [start, end],
+        f"SELECT count(*) FROM sent_picks WHERE status IN ({marks}) AND sent_at >= ? AND sent_at < ?",
+        [*statuses, start, end],
     ).fetchone()[0]
 
 
-def record_sending(con: duckdb.DuckDBPyConnection, row: dict) -> None:
-    """Insert (or retry a previously failed) pick in the ``sending`` state."""
+def record_sending(con: duckdb.DuckDBPyConnection, row: dict, status: str = "sending") -> None:
+    """Insert (or retry a previously failed) pick in the ``sending`` (or ``sandbox``) state."""
     con.execute("DELETE FROM sent_picks WHERE fixture_key = ? AND status = 'failed'", [row["fixture_key"]])
     cols = list(row) + ["status", "sent_at"]
-    values = list(row.values()) + ["sending", utcnow()]
+    values = list(row.values()) + [status, utcnow()]
     con.execute(
         f"INSERT INTO sent_picks ({', '.join(cols)}) VALUES ({', '.join('?' for _ in cols)})", values
     )
@@ -103,13 +106,16 @@ def settle(con: duckdb.DuckDBPyConnection, now: datetime | None = None) -> int:
     """Grade sent picks whose match now appears in the football-data history.
 
     Profit is per 1 unit staked. CLV compares the price taken with Pinnacle's
-    de-vigged closing line when football-data has it (h2h and totals 2.5).
+    de-vigged closing line when football-data has it (h2h and totals 2.5);
+    a CLV already stored by the pre-kick-off snapshot (:mod:`src.agent.closing`)
+    is kept.
     Returns the number of picks settled.
     """
     now = now or utcnow()
     # Picks graded from live scores still lack CLV until football-data has the closing prices.
     pending = con.execute(
-        "SELECT * FROM sent_picks WHERE status = 'sent' AND (won IS NULL OR clv IS NULL) AND commence_time < ?",
+        f"SELECT * FROM sent_picks WHERE status IN {SETTLED_STATUSES} AND (won IS NULL OR clv IS NULL) "
+        "AND commence_time < ?",
         [now],
     ).df()
     settled = 0
@@ -134,7 +140,7 @@ def settle(con: duckdb.DuckDBPyConnection, now: datetime | None = None) -> int:
                 clv = float(p.price * fair[p.outcome] - 1)
         if pd.isna(p.won):
             con.execute(
-                "UPDATE sent_picks SET won = ?, profit_units = ?, clv = ? WHERE fixture_key = ?",
+                "UPDATE sent_picks SET won = ?, profit_units = ?, clv = coalesce(clv, ?) WHERE fixture_key = ?",
                 [bool(won), float(p.price - 1) if won else -1.0, clv, p.fixture_key],
             )
             settled += 1
@@ -158,7 +164,7 @@ def settle_from_scores(con: duckdb.DuckDBPyConnection, scores: list[dict]) -> in
         return 0
     pending = con.execute(
         f"SELECT fixture_key, event_id, market, outcome, point, price FROM sent_picks "
-        f"WHERE status = 'sent' AND won IS NULL AND event_id IN ({', '.join('?' for _ in by_id)})",
+        f"WHERE status IN {SETTLED_STATUSES} AND won IS NULL AND event_id IN ({', '.join('?' for _ in by_id)})",
         list(by_id),
     ).fetchall()
     settled = 0
