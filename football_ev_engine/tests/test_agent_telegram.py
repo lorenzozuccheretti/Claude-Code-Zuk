@@ -54,3 +54,9 @@ def test_send_retries_429_then_raises_without_token():
     with pytest.raises(TelegramError) as exc:
         asyncio.run(TelegramClient("TOKEN", "123").send("x"))
     assert "chat not found" in str(exc.value) and "TOKEN" not in str(exc.value)
+
+
+def test_stake_in_euro():
+    text = format_pick(pick(stake_pct=0.0163), ZoneInfo("Europe/Rome"), bankroll=1000.0)
+    assert "1.6%</b> of bankroll = <b>€16</b> (bankroll €1.000)" in text
+    assert "= <b>€1</b>" in format_pick(pick(stake_pct=0.0004), ZoneInfo("Europe/Rome"), bankroll=1000.0)

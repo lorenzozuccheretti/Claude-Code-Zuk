@@ -97,3 +97,17 @@ def test_send_document(tmp_path):
     assert asyncio.run(TelegramClient("T", "1").send_document(f, "cap")) == 9
     body = route.calls.last.request.read()
     assert b'filename="h.csv"' in body and b"a,b" in body
+
+
+def test_bankroll_compounds_from_its_start_date(con):
+    add(con, "old", datetime(2030, 2, 10, 19), won=True, price=3.0, stake=0.02)    # before the start
+    add(con, "w", datetime(2030, 3, 2, 19), won=True, price=2.0, stake=0.02)       # +2%
+    add(con, "l", datetime(2030, 3, 5, 19), won=False, price=2.0, stake=0.01)      # -1%
+    add(con, "p", datetime(2030, 3, 19, 19), stake=0.02)                            # pending: ignored
+    start = date(2030, 3, 1)
+    assert store.current_bankroll(con, 1000.0, None) == 1000.0
+    assert store.current_bankroll(con, 1000.0, start, ROME) == pytest.approx(1000 * 1.02 * 0.99)
+    r = build_report(con, ROME, now=NOW, bankroll=1000.0, bankroll_start=start)
+    assert r.bankroll_now == pytest.approx(1009.8)
+    text = format_report(r)
+    assert "since 01 Mar" in text and "€1.000 → <b>€1.010</b>" in text

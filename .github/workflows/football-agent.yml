@@ -76,6 +76,10 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           COLUMNS: "160"
+          # Real-money capital in euro: stakes are shown in € and, from the start
+          # date on, follow the bankroll as picks settle.
+          BANKROLL: "1000"
+          BANKROLL_START: "2026-12-01"
 
       - name: Save database
         if: always()

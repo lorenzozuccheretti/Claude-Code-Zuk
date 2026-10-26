@@ -8,6 +8,7 @@ code defaults differ (the agent's odds window is 1.75-2.25 and its EV floor
 
 from __future__ import annotations
 
+from datetime import date
 from functools import lru_cache
 from zoneinfo import ZoneInfo
 
@@ -35,6 +36,11 @@ class AgentSettings(Settings):
     notify_no_picks: bool = True
     # Weekly summary + CSV on this local weekday (0 = Monday); -1 disables it.
     report_weekday: int = Field(0, ge=-1, le=6)
+
+    # Stakes in euro: BANKROLL (shared setting, default 1000) is the starting
+    # capital. From BANKROLL_START on, settled picks compound it, so the Kelly
+    # stake follows the bankroll; before that (or unset) it stays fixed.
+    bankroll_start: date | None = None
 
     # Reasoning: Claude writes it when a key is configured, otherwise a template does.
     anthropic_api_key: str = ""
