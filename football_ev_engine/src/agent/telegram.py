@@ -132,8 +132,10 @@ def format_record(record: TrackRecord) -> str:
     if record.settled == 0:
         return f"📒 Track record: {record.picks} picks sent, none settled yet."
     clv = f", avg CLV {record.avg_clv:+.1%}" if record.avg_clv is not None else ""
+    pending = record.picks - record.settled
+    waiting = f" · {pending} awaiting result" if pending else ""
     return (f"📒 Track record: {record.wins}/{record.settled} won, {record.units:+.2f}u "
-            f"(yield {record.yield_pct:+.1f}%){clv}")
+            f"(yield {record.yield_pct:+.1f}%){clv}{waiting}")
 
 
 def format_no_picks(now: datetime, tz: ZoneInfo, scanned: int, candidates: int) -> str:
