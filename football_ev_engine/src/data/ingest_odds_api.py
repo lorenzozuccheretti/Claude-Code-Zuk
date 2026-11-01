@@ -89,10 +89,18 @@ class Quota:
         return cls(num("x-requests-used"), num("x-requests-remaining"), num("x-requests-last"))
 
 
-def last_known_remaining(con: duckdb.DuckDBPyConnection) -> int | None:
+def last_known_remaining(con: duckdb.DuckDBPyConnection, now: datetime | None = None) -> int | None:
+    """Credits left after the last call of the current (UTC) month.
+
+    The quota resets on the 1st, so last month's balance says nothing: it
+    would hold back optional calls, or block every call if it ended near
+    the floor, until the first request of the month reported the new one.
+    """
+    now = now or datetime.now(timezone.utc).replace(tzinfo=None)
     row = con.execute(
         "SELECT requests_remaining FROM api_usage WHERE requests_remaining IS NOT NULL "
-        "ORDER BY requested_at DESC LIMIT 1"
+        "AND requested_at >= ? ORDER BY requested_at DESC LIMIT 1",
+        [now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)],
     ).fetchone()
     return None if row is None else int(row[0])
 

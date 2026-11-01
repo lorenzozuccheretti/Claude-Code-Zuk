@@ -115,3 +115,14 @@ def test_csv_keeps_the_average_closing_columns():
            "I1,19/10/2026,Monza,Cagliari,4,0,H,2.54,3.25,3.04,2.03,1.81\n")
     row = parse_csv(raw, "I1", "2026-2027").iloc[0]
     assert (row["avgch"], row["avgca"], row["avgc_over25"], row["avgc_under25"]) == (2.54, 3.04, 2.03, 1.81)
+
+
+def test_last_months_balance_is_ignored_after_the_reset(con):
+    """On the 1st, October's 85 credits left must not hold back November's calls."""
+    from src.data.ingest_odds_api import last_known_remaining
+    con.execute("INSERT INTO api_usage VALUES (?, 'x', 200, 415, 85, 2)", [datetime(2026, 10, 31, 8, 42)])
+    assert last_known_remaining(con, now=datetime(2026, 10, 31, 20)) == 85
+    assert last_known_remaining(con, now=datetime(2026, 11, 1, 8, 41)) is None
+    assert affordable(con, date(2026, 11, 1), 12, 2)  # unknown balance: allowed
+    con.execute("INSERT INTO api_usage VALUES (?, 'x', 200, 10, 490, 2)", [datetime(2026, 11, 1, 8, 42)])
+    assert last_known_remaining(con, now=datetime(2026, 11, 1, 9)) == 490

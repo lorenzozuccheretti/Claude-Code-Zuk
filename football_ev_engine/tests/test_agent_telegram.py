@@ -60,3 +60,8 @@ def test_stake_in_euro():
     text = format_pick(pick(stake_pct=0.0163), ZoneInfo("Europe/Rome"), bankroll=1000.0)
     assert "1.6%</b> of bankroll = <b>€16</b> (bankroll €1.000)" in text
     assert "= <b>€1</b>" in format_pick(pick(stake_pct=0.0004), ZoneInfo("Europe/Rome"), bankroll=1000.0)
+
+
+def test_record_shows_picks_awaiting_a_result():
+    text = format_record(TrackRecord(42, 37, 20, 3.53, -0.026))
+    assert text.endswith("20/37 won, +3.53u (yield +9.5%), avg CLV -2.6% · 5 awaiting result")
