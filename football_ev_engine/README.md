@@ -4,7 +4,7 @@ A command-line engine that prices football matches with a Dixon-Coles model,
 strips the margin from sharp (Pinnacle) odds, looks for positive expected
 value (+EV) at soft bookmakers, and sizes stakes with quarter-Kelly.
 
-It covers Serie A, the Premier League, La Liga, the Bundesliga, Ligue 1 and the UEFA Nations League.
+It covers Serie A, the Premier League, La Liga, the Bundesliga, Ligue 1 and the UEFA Nations League, and scans the Champions League, Europa League and Conference League against the market.
 Club history comes from football-data.co.uk, national-team history from
 [martj42/international_results](https://github.com/martj42/international_results), and live odds from The Odds API.
 
@@ -92,6 +92,15 @@ and the constraint Σα = 0 keeps the model identifiable.
 Cold starts come from an independent-Poisson GLM (statsmodels). Refits in the
 backtest are warm-started from the previous fit. One fit takes well under a
 second. The test suite checks that the model recovers the known parameters of simulated leagues.
+
+### European cups (market-priced)
+
+Champions League, Europa League and Conference League matches put together clubs from leagues the model has never compared. Each domestic Dixon-Coles fit is centred on its own league, so an Inter rating and a Benfica rating aren't on the same scale. No free source carries the current cup season's results either: ClubElo's API is down, and openfootball stops at 2025-26.
+
+So the cups have no goal model. A pick needs a soft price beating **Pinnacle's de-vigged line** by the usual `MIN_EV`, with the same odds window and risk rules; without a Pinnacle quote there is no pick. That is the strictest form of value betting, against the sharpest book in the market, so expect few picks.
+- **Cost:** odds cost 2 credits per cup, only on days with a cup fixture in the pick window.
+- **Results:** settled through `/scores`; there is no free history to backfill.
+- **CLV:** comes from the pre-kick-off closing snapshot.
 
 ### National teams (UEFA Nations League)
 

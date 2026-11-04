@@ -31,7 +31,7 @@ from src.agent.report import build_report, export_csv, format_report
 from src.agent.selector import Pick, select, to_picks
 from src.agent.settings import AgentSettings
 from src.agent.telegram import TelegramClient, format_no_picks, format_pick, format_record
-from src.config import LEAGUES, recent_seasons
+from src.config import LEAGUES, MODELLED, recent_seasons
 from src.data.database import session
 from src.data.budget import spare_credits
 from src.data.ingest_odds_api import last_known_remaining
@@ -70,8 +70,9 @@ class RunReport:
 
 def _refresh_history(con: duckdb.DuckDBPyConnection, s: AgentSettings, report: RunReport, fd_client) -> None:
     have = {r[0] for r in con.execute("SELECT DISTINCT league FROM matches").fetchall()}
-    new = [lg for lg in LEAGUES.values() if lg.fd_code not in have]  # full history, once
-    known = [lg for lg in LEAGUES.values() if lg.fd_code in have]    # current season only
+    modelled = [lg for lg in LEAGUES.values() if lg.source != "market"]
+    new = [lg for lg in modelled if lg.fd_code not in have]  # full history, once
+    known = [lg for lg in modelled if lg.fd_code in have]    # current season only
     for leagues, seasons in ((new, recent_seasons(s.history_seasons)), (known, recent_seasons(1))):
         if not leagues:
             continue
@@ -160,6 +161,10 @@ def _refresh_calibration(con: duckdb.DuckDBPyConnection, s: AgentSettings, now: 
 
 def _reason(con, s: AgentSettings, pick: Pick, models: dict[str, DixonColes], llm_client) -> str:
     model = models.get(pick.league)
+    if pick.league not in MODELLED:
+        return (f"{pick.league_name} sides come from different leagues, which the goal model can't compare, so "
+                f"this pick rests on Pinnacle's de-vigged price alone: {pick.p_model:.0%} for "
+                f"{pick.selection_label}. At {pick.price:.2f} that is a {pick.ev:+.1%} edge over the sharpest book.")
     if model is None or pick.p_dc is None:
         sharp = f" against {pick.p_sharp:.0%} implied by Pinnacle" if pick.p_sharp is not None else ""
         return (f"At least one side has too few league matches for the goal model, so this pick rests on the "
@@ -212,6 +217,8 @@ def run_daily(
         report.data_through = {lg: str(d) for lg, d in con.execute(
             "SELECT league, max(match_date) FROM matches GROUP BY 1 ORDER BY 1").fetchall()}
         for lg in LEAGUES.values():
+            if lg.source == "market":
+                continue
             try:
                 pipeline.train(con, s, lg, ml_kind=None)
                 report.trained.append(lg.slug)

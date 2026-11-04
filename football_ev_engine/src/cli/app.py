@@ -124,6 +124,8 @@ def train(
                   title="Dixon-Coles fit")
     with session(s.db_file) as con:
         for lg in leagues:
+            if lg.source == "market":
+                continue  # priced from the market; nothing to fit
             try:
                 with console.status(f"Fitting {lg.name}..."):
                     r = pipeline.train(con, s, lg, None if ml == "none" else ml)

@@ -15,6 +15,7 @@ from datetime import date, datetime, timedelta
 import duckdb
 import pandas as pd
 
+from src.config import MODELLED
 from src.data.database import upsert_df
 
 # /scores only reaches 3 days back; keep a margin for the run's own timing.
@@ -35,7 +36,7 @@ def _missing(con: duckdb.DuckDBPyConnection, now: datetime) -> pd.DataFrame:
     """Stored fixtures that have finished but have no result in ``matches`` yet."""
     return con.execute(
         "SELECT f.event_id, f.league, f.sport_key, f.commence_time FROM fixtures f "
-        "WHERE f.home_team IS NOT NULL AND f.away_team IS NOT NULL "
+        f"WHERE f.league IN {tuple(sorted(MODELLED))} AND f.home_team IS NOT NULL AND f.away_team IS NOT NULL "
         "AND f.commence_time BETWEEN ? AND ? AND NOT EXISTS ("
         "  SELECT 1 FROM matches m WHERE m.league = f.league AND m.home_team = f.home_team "
         "  AND m.away_team = f.away_team "

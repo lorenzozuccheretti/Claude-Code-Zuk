@@ -112,7 +112,10 @@ def fetch_odds(
                     continue
                 events = await api.odds(lg.odds_api_key)
                 fixtures, odds = events_to_frames(events, lg)
-                if not fixtures.empty:
+                if not fixtures.empty and lg.source == "market":
+                    # No history to match against: the bookmaker's names are the names.
+                    fixtures["home_team"], fixtures["away_team"] = fixtures["home_team_raw"], fixtures["away_team_raw"]
+                elif not fixtures.empty:
                     matcher = AliasMatcher.for_league(con, lg.fd_code)
                     names = list(fixtures["home_team_raw"]) + list(fixtures["away_team_raw"])
                     resolved = matcher.match_many(names)
@@ -197,6 +200,8 @@ def calibrate(con: duckdb.DuckDBPyConnection, settings: Settings, leagues: list[
     """Fit the totals calibration on walk-forward predictions of every league, and store it."""
     frames = []
     for lg in leagues:
+        if lg.source == "market":
+            continue
         matches = load_matches(con, lg.fd_code)
         if matches.empty:
             continue
