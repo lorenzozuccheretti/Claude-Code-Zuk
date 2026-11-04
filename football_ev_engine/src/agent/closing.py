@@ -26,7 +26,7 @@ import duckdb
 import httpx
 import pandas as pd
 
-from src.config import LEAGUES, Settings
+from src.config import FREE_CLOSE, LEAGUES, Settings
 from src.data.budget import affordable
 from src.data.ingest_odds_api import Event, OddsApiClient, QuotaExhausted, events_to_frames
 from src.engine.devig import devig
@@ -46,14 +46,14 @@ class ClosingReport:
 def due_picks(con: duckdb.DuckDBPyConnection, now: datetime, window: timedelta = DEFAULT_WINDOW) -> pd.DataFrame:
     """Recorded picks without a snapshot that kick off within ``window``.
 
-    Club 1X2 and Over/Under 2.5 picks are left out: football-data publishes
+    Club-league 1X2 and Over/Under 2.5 picks are left out: football-data publishes
     their closing line for free, and settlement turns it into CLV.
     """
     return con.execute(
         "SELECT p.fixture_key, p.event_id, p.league, p.market, p.outcome, p.point, p.price, f.sport_key "
         "FROM sent_picks p JOIN fixtures f USING (event_id) "
         "WHERE p.status IN ('sent', 'sandbox') AND p.closing_at IS NULL "
-        "AND (p.league = 'INT' OR (p.market = 'totals' AND p.point <> 2.5)) "
+        f"AND (p.league NOT IN {tuple(sorted(FREE_CLOSE))} OR (p.market = 'totals' AND p.point <> 2.5)) "
         "AND p.commence_time > ? AND p.commence_time <= ? ORDER BY p.commence_time",
         [now, now + window],
     ).df()

@@ -26,7 +26,9 @@ class League:
     name: str
     fd_code: str  # history key: football-data division code, or "INT" for national teams
     odds_api_key: str  # The Odds API sport key
-    source: str = "football-data"  # or "international" (martj42/international_results)
+    # "football-data", "international" (martj42/international_results), or
+    # "market": no history to fit a model on, so priced from Pinnacle alone.
+    source: str = "football-data"
     # National teams play ~10 matches a year, so they need a slower decay and a
     # longer window than clubs; None means the global setting.
     decay_xi: float | None = None
@@ -44,11 +46,23 @@ LEAGUES: dict[str, League] = {
         # Half-life ~1 year and 4 years of results: roughly 40 matches per side.
         League("nations-league", "UEFA Nations League", "INT", "soccer_uefa_nations_league",
                source="international", decay_xi=0.0019, window_days=4 * 365),
+        # European cups mix clubs from leagues the model has never compared, and no
+        # free source has their current results, so they are priced from the market.
+        League("champions-league", "Champions League", "UCL", "soccer_uefa_champs_league", source="market"),
+        League("europa-league", "Europa League", "UEL", "soccer_uefa_europa_league", source="market"),
+        League("conference-league", "Conference League", "UECL", "soccer_uefa_europa_conference_league",
+               source="market"),
     )
 }
 
+# Competitions with a fitted model (and history to fit it on).
+MODELLED = {lg.fd_code for lg in LEAGUES.values() if lg.source != "market"}
+# Club leagues whose closing prices football-data publishes for free.
+FREE_CLOSE = {lg.fd_code for lg in LEAGUES.values() if lg.source == "football-data"}
+
 _LEAGUE_ALIASES = {"epl": "premier-league", "serie_a": "serie-a", "laliga": "la-liga", "ligue1": "ligue-1",
-                   "nations": "nations-league", "uefa-nations-league": "nations-league"}
+                   "nations": "nations-league", "uefa-nations-league": "nations-league",
+                   "ucl": "champions-league", "uel": "europa-league", "uecl": "conference-league"}
 
 
 def get_league(name: str) -> League:
